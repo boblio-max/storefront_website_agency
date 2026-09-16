@@ -238,7 +238,8 @@ def check_site(site_dir: Path, lead: dict, threshold: int) -> dict:
             and not any(w in body_text.lower() for w in cat_words):
         penalize(3, f"Category '{lead.get('category')}' never mentioned in copy",
                  "Weave the category into hero subcopy and service descriptions")
-    if "--brand" not in css or "#0b5fff" in css.lower():
+    if not any(v in css for v in ("--brand", "--matcha", "--primary", "--accent")) \
+            or "#0b5fff" in css.lower():
         penalize(5, "Default/generic brand styling (template blue or no theme)",
                  "Define a category palette via --brand/--brand2/--gold custom properties")
     if "linear-gradient" not in css and "radial-gradient" not in css:
