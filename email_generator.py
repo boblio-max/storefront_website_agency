@@ -43,6 +43,8 @@ except Exception:  # noqa: BLE001
 
 OPENCODE_CMD = "opencode"
 AGENCY_NAME = os.environ.get("AGENCY_NAME", "Storefront Web")
+AGENCY_EMAIL = os.environ.get("AGENCY_FROM", "storefront.webs@gmail.com").strip() \
+    or "storefront.webs@gmail.com"
 
 
 def utc_now_iso() -> str:
@@ -214,17 +216,22 @@ def load_history(path: str = "email_history.json") -> list:
     h = load_json(Path(path), [])
     return h if isinstance(h, list) else []
 def smtp_config() -> dict | None:
-    """SMTP transport from env; None when not configured (draft-only mode)."""
-    host = os.environ.get("AGENCY_SMTP_HOST", "").strip()
-    if not host:
+    """SMTP transport for the agency mailbox (Gmail defaults baked in).
+
+    Only the app password must be supplied (AGENCY_SMTP_PASS); host, user,
+    and sender default to the agency Gmail. None when no password is set
+    (draft-only mode).
+    """
+    password = os.environ.get("AGENCY_SMTP_PASS", "")
+    if not password:
         return None
+    sender = AGENCY_EMAIL
     return {
-        "host": host,
+        "host": os.environ.get("AGENCY_SMTP_HOST", "").strip() or "smtp.gmail.com",
         "port": int(os.environ.get("AGENCY_SMTP_PORT", "587")),
-        "user": os.environ.get("AGENCY_SMTP_USER", "").strip(),
-        "password": os.environ.get("AGENCY_SMTP_PASS", ""),
-        "from": os.environ.get("AGENCY_FROM", "").strip()
-                or os.environ.get("AGENCY_SMTP_USER", "").strip(),
+        "user": os.environ.get("AGENCY_SMTP_USER", "").strip() or sender,
+        "password": password,
+        "from": sender,
     }
 
 
@@ -327,9 +334,8 @@ def main(argv=None, **kwargs) -> str | dict | int:
             return 3
         cfg = smtp_config()
         if cfg is None:
-            print("[email_generator] ERROR: --send needs SMTP config "
-                  "(AGENCY_SMTP_HOST/PORT/USER/PASS + AGENCY_FROM); "
-                  "not recorded as sent", file=sys.stderr)
+            print("[email_generator] ERROR: --send needs the Gmail app password "
+                  "(set AGENCY_SMTP_PASS); not recorded as sent", file=sys.stderr)
             return 2
         try:
             smtp_send(cfg, to_addr, subject, body, reply_to=cfg["from"])

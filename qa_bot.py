@@ -215,7 +215,7 @@ def check_site(site_dir: Path, lead: dict, threshold: int) -> dict:
     if words < 400:
         penalize(6, f"Only ~{words} words of copy — too thin to sell anything",
                  "Write 400+ words of specific copy (services, about, reviews, hours)")
-    n_cards = len(soup.select(".cards li, .card")) if soup else 0
+    n_cards = len(soup.select(".cards li, .card, .cap-list li, .price-card")) if soup else 0
     if n_cards < 4:
         penalize(6, f"Only {n_cards} service cards — looks unfinished",
                  "Offer 6 specific service cards for this category, not 3 generic ones")

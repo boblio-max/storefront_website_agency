@@ -30,5 +30,6 @@ py orchestrator.py --reply "..." --reply-lead <id>         # manual reply handli
   `lead_00001`. `lead_id` stays the internal key across JSONs.
 - Outreach only to verified emails (never fabricated); opt-outs suppress
   forever; resends are guarded per lead+purpose.
-- Env: `AGENCY_SMTP_*`, `AGENCY_IMAP_*`, `AGENCY_FROM`,
+- Env: `AGENCY_SMTP_PASS` + `AGENCY_IMAP_PASS` (Gmail app passwords;
+  mailbox defaults to `storefront.webs@gmail.com`),
   `AGENCY_GIT_NAME/EMAIL`, `AGENCY_GH_USER`, `AGENCY_NAME`.

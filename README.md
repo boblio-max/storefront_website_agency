@@ -40,8 +40,9 @@ CLIs.
 |---|---|
 | GitHub | `gh auth login` as the agency account; `gh auth status` to verify |
 | Vercel | `vercel login` as the agency account; `vercel whoami` to verify |
-| Sending mail | `AGENCY_SMTP_HOST/PORT/USER/PASS`, `AGENCY_FROM` (Gmail: app password) |
-| Reading replies | `AGENCY_IMAP_HOST/PORT/USER/PASS` (same Gmail inbox works) |
+| Sending mail | `AGENCY_SMTP_PASS` (Gmail app password for `storefront.webs@gmail.com`; host/user/sender prefilled) |
+| Reading replies | `AGENCY_IMAP_PASS` (same app password; host/user prefilled) |
+| Sender override | `AGENCY_FROM` (default `storefront.webs@gmail.com`) |
 | Commit authorship | `AGENCY_GIT_NAME`, `AGENCY_GIT_EMAIL` (repo-local only) |
 | Deploy guard | `AGENCY_GH_USER` — deploys abort if another account is active |
 | Branding | `AGENCY_NAME` (default `Storefront Web`) |

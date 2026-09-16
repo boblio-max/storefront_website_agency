@@ -151,16 +151,22 @@ def parse_args(argv=None):
 
 
 def imap_config() -> dict | None:
-    """IMAP inbox from env; None when not configured."""
+    """IMAP inbox for the agency mailbox (Gmail defaults baked in).
+
+    Only the app password must be supplied (AGENCY_IMAP_PASS). None when
+    no password is set (polling skipped).
+    """
     import os as _os
-    host = _os.environ.get("AGENCY_IMAP_HOST", "").strip()
-    if not host:
+    password = _os.environ.get("AGENCY_IMAP_PASS", "")
+    if not password:
         return None
+    sender = (_os.environ.get("AGENCY_FROM", "storefront.webs@gmail.com").strip()
+              or "storefront.webs@gmail.com")
     return {
-        "host": host,
+        "host": _os.environ.get("AGENCY_IMAP_HOST", "").strip() or "imap.gmail.com",
         "port": int(_os.environ.get("AGENCY_IMAP_PORT", "993")),
-        "user": _os.environ.get("AGENCY_IMAP_USER", "").strip(),
-        "password": _os.environ.get("AGENCY_IMAP_PASS", ""),
+        "user": _os.environ.get("AGENCY_IMAP_USER", "").strip() or sender,
+        "password": password,
         "mailbox": _os.environ.get("AGENCY_IMAP_MAILBOX", "INBOX"),
     }
 
