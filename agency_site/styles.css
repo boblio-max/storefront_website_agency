@@ -60,14 +60,17 @@ background:#2e9e44;margin-right:.4rem;animation:pulse 2s infinite}
 @keyframes pulse{50%{opacity:.35}}
 .hero-side{display:flex;justify-content:center}
 .badge-spin{width:min(210px,60vw);animation:spin 22s linear infinite}
-.badge-spin text{font-family:ui-monospace,Menlo,monospace;font-size:15.5px;
-letter-spacing:.32em;fill:var(--ink);font-weight:700}
-.badge-arrow{font-size:44px;fill:var(--accent);letter-spacing:0}
+.badge-spin text{font-family:ui-monospace,Menlo,monospace;font-size:15px;
+letter-spacing:.14em;fill:var(--ink);font-weight:700}
+.badge-arrow{font-size:52px;fill:var(--accent);letter-spacing:0}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* marquee */
-.marquee{border-bottom:1px solid var(--ink);overflow:hidden;padding:.85rem 0;background:var(--ink);color:var(--paper)}
+.marquee{border-bottom:1px solid var(--ink);overflow:hidden;padding:.85rem 0;background:var(--ink);color:var(--paper);
+-webkit-mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent);
+mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent)}
 .marquee-track{display:flex;width:max-content;animation:slide 30s linear infinite}
+.marquee:hover .marquee-track{animation-play-state:paused}
 .marquee-track span{font-family:Georgia,serif;font-style:italic;font-size:1.15rem;white-space:nowrap}
 .marquee-track i{font-style:normal;color:var(--sun);padding:0 .6rem}
 @keyframes slide{to{transform:translateX(-50%)}}
