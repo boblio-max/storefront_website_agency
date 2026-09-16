@@ -3,182 +3,192 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Storefront Web — striking, hand-built websites for local businesses. Free preview before you pay. Bothell, WA.">
-<meta property="og:title" content="Storefront Web — Websites with presence">
-<meta property="og:description" content="Striking, hand-built websites for local businesses. Free preview before you pay.">
+<meta name="description" content="Storefront Web is a one-person web studio in Bothell, WA making websites for local businesses. Free preview before you pay.">
+<meta property="og:title" content="Storefront Web — a one-person web studio">
+<meta property="og:description" content="Websites for local businesses, designed by hand. Free preview before you pay.">
 <meta property="og:type" content="website">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%239d8aff'/><text x='50' y='70' font-size='52' text-anchor='middle' fill='%23050508' font-family='Arial' font-weight='bold'>S</text></svg>">
-<title>Storefront Web — Websites with presence</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23141210'/><text x='50' y='72' font-size='58' text-anchor='middle' fill='%23f5f1e8' font-family='Georgia' font-style='italic'>S</text></svg>">
+<title>Storefront Web — a one-person web studio</title>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body id="top">
-<canvas id="glow" aria-hidden="true"></canvas>
 
 <header class="site-header" id="siteHeader">
 <nav class="wrap" aria-label="Main navigation">
-<a class="brand" href="#top">Storefront<sup>®</sup> Web</a>
-<div class="head-right">
-<a class="head-mail" href="mailto:storefront.webs@gmail.com">storefront.webs@gmail.com</a>
-<button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false">Menu <span></span></button>
-</div>
+<a class="wordmark" href="#top">Storefront Web<sup>*</sup></a>
+<button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="navLinks">Menu</button>
+<ul class="nav-links" id="navLinks">
+<li><a href="#work">Work</a></li>
+<li><a href="#services">Services</a></li>
+<li><a href="#pricing">Pricing</a></li>
+<li><a href="#faq">FAQ</a></li>
+</ul>
+<a class="btn btn-ink" href="#inquiry">Free preview</a>
 </nav>
 </header>
 
-<div class="overlay" id="overlay" aria-hidden="true">
-<button class="menu-btn overlay-close" id="menuClose" aria-label="Close menu">Close <span></span></button>
-<nav aria-label="Overlay navigation">
-<a href="#work">Work</a>
-<a href="#studio">Studio</a>
-<a href="#pricing">Pricing</a>
-<a href="#faq">FAQ</a>
-<a href="#inquiry" class="overlay-cta">Start a project →</a>
-</nav>
-<p class="overlay-foot">Bothell, WA · <a href="mailto:storefront.webs@gmail.com">storefront.webs@gmail.com</a></p>
-</div>
-
 <main>
 <!-- HERO -->
-<section class="hero"><div class="wrap">
-<p class="kicker reveal">Independent web studio — Bothell, WA</p>
-<h1 class="reveal">Websites with<br><em>presence.</em></h1>
-<p class="lede reveal">I design and hand-build striking websites for local shops, restaurants, and trades — and you'll see a <strong>free preview of yours before you pay anything.</strong></p>
+<section class="hero"><div class="wrap hero-grid">
+<div>
+<p class="mono-label reveal">Independent web studio — Bothell, WA</p>
+<h1 class="reveal">Websites with<br>a <em>pulse.</em></h1>
+<p class="lede reveal">I'm building the web the slow way: one local business at a time, every page designed by hand, every sentence written for a human. Tell me about your shop and I'll send back a <strong>free preview of your new site</strong> — before a single dollar changes hands.</p>
 <div class="cta-row reveal">
-<a class="btn btn-primary" href="#inquiry">Let's talk</a>
-<a class="btn btn-ghost" href="#work">See the work</a>
+<a class="btn btn-ink" href="#inquiry">Get my free preview</a>
+<a class="text-link" href="#work">See recent work <span aria-hidden="true">→</span></a>
 </div>
-<p class="scroll-cue reveal">Scroll to explore ↓</p>
+<p class="availability reveal"><span class="dot" aria-hidden="true"></span> Booking new projects for <span id="bookMonth">this month</span></p>
+</div>
+<div class="hero-side reveal" aria-hidden="true">
+<svg class="badge-spin" viewBox="0 0 200 200">
+<defs><path id="circ" d="M100,100 m-72,0 a72,72 0 1,1 144,0 a72,72 0 1,1 -144,0"/></defs>
+<text><textPath href="#circ">FREE PREVIEW • NO DEPOSIT • FREE PREVIEW • NO DEPOSIT • </textPath></text>
+<text x="100" y="118" text-anchor="middle" class="badge-arrow">↓</text>
+</svg>
+</div>
 </div></section>
 
 <!-- MARQUEE -->
 <div class="marquee" aria-hidden="true"><div class="marquee-track">
-<span>Free preview ✺ Hand-built ✺ No templates ✺ Local business ✺ You own everything ✺&nbsp;</span>
-<span>Free preview ✺ Hand-built ✺ No templates ✺ Local business ✺ You own everything ✺&nbsp;</span>
+<span>Design <i>✳</i> Words <i>✳</i> Launch <i>✳</i> Revisions <i>✳</i> Local SEO <i>✳</i> Care plans <i>✳</i>&nbsp;</span>
+<span>Design <i>✳</i> Words <i>✳</i> Launch <i>✳</i> Revisions <i>✳</i> Local SEO <i>✳</i> Care plans <i>✳</i>&nbsp;</span>
 </div></div>
-
-<!-- MANIFESTO -->
-<section id="studio"><div class="wrap">
-<p class="kicker reveal">The studio</p>
-<h2 class="manifesto reveal">I combine design, motion, and clean code to make small businesses look <em>unforgettable</em> online — work that captures attention and invites people through your door.</h2>
-<p class="manifesto-sub reveal">No page builders. No resold themes. Every site is designed around one business, written in its voice, and polished until it feels inevitable.</p>
-<div class="stats-grid">
-<div class="stat reveal"><strong><span class="count" data-count="48">0</span>h</strong><span>preview turnaround</span></div>
-<div class="stat reveal"><strong><span class="count" data-count="100">0</span>%</strong><span>sites passing my QA gate</span></div>
-<div class="stat reveal"><strong>$0</strong><span>due before you love it</span></div>
-</div>
-</div></section>
 
 <!-- WORK -->
 <section id="work"><div class="wrap">
-<p class="kicker reveal">Selected work</p>
-<h2 class="reveal">Recent previews</h2>
-<p class="section-sub reveal">Every project starts like these did — as a free first draft.</p>
+<div class="sec-head reveal">
+<p class="mono-label">01 — Selected work</p>
+<h2>Fresh off<br>the drawing board</h2>
+</div>
 <div class="work-list">
-<article class="work-row reveal">
-<span class="work-idx">01</span>
-<div class="work-thumb t-food" aria-hidden="true">🔥</div>
-<div class="work-info"><h3>Family restaurant</h3><p>menu · ordering · design · build</p></div>
-<span class="work-arrow" aria-hidden="true">→</span>
+<article class="work reveal">
+<div class="work-meta"><span>01</span><span>Restaurant</span><span>2026</span></div>
+<h3>Peri-peri chicken joint <em>that finally looks as good as it smells</em></h3>
+<div class="work-shot s-food" aria-hidden="true"><span>Menu, platters &amp; pickup times — built to order.</span></div>
+<p class="work-tags">Menu design · Takeout flow · 6 days, preview to launch</p>
 </article>
-<article class="work-row reveal">
-<span class="work-idx">02</span>
-<div class="work-thumb t-auto" aria-hidden="true">🔧</div>
-<div class="work-info"><h3>Auto repair shop</h3><p>pricing · booking · design · build</p></div>
-<span class="work-arrow" aria-hidden="true">→</span>
+<article class="work reveal">
+<div class="work-meta"><span>02</span><span>Auto &amp; trades</span><span>2026</span></div>
+<h3>A brake shop <em>with prices on the page</em></h3>
+<div class="work-shot s-auto" aria-hidden="true"><span>Up-front pricing, inspection booking, no mysteries.</span></div>
+<p class="work-tags">Pricing pages · Booking form · 5 days, preview to launch</p>
 </article>
-<article class="work-row reveal">
-<span class="work-idx">03</span>
-<div class="work-thumb t-coffee" aria-hidden="true">☕</div>
-<div class="work-info"><h3>Corner café</h3><p>brand · menu · design · build</p></div>
-<span class="work-arrow" aria-hidden="true">→</span>
+<article class="work reveal">
+<div class="work-meta"><span>03</span><span>Café</span><span>2026</span></div>
+<h3>A corner café <em>worth lingering in — online too</em></h3>
+<div class="work-shot s-coffee" aria-hidden="true"><span>Morning specials, call-ahead pickup, warm colors.</span></div>
+<p class="work-tags">Brand · Menu · 4 days, preview to launch</p>
 </article>
 </div>
-<p class="center reveal"><a class="btn btn-primary" href="#inquiry">Make yours next</a></p>
+<p class="reveal"><a class="btn btn-ink" href="#inquiry">Put yours here →</a></p>
 </div></section>
 
-<!-- CAPABILITIES -->
+<!-- MANIFESTO -->
+<section id="studio"><div class="wrap narrow-ish">
+<p class="mono-label reveal">02 — Why this exists</p>
+<p class="manifesto reveal"><span class="dropcap">M</span>ost small-business websites are either a dusty Facebook page or a $10k agency invoice. There's a middle that barely exists: <mark>a real designer, a fair price, and a site you're proud to put on your receipts.</mark> That's the whole business. I take on a few shops at a time, draw every page myself, and don't get paid until you like what you see.</p>
+<p class="signed reveal">— Storefront Web, Bothell WA</p>
+</div></section>
+
+<!-- SERVICES -->
 <section id="services"><div class="wrap">
-<p class="kicker reveal">Capabilities</p>
-<h2 class="reveal">Everything, handled</h2>
-<ul class="cap-list">
-<li class="reveal"><span>Custom design</span><span>sites drawn around your trade</span></li>
-<li class="reveal"><span>Copywriting</span><span>every word written for you</span></li>
-<li class="reveal"><span>Motion &amp; interaction</span><span>subtle, never gimmicky</span></li>
-<li class="reveal"><span>Local SEO setup</span><span>maps, schema, reviews</span></li>
-<li class="reveal"><span>Launch &amp; domain</span><span>connected for you, same-day</span></li>
-<li class="reveal"><span>Care plans</span><span>updates &amp; edits monthly</span></li>
-</ul>
+<div class="sec-head reveal">
+<p class="mono-label">03 — Services</p>
+<h2>One pair of hands,<br>the whole job</h2>
+</div>
+<ol class="svc-list">
+<li class="reveal"><div><h3>Design</h3><p>Drawn around your trade — type, color, layout, photography direction. Your bakery will never look like a brake shop.</p></div><span>01</span></li>
+<li class="reveal"><div><h3>Words</h3><p>Services, story, the awkward "about" page — written in your voice from a 20-minute phone call. You approve every line.</p></div><span>02</span></li>
+<li class="reveal"><div><h3>Build</h3><p>Fast, hand-coded pages that work on cracked phone screens and load before the customer gives up.</p></div><span>03</span></li>
+<li class="reveal"><div><h3>Found</h3><p>Google Maps links, business schema, review prompts — the unglamorous plumbing that gets neighbors through your door.</p></div><span>04</span></li>
+<li class="reveal"><div><h3>Launch</h3><p>Domain connected, everything tested, go-live on a weekday afternoon while you watch. Then I show you around.</p></div><span>05</span></li>
+<li class="reveal"><div><h3>Care</h3><p>Hosting, backups, and small edits on an email thread. The site stays fresh; you stay out of dashboards.</p></div><span>06</span></li>
+</ol>
 </div></section>
 
 <!-- PROCESS -->
 <section id="process"><div class="wrap">
-<p class="kicker reveal">Approach</p>
-<h2 class="reveal">Four steps to live</h2>
-<ol class="steps">
-<li class="reveal"><span>01</span><div><h3>Preview in your inbox</h3><p>A working draft of your site, free. No meeting, no deposit.</p></div></li>
-<li class="reveal"><span>02</span><div><h3>You react</h3><p>Reply like a text — "make it blue", "add Saturdays". A human reads it.</p></div></li>
-<li class="reveal"><span>03</span><div><h3>I refine</h3><p>Feedback folded in, quality re-checked, updated preview sent.</p></div></li>
-<li class="reveal"><span>04</span><div><h3>Launch</h3><p>Approve it and we go live — domain connected, same day.</p></div></li>
-</ol>
+<div class="sec-head reveal">
+<p class="mono-label">04 — How it goes</p>
+<h2>Four emails<br>to a website</h2>
+</div>
+<div class="steps">
+<div class="step reveal"><p class="step-n">First</p><h3>You write two sentences</h3><p>Business name, what you do. The form below is plenty.</p></div>
+<div class="step reveal"><p class="step-n">Second</p><h3>A preview lands in your inbox</h3><p>About 48 hours later: a working draft of your actual site. Free.</p></div>
+<div class="step reveal"><p class="step-n">Third</p><h3>You reply like a text</h3><p>"Make it blue." "Add Saturdays." I fold it in and resend.</p></div>
+<div class="step reveal"><p class="step-n">Fourth</p><h3>We launch it together</h3><p>You approve, I connect the domain. Usually same-day.</p></div>
+</div>
 </div></section>
 
 <!-- PRICING -->
 <section id="pricing"><div class="wrap">
-<p class="kicker reveal">Pricing</p>
-<h2 class="reveal">Simple numbers</h2>
-<p class="section-sub reveal">Final quote confirmed before anything is owed. Preview always free.</p>
+<div class="sec-head reveal">
+<p class="mono-label">05 — Pricing</p>
+<h2>Numbers,<br>out loud</h2>
+<p class="section-sub">Quoted before anything is owed. No deposits, no retainers, no "premium unlocks."</p>
+</div>
 <div class="price-grid">
 <div class="price-card reveal">
 <h3>Launch</h3>
-<p class="price"><strong>$490</strong><span> / one-time</span></p>
-<ul><li>5-page custom site</li><li>Mobile-first, tap-to-call</li><li>Words written for you</li><li>Domain hookup &amp; launch</li></ul>
-<a class="btn btn-ghost" href="#inquiry">Start free</a>
+<p class="price">$490 <span>one-time</span></p>
+<p class="plan-sub">For new businesses that just need to exist online, properly.</p>
+<ul><li>Five-page custom site</li><li>Mobile-first, tap-to-call</li><li>Words written for you</li><li>Domain hookup &amp; launch</li><li>One round of tweaks</li></ul>
+<a class="btn btn-line" href="#inquiry">Start free</a>
 </div>
-<div class="price-card featured reveal">
-<p class="plan-flag">Most picked</p>
+<div class="price-card dark reveal">
 <h3>Storefront</h3>
-<p class="price"><strong>$990</strong><span> / one-time</span></p>
-<ul><li>Up to 10 pages + catalogs</li><li>Motion &amp; interaction</li><li>Local SEO + review engine</li><li>Quote &amp; booking forms</li><li>30 days of tweaks</li></ul>
-<a class="btn btn-primary" href="#inquiry">Start free</a>
+<p class="price">$990 <span>one-time</span></p>
+<p class="plan-sub">The full shop window. What most established businesses pick.</p>
+<ul><li>Up to ten pages + menus</li><li>Everything in Launch</li><li>Google-findability setup</li><li>Quote &amp; booking forms</li><li>Thirty days of tweaks</li></ul>
+<a class="btn btn-paper" href="#inquiry">Start free</a>
 </div>
 <div class="price-card reveal">
 <h3>Care</h3>
-<p class="price"><strong>$49</strong><span> / month</span></p>
-<ul><li>Hosting, backups, updates</li><li>Small edits on request</li><li>Cancel anytime</li></ul>
-<a class="btn btn-ghost" href="#inquiry">Ask about care</a>
+<p class="price">$49 <span>/month</span></p>
+<p class="plan-sub">After launch: hosting, backups, small edits. Cancel anytime.</p>
+<ul><li>Hosting &amp; updates handled</li><li>Edits on a plain email</li><li>Someone to call when stuck</li></ul>
+<a class="btn btn-line" href="#inquiry">Ask about care</a>
 </div>
 </div>
 </div></section>
 
 <!-- FAQ -->
-<section id="faq"><div class="wrap narrow">
-<p class="kicker reveal">FAQ</p>
-<h2 class="reveal">Fair questions</h2>
+<section id="faq"><div class="wrap narrow-ish">
+<div class="sec-head reveal">
+<p class="mono-label">06 — Fair questions</p>
+<h2>Asked, answered</h2>
+</div>
 <div class="faq-list">
-<details class="reveal"><summary>Why is the preview free?</summary><p>It's how I earn trust. A couple of days of design work; most owners approve it. If you don't love it, keep the ideas — no hard feelings.</p></details>
-<details class="reveal"><summary>How fast is this?</summary><p>Preview in about 48 hours. Launch is usually same-day after approval.</p></details>
-<details class="reveal"><summary>Do I own the site?</summary><p>Completely — domain, design, words, files. No lock-in, ever.</p></details>
-<details class="reveal"><summary>I'm not techy. Problem?</summary><p>Most of my clients aren't. You email me like a neighbor; I handle everything else.</p></details>
+<details class="reveal"><summary>Why free? What's the catch?</summary><p>Two days of my time, and most owners approve the preview — that's the entire sales pitch. If you don't love it, keep the ideas. Genuinely no hard feelings; it happens.</p></details>
+<details class="reveal"><summary>Are you actually one person?</summary><p>Yes. That's the point — you talk to the person drawing your site, not an account manager relaying notes to a contractor.</p></details>
+<details class="reveal"><summary>Do I own everything?</summary><p>Domain, design, words, files. I'll zip it all up whenever you ask, even if you're leaving. No lock-in is a selling point, not a risk.</p></details>
+<details class="reveal"><summary>I'm hopeless with computers.</summary><p>Perfect, most clients are. You'll never see code, a dashboard, or a DNS record. Email me like a neighbor and consider it done.</p></details>
+<details class="reveal"><summary>What do you need from me?</summary><p>The form below: name, business, email. I'll look up the rest and confirm every fact with you before launch.</p></details>
 </div>
 </div></section>
 
-<!-- CONTACT -->
+<!-- INQUIRY -->
 <section id="inquiry"><div class="wrap">
-<p class="kicker reveal">New business</p>
-<h2 class="huge reveal">Got a big idea?<br><em>Let's talk.</em></h2>
-<div class="visit-grid">
+<div class="sec-head reveal">
+<p class="mono-label">07 — Say hello</p>
+<h2 class="huge">Tell me about<br>your <em>shop.</em></h2>
+</div>
+<div class="inq-grid">
 <div class="reveal">
-<p class="direct"><a href="mailto:storefront.webs@gmail.com">storefront.webs@gmail.com</a></p>
-<p class="muted">Bothell, Washington<br>Replies usually within a day.</p>
+<p class="inq-note">I read everything myself and reply within a day or so — usually with questions, sometimes with a half-formed idea I'm excited about.</p>
+<p class="direct"><a href="mailto:storefront.webs@gmail.com?subject=Free%20preview%20request">storefront.webs@gmail.com</a></p>
+<p class="muted-line">Bothell, Washington · <span id="clock">--:--</span> local time</p>
 </div>
 <div class="reveal">
 <form id="inquiry-form" novalidate>
 <label>Your name<input name="name" required autocomplete="name" placeholder="Jane Doe"></label>
 <label>Business name<input name="business" required autocomplete="organization" placeholder="Doe's Bakery"></label>
 <label>Email<input name="email" type="email" required autocomplete="email" placeholder="you@yourbusiness.com"></label>
-<label>Phone <span class="opt">(optional)</span><input name="phone" type="tel" autocomplete="tel" placeholder="(425) 555-0100"></label>
-<label>Project<select name="topic"><option>A brand-new website</option><option>My current site needs a redo</option><option>Just curious — show me the preview</option><option>Help with my existing site</option></select></label>
-<label>Details<textarea name="message" rows="4" placeholder="What does your business do? What should the site say?"></textarea></label>
-<button class="btn btn-primary" type="submit">Send inquiry →</button>
+<label>Phone <span class="opt">(only if you'd rather talk)</span><input name="phone" type="tel" autocomplete="tel" placeholder="(425) 555-0100"></label>
+<label>Which is it?<select name="topic"><option>No website at all yet</option><option>Current site embarrasses me</option><option>Just curious — show me the preview</option><option>Something else (I'll explain below)</option></select></label>
+<label>The situation<textarea name="message" rows="4" placeholder="A sentence or two: what you do, who it's for, anything I should know."></textarea></label>
+<button class="btn btn-ink" type="submit">Send it over →</button>
 <p class="form-note" role="status" aria-live="polite"></p>
 </form>
 </div>
@@ -186,22 +196,14 @@
 </div></section>
 </main>
 
-<footer><div class="wrap foot-grid">
-<div>
-<p class="foot-brand">Storefront Web</p>
-<p class="muted">Striking websites for local business.<br>Designed &amp; built by hand in Washington.</p>
+<footer><div class="wrap">
+<p class="giant" aria-hidden="true">Storefront Web</p>
+<div class="foot-grid">
+<div><p class="foot-h">Studio</p><p><a href="#work">Work</a><br><a href="#services">Services</a><br><a href="#pricing">Pricing</a></p></div>
+<div><p class="foot-h">Elsewhere</p><p><a href="mailto:storefront.webs@gmail.com">Email me</a><br><a href="#inquiry">Free preview</a><br><a href="#top">Top ↑</a></p></div>
+<div><p class="foot-h">Colophon</p><p class="fine">Set in Georgia &amp; Helvetica.<br>Built by hand, no templates.<br>© <span id="year">2026</span> Storefront Web.</p></div>
 </div>
-<div>
-<p class="foot-h">Menu</p>
-<p><a href="#work">Work</a><br><a href="#studio">Studio</a><br><a href="#pricing">Pricing</a></p>
-</div>
-<div>
-<p class="foot-h">Contact</p>
-<p><a href="mailto:storefront.webs@gmail.com">storefront.webs@gmail.com</a><br><a href="#inquiry">Start a project →</a></p>
-</div>
-</div>
-<p class="fine">© <span id="year">2026</span> Storefront Web · Bothell, WA</p>
-</footer>
+</div></footer>
 
 <script src="script.js"></script>
 </body>
