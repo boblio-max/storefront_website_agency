@@ -22,7 +22,7 @@
 <a class="wordmark" href="#top">Storefront<sup>*</sup></a>
 <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="navLinks">Menu</button>
 <ul class="nav-links" id="navLinks">
-<li><a href="#work">Work</a></li>
+<li><a href="#work">Demo</a></li>
 <li><a href="#services">Services</a></li>
 <li><a href="#pricing">Pricing</a></li>
 <li><a href="#faq">FAQ</a></li>
@@ -62,33 +62,45 @@
 <!-- WORK -->
 <section id="work"><div class="wrap">
 <div class="sec-head reveal">
-<p class="mono-label">01 — Starting points</p>
-<h2>Pick your lane.</h2>
+<p class="mono-label">01 — Try it yourself</p>
+<h2>Don't take my word.<br>Click around.</h2>
 </div>
-<p class="section-sub reveal" style="text-align:left;margin-left:0">Three packages tuned to the shops I build for most — each one starts with a free preview of <em>your</em> business, not a demo. Anything else is custom; just ask.</p>
-<div class="work-list">
-<article class="work reveal">
-<div class="work-meta"><span>01</span><span>Restaurants &amp; cafés</span><span>from $490</span></div>
-<h3>Menus people can <em>actually read</em></h3>
-<div class="work-shot s-food" aria-hidden="true"><span>Tabbed menus · Platters &amp; specials · Pickup times up top</span></div>
-<p class="work-tags">Menu design · Takeout flow · Review prompts</p>
-<p><a class="text-link" href="#inquiry">Start with this →</a></p>
-</article>
-<article class="work reveal">
-<div class="work-meta"><span>02</span><span>Auto &amp; trades</span><span>from $490</span></div>
-<h3>Prices on the page, <em>phone ringing</em></h3>
-<div class="work-shot s-auto" aria-hidden="true"><span>Up-front pricing · Inspection booking · Trust badges</span></div>
-<p class="work-tags">Pricing pages · Booking form · Quote requests</p>
-<p><a class="text-link" href="#inquiry">Start with this →</a></p>
-</article>
-<article class="work reveal">
-<div class="work-meta"><span>03</span><span>Shops &amp; services</span><span>from $490</span></div>
-<h3>Open hours, <em>answered questions</em></h3>
-<div class="work-shot s-coffee" aria-hidden="true"><span>Services &amp; hours · Directions · Call buttons everywhere</span></div>
-<p class="work-tags">Service catalog · Map links · Tap-to-call</p>
-<p><a class="text-link" href="#inquiry">Start with this →</a></p>
-</article>
+<p class="section-sub reveal" style="text-align:left;margin-left:0">A tiny fictional bakery, built exactly like I'd build yours — with your real menu, photos, and words. Switch tabs, flip to phone view.</p>
+<div class="demo reveal">
+<div class="demo-bar" aria-hidden="true"><i></i><i></i><i></i><span class="demo-url">preview.yourbusiness.com</span>
+<span class="demo-view"><button class="view-btn active" data-view="desktop" aria-label="Desktop view">Desktop</button><button class="view-btn" data-view="mobile" aria-label="Mobile view">Phone</button></span></div>
+<div class="demo-stage" id="demoStage">
+<div class="mini" id="miniSite">
+<div class="mini-nav"><b>Cedar &amp; Crumb</b><span>Menu</span><span>Story</span><span>Visit</span><em>Order ahead</em></div>
+<div class="mini-tabs" role="tablist" aria-label="Sample pages">
+<button class="mini-tab active" data-page="menu" role="tab" aria-selected="true">Menu</button>
+<button class="mini-tab" data-page="story" role="tab" aria-selected="false">Our story</button>
+<button class="mini-tab" data-page="visit" role="tab" aria-selected="false">Visit</button>
 </div>
+<div class="mini-page active" id="page-menu" role="tabpanel">
+<h4>Today at the counter</h4>
+<ul class="mini-list">
+<li><div><b>Cardamom morning bun</b><p>Brown butter glaze, flaky layers</p></div><span>$4.50</span></li>
+<li><div><b>Seeded rye loaf</b><p>Baked at 5am, gone by ten</p></div><span>$8.00</span></li>
+<li><div><b>Espresso + pastry</b><p>Weekdays before 9am</p></div><span>$6.00</span></li>
+</ul>
+<p class="mini-cta"><span>Order ahead →</span></p>
+</div>
+<div class="mini-page" id="page-story" role="tabpanel" hidden>
+<h4>Baked by neighbors</h4>
+<p>Cedar &amp; Crumb is a fictional bakery I invented to show what's possible: a real menu, real hours, a real voice — imagine your business in its place.</p>
+<p class="mini-quote">"The morning bun alone is worth the trip." — a future regular</p>
+</div>
+<div class="mini-page" id="page-visit" role="tabpanel" hidden>
+<h4>Come hungry</h4>
+<p>14 Maple Street, Bothell<br>Tue–Sun · 7am–2pm<br>(425) 555-0119</p>
+<p class="mini-cta"><span>Get directions →</span></p>
+</div>
+</div>
+</div>
+<p class="demo-cap">Fictional demo shop — zero real businesses were involved. Yours gets the same treatment, with your details.</p>
+</div>
+<p class="reveal"><a class="btn btn-ink" href="#inquiry">Build mine like this →</a></p>
 </div></section>
 
 <!-- BEFORE / AFTER -->

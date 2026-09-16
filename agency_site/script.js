@@ -18,6 +18,17 @@ b.addEventListener('mousemove',function(e){var r=b.getBoundingClientRect();
 b.style.transform='translate('+((e.clientX-r.left-r.width/2)*.12)+'px,'+((e.clientY-r.top-r.height/2)*.18)+'px)'});
 b.addEventListener('mouseleave',function(){b.style.transform=''})})}
 
+/* demo tabs + desktop/phone toggle */
+document.querySelectorAll('.mini-tab').forEach(function(tab){tab.addEventListener('click',function(){
+document.querySelectorAll('.mini-tab').forEach(function(o){o.classList.remove('active');o.setAttribute('aria-selected','false')});
+tab.classList.add('active');tab.setAttribute('aria-selected','true');
+document.querySelectorAll('.mini-page').forEach(function(p){p.hidden=p.id!=='page-'+tab.dataset.page})})});
+var stage=document.getElementById('demoStage');
+document.querySelectorAll('.view-btn').forEach(function(btn){btn.addEventListener('click',function(){
+document.querySelectorAll('.view-btn').forEach(function(o){o.classList.remove('active')});
+btn.classList.add('active');
+if(stage){stage.classList.toggle('phone',btn.dataset.view==='mobile')}})});
+
 /* mobile nav */
 var t=document.querySelector('.nav-toggle'),l=document.querySelector('.nav-links');
 if(t&&l){t.addEventListener('click',function(){var o=l.classList.toggle('open');t.setAttribute('aria-expanded',String(o));t.textContent=o?'Close':'Menu'})}
