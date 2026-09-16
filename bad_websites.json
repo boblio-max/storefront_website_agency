@@ -1,5 +1,36 @@
 [
   {
+    "name": "Bothell Way Garage",
+    "category": "Auto repair shop",
+    "address": "17210 Bothell Way NE, Bothell, WA 98011",
+    "phone": "(425) 949-7627",
+    "website": "https://bothellwaygarage.com/",
+    "rating": 4.9,
+    "review_count": 345,
+    "maps_url": "https://www.google.com/maps/place/Bothell+Way+Garage/data=!4m7!3m6!1s0x54900e12341ff23b:0x808b7cc22e1d1dd2!8m2!3d47.7530573!4d-122.2117249!16s%2Fg%2F1td60f7_!19sChIJO_IfNBIOkFQR0h0dLsJ8i4A?authuser=0&hl=en&g_ep=EgoyMDI2MDkwMi4wIJJjKgBIAVAD&rclk=1",
+    "source": "google_maps",
+    "discovered_at": "2026-09-09T01:46:17.596467+00:00",
+    "website_analysis": {
+      "score": 0,
+      "verdict": "bad",
+      "problems": [
+        "Website unreachable: SSLError: HTTPSConnectionPool(host='bothellwaygarage.com', port=443): Max retries exceeded with url: / (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)')))",
+        "No clear contact / booking path",
+        "Weak call-to-action"
+      ],
+      "strengths": [],
+      "details": {
+        "fetch_error": "SSLError: HTTPSConnectionPool(host='bothellwaygarage.com', port=443): Max retries exceeded with url: / (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)')))",
+        "final_url": "https://bothellwaygarage.com/",
+        "load_ms": 2583,
+        "size_kb": 0.0,
+        "http_status": null
+      },
+      "checked_at": "2026-09-09T04:31:13.805260+00:00",
+      "final_url": "https://bothellwaygarage.com/"
+    }
+  },
+  {
     "name": "Safety Auto Repair - Bothell",
     "category": "Auto repair shop",
     "address": "19521 Bothell Everett Hwy, Bothell, WA 98012",
@@ -14,19 +45,19 @@
       "score": 0,
       "verdict": "bad",
       "problems": [
-        "Website unreachable: ConnectionError: HTTPSConnectionPool(host='www.safetyautorepairs.com', port=443): Max retries exceeded with url: / (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x00000266343E2490>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))",
+        "Website unreachable: ConnectionError: HTTPSConnectionPool(host='www.safetyautorepairs.com', port=443): Max retries exceeded with url: / (Caused by NewConnectionError(\"HTTPSConnection(host='www.safetyautorepairs.com', port=443): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it\"))",
         "No clear contact / booking path",
         "Weak call-to-action"
       ],
       "strengths": [],
       "details": {
-        "fetch_error": "ConnectionError: HTTPSConnectionPool(host='www.safetyautorepairs.com', port=443): Max retries exceeded with url: / (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x00000266343E2490>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))",
+        "fetch_error": "ConnectionError: HTTPSConnectionPool(host='www.safetyautorepairs.com', port=443): Max retries exceeded with url: / (Caused by NewConnectionError(\"HTTPSConnection(host='www.safetyautorepairs.com', port=443): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it\"))",
         "final_url": "https://www.safetyautorepairs.com/",
-        "load_ms": 2094,
+        "load_ms": 2117,
         "size_kb": 0.0,
         "http_status": null
       },
-      "checked_at": "2026-09-16T00:16:04.653962+00:00",
+      "checked_at": "2026-09-09T04:31:15.919548+00:00",
       "final_url": "https://www.safetyautorepairs.com/"
     }
   },
@@ -53,74 +84,12 @@
       "details": {
         "fetch_error": "HTTP 400",
         "final_url": "https://www.facebook.com/ridgecoffeebothell",
-        "load_ms": 750,
+        "load_ms": 2478,
         "size_kb": 1.5,
         "http_status": 400
       },
-      "checked_at": "2026-09-16T00:16:07.486114+00:00",
+      "checked_at": "2026-09-09T04:31:25.615333+00:00",
       "final_url": "https://www.facebook.com/ridgecoffeebothell"
-    }
-  },
-  {
-    "name": "Woodinville Import Auto Repair",
-    "category": "Auto repair shop",
-    "address": "15632 NE Woodinville Duvall Pl #9657, Woodinville, WA 98072",
-    "phone": "(425) 481-1927",
-    "website": "https://www.woodinvilleimportauto.com/",
-    "rating": 4.6,
-    "review_count": 89,
-    "maps_url": "https://www.google.com/maps/place/Woodinville+Import+Auto+Repair/data=!4m7!3m6!1s0x54900c1e7f359069:0xcd23d2b1ddf09764!8m2!3d47.7626987!4d-122.1302202!16s%2Fg%2F1td425n5!19sChIJaZA1fx4MkFQRZJfw3bHSI80?authuser=0&hl=en&g_ep=EgoyMDI2MDkwMi4wIJJjKgBIAVAD&rclk=1",
-    "source": "google_maps",
-    "discovered_at": "2026-09-09T04:28:29.557381+00:00",
-    "website_analysis": {
-      "score": 0,
-      "verdict": "bad",
-      "problems": [
-        "Website unreachable: ConnectionError: HTTPSConnectionPool(host='woodinvilleimportauto.com', port=443): Max retries exceeded with url: / (Caused by NameResolutionError(\"<urllib3.connection.HTTPSConnection object at 0x00000266343E1BD0>: Failed to resolve 'woodinvilleimportauto.com' ([Errno 11001] getaddrinfo failed)\"))",
-        "No clear contact / booking path",
-        "Weak call-to-action"
-      ],
-      "strengths": [],
-      "details": {
-        "fetch_error": "ConnectionError: HTTPSConnectionPool(host='woodinvilleimportauto.com', port=443): Max retries exceeded with url: / (Caused by NameResolutionError(\"<urllib3.connection.HTTPSConnection object at 0x00000266343E1BD0>: Failed to resolve 'woodinvilleimportauto.com' ([Errno 11001] getaddrinfo failed)\"))",
-        "final_url": "https://www.woodinvilleimportauto.com/",
-        "load_ms": 4013,
-        "size_kb": 0.0,
-        "http_status": null
-      },
-      "checked_at": "2026-09-16T00:16:08.667175+00:00",
-      "final_url": "https://www.woodinvilleimportauto.com/"
-    }
-  },
-  {
-    "name": "Sidekick Coffee",
-    "category": "Coffee shop",
-    "address": "17255 135th Ave NE Ste 1020, Woodinville, WA 98072",
-    "phone": "(425) 949-7422",
-    "website": "http://sidekick.coffee/",
-    "rating": 4.7,
-    "review_count": 696,
-    "maps_url": "https://www.google.com/maps/place/Sidekick+Coffee/data=!4m7!3m6!1s0x54900d3bd48180df:0xbda9ce901d76e4a1!8m2!3d47.752347!4d-122.1592848!16s%2Fg%2F11mxkghcwm!19sChIJ34CB1DsNkFQRoeR2HZDOqb0?authuser=0&hl=en&g_ep=EgoyMDI2MDkwMi4wIJJjKgBIAVAD&rclk=1",
-    "source": "google_maps",
-    "discovered_at": "2026-09-09T04:29:32.281674+00:00",
-    "website_analysis": {
-      "score": 0,
-      "verdict": "bad",
-      "problems": [
-        "Website unreachable: ConnectionError: HTTPSConnectionPool(host='www.sidekick.coffee', port=443): Max retries exceeded with url: / (Caused by NameResolutionError(\"<urllib3.connection.HTTPSConnection object at 0x0000026634470050>: Failed to resolve 'www.sidekick.coffee' ([Errno 11001] getaddrinfo failed)\"))",
-        "No clear contact / booking path",
-        "Weak call-to-action"
-      ],
-      "strengths": [],
-      "details": {
-        "fetch_error": "ConnectionError: HTTPSConnectionPool(host='www.sidekick.coffee', port=443): Max retries exceeded with url: / (Caused by NameResolutionError(\"<urllib3.connection.HTTPSConnection object at 0x0000026634470050>: Failed to resolve 'www.sidekick.coffee' ([Errno 11001] getaddrinfo failed)\"))",
-        "final_url": "http://sidekick.coffee/",
-        "load_ms": 1225,
-        "size_kb": 0.0,
-        "http_status": null
-      },
-      "checked_at": "2026-09-16T00:16:09.800020+00:00",
-      "final_url": "http://sidekick.coffee/"
     }
   },
   {
@@ -146,12 +115,85 @@
       "details": {
         "fetch_error": "HTTP 400",
         "final_url": "https://www.facebook.com/lagloriabothell/?_rdr",
-        "load_ms": 1694,
+        "load_ms": 4824,
         "size_kb": 1.5,
         "http_status": 400
       },
-      "checked_at": "2026-09-16T00:16:13.641859+00:00",
+      "checked_at": "2026-09-09T04:31:44.133512+00:00",
       "final_url": "https://www.facebook.com/lagloriabothell/?_rdr"
+    }
+  },
+  {
+    "name": "Sidekick Coffee",
+    "category": "Coffee shop",
+    "address": "17255 135th Ave NE Ste 1020, Woodinville, WA 98072",
+    "phone": "(425) 949-7422",
+    "website": "http://sidekick.coffee/",
+    "rating": 4.7,
+    "review_count": 696,
+    "maps_url": "https://www.google.com/maps/place/Sidekick+Coffee/data=!4m7!3m6!1s0x54900d3bd48180df:0xbda9ce901d76e4a1!8m2!3d47.752347!4d-122.1592848!16s%2Fg%2F11mxkghcwm!19sChIJ34CB1DsNkFQRoeR2HZDOqb0?authuser=0&hl=en&g_ep=EgoyMDI2MDkwMi4wIJJjKgBIAVAD&rclk=1",
+    "source": "google_maps",
+    "discovered_at": "2026-09-09T04:29:32.281674+00:00",
+    "website_analysis": {
+      "score": 50,
+      "verdict": "bad",
+      "problems": [
+        "Difficult navigation",
+        "Thin or poorly structured content",
+        "Missing basic business info (phone / address / hours)",
+        "Weak call-to-action",
+        "No clear contact / booking path"
+      ],
+      "strengths": [
+        "Clean, modern visual presentation"
+      ],
+      "details": {
+        "outdated_signals": 0,
+        "inline_styles": 0,
+        "css_links": 2,
+        "copyright_years": [
+          2022
+        ],
+        "stale_copyright": true,
+        "has_viewport": true,
+        "media_queries": 1,
+        "has_nav": false,
+        "link_count": 0,
+        "load_ms": 5306,
+        "size_kb": 54.2,
+        "images": 0,
+        "scripts": 7,
+        "words": 4,
+        "has_h1": false,
+        "title": "Home | Sidekick Coffee",
+        "has_phone": false,
+        "has_address": false,
+        "has_hours": false,
+        "cta_hits": 0,
+        "tel_links": 0,
+        "forms": 0,
+        "has_contact_link": false,
+        "map_embed": false,
+        "https": true,
+        "has_meta_description": true,
+        "has_favicon": true,
+        "social_links": false,
+        "http_status": 200,
+        "dimension_scores": {
+          "visual_design": 10,
+          "modernity": 6,
+          "mobile_responsiveness": 10,
+          "navigation_ux": 0,
+          "performance": 7,
+          "readability": 2,
+          "business_info": 1,
+          "cta": 2,
+          "contact_booking": 2,
+          "professionalism": 10
+        }
+      },
+      "checked_at": "2026-09-09T04:31:34.297875+00:00",
+      "final_url": "https://www.sidekick.coffee"
     }
   },
   {
@@ -166,7 +208,7 @@
     "source": "google_maps",
     "discovered_at": "2026-09-09T04:29:09.019207+00:00",
     "website_analysis": {
-      "score": 53,
+      "score": 52,
       "verdict": "bad",
       "problems": [
         "Difficult navigation",
@@ -188,8 +230,8 @@
         "media_queries": 2,
         "has_nav": false,
         "link_count": 0,
-        "load_ms": 908,
-        "size_kb": 609.8,
+        "load_ms": 2689,
+        "size_kb": 608.2,
         "images": 2,
         "scripts": 44,
         "words": 1,
@@ -213,7 +255,7 @@
           "modernity": 10,
           "mobile_responsiveness": 10,
           "navigation_ux": 0,
-          "performance": 8,
+          "performance": 7,
           "readability": 2,
           "business_info": 1,
           "cta": 2,
@@ -221,7 +263,7 @@
           "professionalism": 8
         }
       },
-      "checked_at": "2026-09-16T00:16:08.265170+00:00",
+      "checked_at": "2026-09-09T04:31:27.366539+00:00",
       "final_url": "https://www.instagram.com/nolicoffee/"
     }
   },
@@ -237,7 +279,7 @@
     "source": "google_maps",
     "discovered_at": "2026-09-09T01:46:08.507165+00:00",
     "website_analysis": {
-      "score": 56,
+      "score": 54,
       "verdict": "bad",
       "problems": [
         "Difficult navigation",
@@ -259,7 +301,7 @@
         "media_queries": 9,
         "has_nav": false,
         "link_count": 0,
-        "load_ms": 3449,
+        "load_ms": 5803,
         "size_kb": 368.6,
         "images": 0,
         "scripts": 3,
@@ -284,7 +326,7 @@
           "modernity": 10,
           "mobile_responsiveness": 10,
           "navigation_ux": 0,
-          "performance": 9,
+          "performance": 7,
           "readability": 2,
           "business_info": 1,
           "cta": 2,
@@ -292,7 +334,7 @@
           "professionalism": 10
         }
       },
-      "checked_at": "2026-09-16T00:16:05.084069+00:00",
+      "checked_at": "2026-09-09T04:31:17.026959+00:00",
       "final_url": "https://jdmhousemotorsports.com/"
     }
   }
