@@ -256,7 +256,8 @@ def check_site(site_dir: Path, lead: dict, threshold: int) -> dict:
     if not has_nav_js:
         penalize(2, "JS missing mobile nav toggle",
                  "Implement a menu toggle in script.js")
-    if "quote-form" not in html_low and "quote-form" not in js_low:
+    if "quote-form" not in html_low and "quote-form" not in js_low \
+            and "inquiry-form" not in html_low and "inquiry-form" not in js_low:
         penalize(2, "JS missing contact form handler",
                  "Implement contact form handler in script.js")
     if "scrollintoview" not in js_low and "scroll-behavior" not in css.lower():
