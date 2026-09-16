@@ -42,14 +42,14 @@ function tick(){if(!clock)return;
 try{clock.textContent=new Intl.DateTimeFormat('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Los_Angeles'}).format(new Date())}catch(e){clock.textContent=''}}
 if(clock){tick();setInterval(tick,30000)}
 
-/* counters */
-document.querySelectorAll('.count').forEach(function(el){
-var end=parseInt(el.dataset.count||'0',10),t0=null;
-function tick2(ts){if(!t0)t0=ts;var p=Math.min(1,(ts-t0)/1200);
-el.textContent=Math.round(end*(1-Math.pow(1-p,3)));if(p<1)requestAnimationFrame(tick2)}
-if('IntersectionObserver' in window){var o2=new IntersectionObserver(function(es){
-es.forEach(function(en){if(en.isIntersecting){requestAnimationFrame(tick2);o2.disconnect()}})},{threshold:.4});
-o2.observe(el)}else{el.textContent=end}});
+/* gentle parallax on work visuals */
+var shots=Array.prototype.slice.call(document.querySelectorAll('.work-shot'));
+if(shots.length&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
+var ticking=false;
+addEventListener('scroll',function(){if(!ticking){ticking=true;requestAnimationFrame(function(){
+var vh=innerHeight;shots.forEach(function(s){var r=s.getBoundingClientRect();
+var p=(r.top+r.height/2-vh/2)/vh;if(Math.abs(p)<1){s.style.backgroundPosition='50% '+(50+p*14)+'%'}});
+ticking=false})}},{passive:true})}
 
 /* inquiry form -> prefilled email */
 var f=document.getElementById('inquiry-form');

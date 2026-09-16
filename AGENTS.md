@@ -28,6 +28,8 @@ py orchestrator.py --reply "..." --reply-lead <id>         # manual reply handli
 ## Conventions
 - Customer-facing names are business slugs (`bothell-way-garage`), never
   `lead_00001`. `lead_id` stays the internal key across JSONs.
+- Outreach builds are locked previews (banner + noindex + demo forms);
+  `--final` unlocks after payment.
 - Outreach only to verified emails (never fabricated); opt-outs suppress
   forever; resends are guarded per lead+purpose.
 - Env: `AGENCY_SMTP_PASS` + `AGENCY_IMAP_PASS` (Gmail app passwords;

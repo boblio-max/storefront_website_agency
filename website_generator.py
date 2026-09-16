@@ -283,7 +283,7 @@ def _category_profile(category: str, name: str) -> dict:
     }
 
 
-def build_prompt(b: dict, feedback: dict | None) -> str:
+def build_prompt(b: dict, feedback: dict | None, preview: bool = True) -> str:
     name = b.get("name") or "Local Business"
     category = b.get("category") or "local business"
     address = b.get("address") or ""
@@ -315,6 +315,22 @@ def build_prompt(b: dict, feedback: dict | None) -> str:
         "- JS: mobile nav toggle, smooth anchor scroll, review/testimonial slider, tab switching if a menu exists, "
         "contact form validation with inline success message, sticky-header shadow, current year in footer.",
         f"Credit the builder with a subtle footer line: 'Site by {AGENCY_NAME}'.",
+        ("PREVIEW MODE (this build is a sales demo, NOT the launched site):"
+         if preview else
+         "FINAL BUILD (the client paid — this is the launched site):"),
+        ("- Fixed bottom banner on every viewport: 'Preview draft by Storefront Web — "
+         "design concept, not the business's official site.' Style it to match the theme; "
+         "it must never overlap CTAs or the mobile nav."
+         if preview else
+         "- No preview banner, no demo notices — clean production build."),
+        ('- <meta name="robots" content="noindex, nofollow"> so the demo never hijacks '
+         "the business's Google rankings."
+         if preview else
+         "- Full indexable build (no robots noindex)."),
+        ("- The contact form validates, then shows 'Thanks! (Demo preview — this form "
+         "goes live when the site launches.)' and does NOT claim anyone was contacted."
+         if preview else
+         "- The contact form validates and shows a normal success message."),
         "Technical requirements: semantic HTML with <nav>, exactly one <h1>, CTA buttons (Call Now, Get a Quote, "
         "Book Appointment), tel: link with the exact phone given, contact form with required + JS validation, "
         "viewport meta, meta description, favicon (inline SVG data URI), alt text on images, address + hours table, "
@@ -334,13 +350,17 @@ def build_prompt(b: dict, feedback: dict | None) -> str:
 # Fallback template engine (offline)
 # ---------------------------------------------------------------------------
 
-def render_template(b: dict, feedback: dict | None) -> dict[str, str]:
+def render_template(b: dict, feedback: dict | None,
+                    preview: bool = True) -> dict[str, str]:
     """Offline fallback: a genuinely good category-aware site, not a stub.
 
     Mirrors the structure the OpenCode prompt demands (topbar, sticky
     header, hero, trust strip, 6 services, about split, review slider,
     visit/hours + form, footer) so QA and deploys look the same whichever
     engine built the page.
+
+    preview=True (default) marks the build as a sales demo: preview banner,
+    noindex, demo-only forms. preview=False renders the paid final build.
     """
     name = b.get("name") or "Local Business"
     category = b.get("category") or "Local Business"
@@ -387,6 +407,7 @@ def render_template(b: dict, feedback: dict | None) -> dict[str, str]:
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="{esc(name)} — {esc(category)} in {city}. {esc(prof['hero_sub'])} Call {esc(phone) or 'today'} for a free quote.">
+{'<meta name="robots" content="noindex, nofollow">' if preview else ''}
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='{brand}'/><text x='50' y='70' font-size='52' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'>{first_word[:2]}</text></svg>">
 <title>{esc(name)} | {esc(category)} — {city}</title>
 <link rel="stylesheet" href="styles.css">
@@ -481,6 +502,7 @@ def render_template(b: dict, feedback: dict | None) -> dict[str, str]:
 <p><strong>{esc(name)}</strong> · {esc(category)} · {esc(address)}{(' · <a href="' + esc(tel) + '">' + esc(phone) + '</a>') if phone else ''}</p>
 <p class="fine">© <span id="year">{datetime.datetime.now().year}</span> {esc(name)}. All rights reserved. · Site by {esc(AGENCY_NAME)}</p>
 </div></footer>
+{('<div class="preview-banner" role="note">Preview draft by ' + esc(AGENCY_NAME) + ' — design concept, not the official site of ' + esc(name) + '. The contact form is disabled in previews.</div>') if preview else ''}
 <script src="script.js"></script>
 </body>
 </html>
@@ -533,18 +555,21 @@ input,textarea,select{{width:100%;padding:.65rem .75rem;border:1.5px solid #d9c7
 footer{{background:var(--dark);color:#cbb9ab;text-align:center;padding:2rem 0 2.5rem;margin-top:1rem}}
 footer a{{color:var(--gold)}}footer .fine{{font-size:.85rem;opacity:.85}}footer strong{{color:#fff}}
 .reveal{{opacity:0;transform:translateY(14px);transition:opacity .5s ease,transform .5s ease}}.reveal.visible{{opacity:1;transform:none}}
+.preview-banner{{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--dark);color:var(--gold);text-align:center;font-size:.82rem;font-weight:700;padding:.5rem .8rem;border-top:2px solid var(--gold)}}
+{('body{padding-bottom:2.2rem}') if preview else ''}
 .narrow{{max-width:760px}}
 @media(max-width:760px){{.nav-links{{display:none;width:100%;flex-direction:column;background:#fff;border:1px solid var(--line);border-radius:12px;padding:.7rem}}.nav-links.open{{display:flex}}.nav-toggle{{display:block}}.hide-mobile{{display:none}}.btn-call{{width:100%;text-align:center}}.about-grid,.visit-grid{{grid-template-columns:1fr}}.hero{{padding:3rem 0 2.5rem}}}}
 """
-    js = """(function(){var t=document.querySelector('.nav-toggle'),l=document.querySelector('.nav-links');if(t&&l){t.addEventListener('click',function(){var o=l.classList.toggle('open');t.setAttribute('aria-expanded',o)})}
-var dots=Array.prototype.slice.call(document.querySelectorAll('.dot')),reviews=Array.prototype.slice.call(document.querySelectorAll('.review')),cur=0;function show(i){if(!reviews.length)return;cur=(i+reviews.length)%reviews.length;reviews.forEach(function(r,j){r.classList.toggle('active',j===cur)});dots.forEach(function(d,j){d.classList.toggle('active',j===cur)})}
-dots.forEach(function(d,i){d.addEventListener('click',function(){show(i)})});if(reviews.length>1){setInterval(function(){show(cur+1)},6000)}
+    js = ("""(function(){var t=document.querySelector('.nav-toggle'),l=document.querySelector('.nav-links');if(t&&l){t.addEventListener('click',function(){var o=l.classList.toggle('open');t.setAttribute('aria-expanded',o)})}
 document.querySelectorAll('a[href^="#"]').forEach(function(a){a.addEventListener('click',function(e){var t=document.querySelector(a.getAttribute('href'));if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth'});if(l&&l.classList.contains('open')){l.classList.remove('open');t.setAttribute('aria-expanded','false')}}})});
 var h=document.getElementById('siteHeader');if(h){addEventListener('scroll',function(){h.classList.toggle('scrolled',scrollY>8)},{passive:true})}
-var f=document.getElementById('quote-form');if(f){f.addEventListener('submit',function(e){e.preventDefault();var n=f.name.value.trim(),p=f.phone.value.trim(),m=f.message.value.trim(),note=f.querySelector('.form-note');if(!n||!p||!m){note.textContent='Please fill in your name, phone, and message.';return}if(p.replace(/\\D/g,'').length<7){note.textContent='That phone number looks too short — please double-check.';return}note.textContent='Thanks '+n.split(' ')[0]+'! We will call you back shortly.';f.reset()})}
+""" + ("var PREVIEW=true;" if preview else "var PREVIEW=false;") + """
+var f=document.getElementById('quote-form');if(f){f.addEventListener('submit',function(e){e.preventDefault();var n=f.name.value.trim(),p=f.phone.value.trim(),m=f.message.value.trim(),note=f.querySelector('.form-note');if(!n||!p||!m){note.textContent='Please fill in your name, phone, and message.';return}if(p.replace(/\\D/g,'').length<7){note.textContent='That phone number looks too short — please double-check.';return}if(PREVIEW){note.textContent='Thanks '+n.split(' ')[0]+'! (Design preview — this form goes live when the site launches.)';return}note.textContent='Thanks '+n.split(' ')[0]+'! We will call you back shortly.';f.reset()})}
+var dots=Array.prototype.slice.call(document.querySelectorAll('.dot')),reviews=Array.prototype.slice.call(document.querySelectorAll('.review')),cur=0;function show(i){if(!reviews.length)return;cur=(i+reviews.length)%reviews.length;reviews.forEach(function(r,j){r.classList.toggle('active',j===cur)});dots.forEach(function(d,j){d.classList.toggle('active',j===cur)})}
+dots.forEach(function(d,i){d.addEventListener('click',function(){show(i)})});if(reviews.length>1){setInterval(function(){show(cur+1)},6000)}
 var y=document.getElementById('year');if(y){y.textContent=new Date().getFullYear()}
 var tabs=Array.prototype.slice.call(document.querySelectorAll('.tab'));tabs.forEach(function(tab){tab.addEventListener('click',function(){tabs.forEach(function(o){o.classList.remove('active');o.setAttribute('aria-selected','false')});tab.classList.add('active');tab.setAttribute('aria-selected','true');document.querySelectorAll('.tab-panel').forEach(function(p){p.hidden=p.id!=='panel-'+tab.dataset.tab})})});
-})();"""
+})();""")
     return {"index.html": index, "styles.css": css, "script.js": js}
 
 
@@ -573,36 +598,71 @@ def select_leads(leads: list[dict], lead_id: str | None, limit: int) -> list[dic
     return leads[:limit] if limit and limit > 0 else leads
 
 
+def apply_preview_lock(target: Path, business_name: str) -> None:
+    """Retrofit the preview blocker onto an OpenCode-built site.
+
+    The prompt asks OpenCode for banner/noindex/demo-forms, but output
+    can't be trusted — this guarantees the lock: noindex meta, fixed
+    preview banner, and forms that demo instead of pretending to submit.
+    Idempotent (safe to re-run).
+    """
+    idx = target / "index.html"
+    try:
+        html = idx.read_text(encoding="utf-8")
+    except OSError:
+        return
+    if 'name="robots"' not in html:
+        tag = '<meta name="robots" content="noindex, nofollow">'
+        html = html.replace("</head>", tag + "\n</head>", 1) if "</head>" in html \
+            else tag + "\n" + html
+    if "sw-preview-banner" not in html:
+        banner = (f'<div class="sw-preview-banner" role="note">Preview draft by '
+                  f'{esc(AGENCY_NAME)} — design concept, not the official site of '
+                  f'{esc(business_name)}. The contact form is disabled in previews.</div>')
+        lock = (banner + "\n<style>.sw-preview-banner{position:fixed;left:0;right:0;bottom:0;"
+                "z-index:9999;background:#141210;color:#ffc53d;text-align:center;font-size:13px;"
+                "font-weight:700;padding:8px 12px;border-top:2px solid #ffc53d}</style>\n"
+                "<script>document.body.style.paddingBottom='2.4rem';"
+                "(function(){var f=document.querySelector('form');if(f){f.addEventListener('submit',"
+                "function(){var n=f.querySelector('.form-note');"
+                "if(n){n.textContent='Thanks! (Design preview \\u2014 this form goes live when the site launches.)'}})}})();</script>")
+        html = html.replace("</body>", lock + "\n</body>", 1) if "</body>" in html \
+            else html + "\n" + lock
+        idx.write_text(html, encoding="utf-8")
+
+
 def generate_one(lead: dict, out_root: Path, feedback: dict | None,
-                 use_opencode: bool, force: bool) -> dict:
+                 use_opencode: bool, force: bool, preview: bool = True) -> dict:
     lid = lead.get("lead_id") or "lead_unknown"
     target, slug = site_dir_for(lead, out_root)
     if target.exists() and (target / "index.html").exists() and not force:
         return {"lead_id": lid, "dir": str(target), "skipped": True, "engine": "cached"}
     target.mkdir(parents=True, exist_ok=True)
-    prompt = build_prompt(lead, feedback)
+    prompt = build_prompt(lead, feedback, preview=preview)
     engine = "template"
     if use_opencode:
         try:
             run_opencode_command(target, prompt)
             if (target / "index.html").exists():
                 engine = "opencode"
+                if preview:
+                    apply_preview_lock(target, lead.get("name") or "this business")
             else:
                 raise RuntimeError("OpenCode finished but index.html missing")
         except RuntimeError as e:
             print(f"[website_generator] {lid}: OpenCode unavailable ({e}) — using template", flush=True)
-            files = render_template(lead, feedback)
+            files = render_template(lead, feedback, preview=preview)
             for name, content in files.items():
                 (target / name).write_text(content, encoding="utf-8")
     else:
-        files = render_template(lead, feedback)
+        files = render_template(lead, feedback, preview=preview)
         for name, content in files.items():
             (target / name).write_text(content, encoding="utf-8")
     meta = {"lead_id": lid, "slug": target.name,
             "business": {k: lead.get(k) for k in
             ("name", "category", "address", "phone", "website", "rating", "review_count")},
             "lead_type": lead.get("lead_type"), "opportunity_score": lead.get("opportunity_score"),
-            "engine": engine, "created_at": utc_now_iso(),
+            "engine": engine, "created_at": utc_now_iso(), "preview_mode": preview,
             "feedback_applied": bool(feedback and feedback.get("requested_changes"))}
     (target / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
     return {"lead_id": lid, "dir": str(target), "skipped": False, "engine": engine}
@@ -618,6 +678,8 @@ def parse_args(argv=None):
     p.add_argument("--force", action="store_true", help="Regenerate even if index.html exists")
     p.add_argument("--no-opencode", action="store_true", help="Skip OpenCode, use template directly")
     p.add_argument("--feedback", default=None, help="Bot 10 feedback JSON path (revision requests)")
+    p.add_argument("--final", dest="preview", action="store_false", default=True,
+                   help="Paid final build: no preview banner, indexable, live forms (default: preview demo)")
     return p.parse_args(argv)
 
 
@@ -672,7 +734,8 @@ def main(argv=None, lead_data: dict | None = None, **kwargs) -> str | int:
         if not lead_data.get("lead_id"):
             print("[website_generator] ERROR: lead_data missing 'lead_id'", file=sys.stderr)
             return 2
-        res = generate_one(lead_data, out_root, feedback, use_opencode, args.force)
+        res = generate_one(lead_data, out_root, feedback, use_opencode, args.force,
+                         preview=args.preview)
         if res["skipped"]:
             print(f"[website_generator] skip {res['lead_id']} (exists, use --force)", flush=True)
         else:
@@ -696,7 +759,8 @@ def main(argv=None, lead_data: dict | None = None, **kwargs) -> str | int:
           f"{'template' if args.no_opencode else 'opencode→template fallback'}", flush=True)
     built, skipped = 0, 0
     for lead in selected:
-        res = generate_one(lead, out_root, feedback, not args.no_opencode, args.force)
+        res = generate_one(lead, out_root, feedback, not args.no_opencode, args.force,
+                         preview=args.preview)
         if res["skipped"]:
             skipped += 1
             print(f"[website_generator] skip {res['lead_id']} (exists, use --force)", flush=True)

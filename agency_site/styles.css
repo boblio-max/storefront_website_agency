@@ -45,6 +45,10 @@ textarea:focus-visible,select:focus-visible,summary:focus-visible{outline:3px so
 .mono-label{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.78rem;
 text-transform:uppercase;letter-spacing:.22em;color:var(--muted);margin:0 0 1.1rem}
 .hero h1{font-size:clamp(3.2rem,9.5vw,7.5rem)}
+.hero h1 .line{display:block;overflow:hidden;padding-bottom:.06em;margin-bottom:-.06em}
+.hero h1 .line>span{display:block;animation:rise 1s cubic-bezier(.19,.7,.22,1) both}
+.hero h1 .line:nth-child(3)>span{animation-delay:.12s}
+@keyframes rise{from{transform:translateY(110%)}to{transform:none}}
 .lede{font-size:1.18rem;max-width:34rem;color:var(--ink2)}
 .lede strong{background:linear-gradient(transparent 55%,var(--sun) 55%,var(--sun) 96%,transparent 96%)}
 .cta-row{display:flex;gap:1.2rem;align-items:center;flex-wrap:wrap;margin:1.6rem 0 1.2rem}
@@ -119,7 +123,8 @@ font-size:.8rem;text-transform:uppercase;letter-spacing:.18em;color:var(--muted)
 .work h3{font-size:clamp(1.7rem,4.5vw,3rem);max-width:22ch}
 .work-shot{border:1.5px solid var(--ink);border-radius:var(--radius);
 min-height:11rem;display:flex;align-items:flex-end;padding:1.2rem;
-font-weight:600;max-width:44rem}
+font-weight:600;max-width:44rem;background-size:120% 120%;transition:transform .35s cubic-bezier(.2,.7,.2,1)}
+.work:hover .work-shot{transform:scale(1.015) rotate(-.4deg)}
 .work-shot span{background:rgba(245,241,232,.92);padding:.35rem .8rem;border-radius:8px;font-size:.92rem}
 .s-food{background:linear-gradient(120deg,#f3c98a 0%,#e8845a 55%,#b73a1b 100%)}
 .s-auto{background:linear-gradient(120deg,#cfd6de 0%,#7d94ab 55%,#2e4356 100%)}

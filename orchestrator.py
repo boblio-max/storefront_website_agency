@@ -15,6 +15,7 @@ Run:
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -33,6 +34,31 @@ def _require(result, stage: str):
     if isinstance(result, int):
         raise RuntimeError(f"{stage} failed with exit code {result}")
     return result
+
+
+def notify_owner(subject: str, body: str, notify_to: str | None = None) -> bool:
+    """Email the owner an update via the agency mailbox. Never raises.
+
+    Returns True if sent. Skips quietly (log line only) when SMTP is
+    unconfigured or notify_to is empty — pipeline must never die because
+    a notification failed.
+    """
+    to = (notify_to if notify_to is not None
+          else os.environ.get("AGENCY_NOTIFY_TO", "nikhilmahankali56@gmail.com")).strip()
+    if not to:
+        return False
+    cfg = eg.smtp_config()
+    if cfg is None:
+        print("[orchestrator] owner notify skipped (no SMTP transport)", flush=True)
+        return False
+    try:
+        eg.smtp_send(cfg, to, f"[Storefront Web] {subject}", body,
+                     reply_to=cfg["from"])
+    except RuntimeError as e:
+        print(f"[orchestrator] owner notify failed: {e}", flush=True)
+        return False
+    print(f"[orchestrator] owner notified: {subject}", flush=True)
+    return True
 
 
 def deployed_lids(record_file: str | Path = "deployments/deployments.json") -> set[str]:
@@ -82,7 +108,10 @@ def run(queries: list[str] | None = None, max_per_query: int = 20,
         skip_scrape: bool = False,
         businesses: str = "businesses.json",
         history: str = "email_history.json",
-        skip_deployed: bool = False) -> str:
+        skip_deployed: bool = False,
+        notify: bool = True,
+        notify_to: str | None = None,
+        preview: bool = True) -> str:
     """Run scrape -> classify -> qualify -> merge -> prioritize -> per-lead loop.
 
     Per entry: Bot 5 generate -> Bot 6 QA loop ("good") -> Bot 7 deploy
@@ -141,66 +170,105 @@ def run(queries: list[str] | None = None, max_per_query: int = 20,
     if limit and limit > 0:
         leads = leads[:limit]
     print(f"[orchestrator] Bot 5+6: generating {len(leads)} site(s)...", flush=True)
+    failures = 0
     for entry in leads:
         lid = entry.get("lead_id", "?")
-        website_path = _require(
-            wg.main(lead_data=entry, output_dir=output_dir,
-                    force=force, no_opencode=no_opencode),
-            "website_generator",
-        )
-
-        # Bot 6: loop until QA passes, then print good.
-        # Retries force a regenerate so QA re-checks fresh output.
-        for attempt in range(1, max_qa_attempts + 1):
-            if attempt > 1:
-                website_path = _require(
-                    wg.main(lead_data=entry, output_dir=output_dir,
-                            force=True, no_opencode=no_opencode),
-                    "website_generator",
-                )
-            qa_res = qb.main(website_path, threshold=qa_threshold)
-            if isinstance(qa_res, str):
-                print(f"[orchestrator] good — {lid} passed QA", flush=True)
-                break
-            if qa_res == 1:
-                print(f"[orchestrator] QA failed for {lid} "
-                      f"(attempt {attempt}/{max_qa_attempts}), regenerating...",
-                      flush=True)
-                continue
-            _require(qa_res, "qa_bot")
-        else:
-            raise RuntimeError(
-                f"qa_bot: {lid} still failing QA after {max_qa_attempts} attempts")
-
-        rc = dmgr.main(path_to_file=website_path, prod=prod)
-        if rc != 0:
-            raise RuntimeError(f"deployment_manager failed for {lid} (exit {rc})")
-
-        # Bot 8: outreach-ready lead (preview URL from Bot 7's record).
-        preview_url = _latest_preview("deployments/deployments.json", lid)
-        _require(
-            clg.main(leads=leads_path, lead=lid, preview_url=preview_url or None,
-                     output=current_output),
-            "current_lead_generator",
-        )
-
-        # Bot 9: outreach email (draft unless send_emails=True).
-        if send_emails and eg.already_sent(eg.load_history(history), lid, "initial_outreach"):
-            print(f"[orchestrator] email already sent for {lid} — skipping resend",
-                  flush=True)
-            email_res = 0
-        else:
-            email_res = eg.main(lead=lid, current=current_output, send=send_emails,
-                                preview_url=preview_url or None, history=history)
-        if email_res == 1:
-            raise RuntimeError(f"email_generator failed for {lid} (exit 1)")
-        if isinstance(email_res, int):
-            print(f"[orchestrator] email skipped for {lid} (exit {email_res}: "
-                  f"no address, suppressed, or no SMTP transport)", flush=True)
-        else:
-            print(f"[orchestrator] email {'sent' if send_emails else 'drafted'} for {lid}",
-                  flush=True)
+        try:
+            _process_lead(entry, lid, leads_path, output_dir, force, no_opencode,
+                          max_qa_attempts, qa_threshold, prod, current_output,
+                          send_emails, history, notify, notify_to, preview)
+        except RuntimeError as e:
+            failures += 1
+            print(f"[orchestrator] lead {lid} failed ({e}) — continuing "
+                  f"with next lead", flush=True)
+            if notify:
+                notify_owner(f"lead {lid} failed: {e}",
+                             f"Lead: {entry.get('name')} ({lid})\n"
+                             f"Error: {e}\nLead skipped; pipeline continued.",
+                             notify_to)
+    if failures:
+        print(f"[orchestrator] {failures}/{len(leads)} lead(s) failed", flush=True)
     return leads_path
+
+
+def _process_lead(entry: dict, lid: str, leads_path: str, output_dir: str,
+                  force: bool, no_opencode: bool, max_qa_attempts: int,
+                  qa_threshold: int, prod: bool, current_output: str,
+                  send_emails: bool, history: str,
+                  notify: bool, notify_to: str | None,
+                  preview: bool = True) -> None:
+    """Generate → QA → deploy → outreach for one lead. Raises RuntimeError."""
+    website_path = _require(
+        wg.main(lead_data=entry, output_dir=output_dir,
+                force=force, no_opencode=no_opencode, preview=preview),
+        "website_generator",
+    )
+
+    # Bot 6: loop until QA passes, then print good.
+    # Retries force a regenerate so QA re-checks fresh output.
+    for attempt in range(1, max_qa_attempts + 1):
+        if attempt > 1:
+            website_path = _require(
+                wg.main(lead_data=entry, output_dir=output_dir,
+                        force=True, no_opencode=no_opencode, preview=preview),
+                "website_generator",
+            )
+        qa_res = qb.main(website_path, threshold=qa_threshold)
+        if isinstance(qa_res, str):
+            print(f"[orchestrator] good — {lid} passed QA", flush=True)
+            break
+        if qa_res == 1:
+            print(f"[orchestrator] QA failed for {lid} "
+                  f"(attempt {attempt}/{max_qa_attempts}), regenerating...",
+                  flush=True)
+            continue
+        _require(qa_res, "qa_bot")
+    else:
+        raise RuntimeError(
+            f"qa_bot: {lid} still failing QA after {max_qa_attempts} attempts")
+
+    rc = dmgr.main(path_to_file=website_path, prod=prod)
+    if rc != 0:
+        raise RuntimeError(f"deployment_manager failed for {lid} (exit {rc})")
+
+    # Lead secured: site is live. Tell the owner.
+    name = entry.get("name", lid)
+    preview_url = _latest_preview("deployments/deployments.json", lid)
+    if notify:
+        notify_owner(f"lead secured: {name} is live",
+                     f"Business: {name} ({lid})\n"
+                     f"Preview: {preview_url or website_path}\n"
+                     f"Outreach: {'sending' if send_emails else 'draft-only'}.",
+                     notify_to)
+
+    # Bot 8: outreach-ready lead (preview URL from Bot 7's record).
+    _require(
+        clg.main(leads=leads_path, lead=lid, preview_url=preview_url or None,
+                 output=current_output),
+        "current_lead_generator",
+    )
+
+    # Bot 9: outreach email (draft unless send_emails=True).
+    if send_emails and eg.already_sent(eg.load_history(history), lid, "initial_outreach"):
+        print(f"[orchestrator] email already sent for {lid} — skipping resend",
+              flush=True)
+        email_res = 0
+    else:
+        email_res = eg.main(lead=lid, current=current_output, send=send_emails,
+                            preview_url=preview_url or None, history=history)
+    if email_res == 1:
+        raise RuntimeError(f"email_generator failed for {lid} (exit 1)")
+    if isinstance(email_res, int):
+        print(f"[orchestrator] email skipped for {lid} (exit {email_res}: "
+              f"no address, suppressed, or no SMTP transport)", flush=True)
+    else:
+        print(f"[orchestrator] email {'sent' if send_emails else 'drafted'} for {lid}",
+              flush=True)
+        if send_emails and notify:
+            notify_owner(f"outreach sent to {name}",
+                         f"Initial outreach email sent for {name} ({lid}).\n"
+                         f"Preview: {preview_url}.",
+                         notify_to)
      
  
 def handle_reply(incoming: str, lead: str | None = None,
@@ -212,7 +280,9 @@ def handle_reply(incoming: str, lead: str | None = None,
                  prod: bool = False,
                  current_output: str = "current_leads.json",
                  send_emails: bool = False,
-                 history: str = "email_history.json") -> dict:
+                 history: str = "email_history.json",
+                 notify: bool = True,
+                 notify_to: str | None = None) -> dict:
     """Handle one inbound client reply (Bot 10) and route it.
 
     - revision request → Bot 5 rebuild with feedback → Bot 6 QA loop →
@@ -227,6 +297,13 @@ def handle_reply(incoming: str, lead: str | None = None,
         feedback = json.loads(Path(fb_path).read_text(encoding="utf-8"))
     print(f"[orchestrator] reply: {feedback['lead_id']}: "
           f"{feedback['response_type']} -> {feedback['action']}", flush=True)
+    if notify:
+        notify_owner(f"reply from {feedback['lead_id']}: {feedback['response_type']}",
+                     f"Lead: {feedback['lead_id']}\n"
+                     f"Type: {feedback['response_type']} -> {feedback['action']}\n"
+                     f"Route: {feedback.get('route')}\n"
+                     f"Excerpt: {feedback.get('incoming_excerpt', '')[:400]}",
+                     notify_to)
     if feedback.get("action") != "website_revision":
         return feedback  # sales / human review route — nothing to rebuild
 
@@ -240,7 +317,7 @@ def handle_reply(incoming: str, lead: str | None = None,
 
     site = _require(
         wg.main(lead_data=entry, output_dir=output_dir, force=True,
-                no_opencode=no_opencode, feedback=feedback),
+                no_opencode=no_opencode, feedback=feedback, preview=True),
         "website_generator",
     )
     for attempt in range(1, max_qa_attempts + 1):
@@ -253,7 +330,7 @@ def handle_reply(incoming: str, lead: str | None = None,
                   f"(attempt {attempt}/{max_qa_attempts}), regenerating...", flush=True)
             site = _require(
                 wg.main(lead_data=entry, output_dir=output_dir, force=True,
-                        no_opencode=no_opencode, feedback=feedback),
+                        no_opencode=no_opencode, feedback=feedback, preview=True),
                 "website_generator",
             )
             continue
@@ -330,7 +407,9 @@ def watch(interval: int = 3600, poll_inbox: bool = True, **run_kwargs) -> None:
                         current_output=run_kwargs.get("current_output",
                                                       "current_leads.json"),
                         send_emails=run_kwargs.get("send_emails", False),
-                        history=history)
+                        history=history,
+                        notify=run_kwargs.get("notify", True),
+                        notify_to=run_kwargs.get("notify_to"))
                     print(f"[orchestrator] reply {msg['lead_id']}: "
                           f"{fb.get('action')} — marking seen", flush=True)
                     try:
@@ -358,6 +437,8 @@ def parse_args(argv=None):
     p.add_argument("--output-dir", default="generated_sites")
     p.add_argument("--force", action="store_true")
     p.add_argument("--no-opencode", action="store_true")
+    p.add_argument("--final", dest="preview", action="store_false", default=True,
+                   help="Paid final builds: unlock preview blockers (default: locked previews)")
     p.add_argument("--limit", type=int, default=1, help="Leads to process (0 = all)")
     p.add_argument("--qa-threshold", type=int, default=80)
     p.add_argument("--max-qa-attempts", type=int, default=5)
@@ -380,6 +461,10 @@ def parse_args(argv=None):
     p.add_argument("--no-inbox", dest="poll_inbox", action="store_false", default=True,
                    help="Watch without polling the inbox")
     p.add_argument("--history", default="email_history.json")
+    p.add_argument("--no-notify", dest="notify", action="store_false", default=True,
+                   help="Don't email owner updates (default: notify)")
+    p.add_argument("--notify-to", default=None,
+                   help="Owner update recipient (default: AGENCY_NOTIFY_TO or nikhilmahankali56@gmail.com)")
     return p.parse_args(argv)
 
 
@@ -390,7 +475,9 @@ def _run_kwargs(_a) -> dict:
             "qa_threshold": _a.qa_threshold, "max_qa_attempts": _a.max_qa_attempts,
             "prod": _a.prod, "current_output": _a.current_output,
             "send_emails": _a.send_emails, "skip_scrape": _a.skip_scrape,
-            "businesses": _a.businesses, "history": _a.history}
+            "businesses": _a.businesses, "history": _a.history,
+            "notify": _a.notify, "notify_to": _a.notify_to,
+            "preview": _a.preview}
 
 
 if __name__ == "__main__":
@@ -406,7 +493,8 @@ if __name__ == "__main__":
                                qa_threshold=_a.qa_threshold,
                                max_qa_attempts=_a.max_qa_attempts, prod=_a.prod,
                                current_output=_a.current_output,
-                               send_emails=_a.send_emails, history=_a.history)
+                               send_emails=_a.send_emails, history=_a.history,
+                               notify=_a.notify, notify_to=_a.notify_to)
         except RuntimeError as e:
             print(f"[orchestrator] ERROR: {e}", file=sys.stderr)
             raise SystemExit(1)

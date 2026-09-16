@@ -85,6 +85,10 @@ py response_feedback_manager.py --poll                 # list unseen inbox repli
 - **QA failing stops the lead** — fix the site, don't force the deploy.
 - **No `lead_00001` in public**: folders, repos, and Vercel projects use
   business slugs; colliding names get a short stable suffix.
+- **Previews are locked demos.** Every outreach build ships with a
+  visible preview banner, `noindex`, and demo-only forms — gorgeous but
+  unusable until paid. `--final` rebuilds the unlocked production site
+  after payment (banner gone, indexable, live forms).
 - Generated sites, `deployments/`, and outreach history are pipeline
   output — lead data (`businesses.json`, `target_leads.json`) is input.
   Don't delete one thinking it's the other.
