@@ -1,8 +1,8 @@
-# website_agency — Storefront Web (agency account)
+# website_agency — Storefront (agency account)
 
 ## GitHub account
 All pipeline GitHub operations (repo create/push) MUST run as the
-**Storefront Web agency account** — never `boblio-max`.
+**Storefront agency account** — never `boblio-max`.
 - Verify: `gh auth status` → active account must be the agency one.
 - Switch: `gh auth switch --user <agency-login>`.
 - `deployment_manager` enforces this via `AGENCY_GH_USER`: if the active
@@ -12,7 +12,7 @@ All pipeline GitHub operations (repo create/push) MUST run as the
 
 ## Vercel account
 Deploys go to whichever account `vercel` is logged into.
-- Verify: `vercel whoami` → must be the Storefront Web account.
+- Verify: `vercel whoami` → must be the Storefront account.
 - The CLI holds ONE login: `vercel logout` + `vercel login` to change it.
 - Old lead projects were deleted; each site links its own fresh project.
 

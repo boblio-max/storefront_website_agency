@@ -42,7 +42,7 @@ except Exception:  # noqa: BLE001
     pass
 
 OPENCODE_CMD = "opencode"
-AGENCY_NAME = os.environ.get("AGENCY_NAME", "Storefront Web")
+AGENCY_NAME = os.environ.get("AGENCY_NAME", "Storefront")
 AGENCY_EMAIL = os.environ.get("AGENCY_FROM", "storefront.webs@gmail.com").strip() \
     or "storefront.webs@gmail.com"
 

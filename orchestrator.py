@@ -52,7 +52,7 @@ def notify_owner(subject: str, body: str, notify_to: str | None = None) -> bool:
         print("[orchestrator] owner notify skipped (no SMTP transport)", flush=True)
         return False
     try:
-        eg.smtp_send(cfg, to, f"[Storefront Web] {subject}", body,
+        eg.smtp_send(cfg, to, f"[Storefront] {subject}", body,
                      reply_to=cfg["from"])
     except RuntimeError as e:
         print(f"[orchestrator] owner notify failed: {e}", flush=True)

@@ -50,7 +50,7 @@ except Exception:  # noqa: BLE001
     pass
 
 OPENCODE_CMD = "opencode"
-AGENCY_NAME = os.environ.get("AGENCY_NAME", "Storefront Web")
+AGENCY_NAME = os.environ.get("AGENCY_NAME", "Storefront")
 
 
 def utc_now_iso() -> str:
@@ -318,7 +318,7 @@ def build_prompt(b: dict, feedback: dict | None, preview: bool = True) -> str:
         ("PREVIEW MODE (this build is a sales demo, NOT the launched site):"
          if preview else
          "FINAL BUILD (the client paid — this is the launched site):"),
-        ("- Fixed bottom banner on every viewport: 'Preview draft by Storefront Web — "
+        (f"- Fixed bottom banner on every viewport: 'Preview draft by {AGENCY_NAME} — "
          "design concept, not the business's official site.' Style it to match the theme; "
          "it must never overlap CTAs or the mobile nav."
          if preview else

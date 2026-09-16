@@ -1,4 +1,4 @@
-# Storefront Web — automated website agency
+# Storefront — automated website agency
 
 Finds local businesses with missing or bad websites, builds each one a
 modern site, deploys it, and runs personalized email outreach — including
@@ -45,7 +45,7 @@ CLIs.
 | Sender override | `AGENCY_FROM` (default `storefront.webs@gmail.com`) |
 | Commit authorship | `AGENCY_GIT_NAME`, `AGENCY_GIT_EMAIL` (repo-local only) |
 | Deploy guard | `AGENCY_GH_USER` — deploys abort if another account is active |
-| Branding | `AGENCY_NAME` (default `Storefront Web`) |
+| Branding | `AGENCY_NAME` (default `Storefront`) |
 
 If you work in other local folders, they belong to `boblio-max` — see
 `../AGENTS.md`. Never mix the two accounts.
