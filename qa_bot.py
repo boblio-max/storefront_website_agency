@@ -179,7 +179,7 @@ def check_site(site_dir: Path, lead: dict, threshold: int) -> dict:
     imgs_no_alt = [i for i in soup.find_all("img") if not (i.get("alt") or "").strip()]
     if imgs_no_alt:
         penalize(3, f"{len(imgs_no_alt)} image(s) missing alt text", "Add descriptive alt attributes")
-    if re.search(r"<button[^>]*>\s*</button>", html):
+    if re.search(r"<button(?![^>]*aria-label)[^>]*>\s*</button>", html):
         penalize(2, "Empty <button> element", "Give every button visible text")
     m = re.search(r"\.btn-primary\s*\{([^}]*)\}", css)
     if m and not ("background" in m.group(1) and "color" in m.group(1)):
@@ -202,6 +202,71 @@ def check_site(site_dir: Path, lead: dict, threshold: int) -> dict:
             if not (site_dir / ref.split("?")[0].split("#")[0]).exists():
                 penalize(3, f"Broken {tag} reference: {ref}", f"Fix or remove the dead '{ref}' link")
                 break
+
+    # -- Design quality (agency bar — generic templates fail here) -----------
+    body_text = soup.get_text(" ", strip=True) if soup else ""
+    words = len(re.findall(r"[A-Za-z0-9']+", body_text))
+    details["words"] = words
+    n_sections = len(soup.find_all("section")) if soup else 0
+    details["sections"] = n_sections
+    if n_sections < 5:
+        penalize(8, f"Only {n_sections} <section> blocks — looks like a stub",
+                 "Ship topbar/header/hero/trust-strip/services/about/reviews/visit/footer (7+ sections)")
+    if words < 400:
+        penalize(6, f"Only ~{words} words of copy — too thin to sell anything",
+                 "Write 400+ words of specific copy (services, about, reviews, hours)")
+    n_cards = len(soup.select(".cards li, .card")) if soup else 0
+    if n_cards < 4:
+        penalize(6, f"Only {n_cards} service cards — looks unfinished",
+                 "Offer 6 specific service cards for this category, not 3 generic ones")
+    filler = [p for p in ("quality work, fair prices",
+                          "lorem ipsum", "welcome to our website",
+                          "ask us about recent customer feedback")
+              if p in body_text.lower()]
+    if filler:
+        penalize(7, f"Generic filler copy: {', '.join(filler)}",
+                 "Replace filler with specific copy (street, services, prices, hours)")
+    name_hits = body_text.lower().count(name.lower()) if name else 0
+    first = (name.strip().split() or [""])[0].lower() if name else ""
+    first_hits = body_text.lower().count(first) if len(first) > 2 else 0
+    if name and name_hits < 3 and first_hits < 4:
+        penalize(4, f"Business name appears only {name_hits}x — feels templated",
+                 "Mention the business name in hero, about, and footer at minimum")
+    cat = (lead.get("category") or "").strip().lower()
+    cat_words = [w for w in re.findall(r"[a-z]{4,}", cat)]
+    if cat and len(cat) > 3 and cat not in body_text.lower() \
+            and not any(w in body_text.lower() for w in cat_words):
+        penalize(3, f"Category '{lead.get('category')}' never mentioned in copy",
+                 "Weave the category into hero subcopy and service descriptions")
+    if "--brand" not in css or "#0b5fff" in css.lower():
+        penalize(5, "Default/generic brand styling (template blue or no theme)",
+                 "Define a category palette via --brand/--brand2/--gold custom properties")
+    if "linear-gradient" not in css and "radial-gradient" not in css:
+        penalize(3, "Flat, unstyled hero — no gradient or visual hierarchy",
+                 "Style the hero with a gradient, badge, and layered CTA row")
+    if ".topbar" not in html and "topbar" not in css:
+        penalize(2, "No utility top bar (address/hours/phone strip)",
+                 "Add a topbar with address, hours, and click-to-call")
+    if "review-slider" not in html and "review" not in html.lower():
+        penalize(3, "No reviews/testimonials section", "Add a 3-quote review slider with dots")
+    js_low = js.lower()
+    html_low = html.lower()
+    has_nav_js = ("nav-toggle" in html_low or "nav-toggle" in js_low
+                  or "toggle" in js_low or "menu" in js_low)
+    if not has_nav_js:
+        penalize(2, "JS missing mobile nav toggle",
+                 "Implement a menu toggle in script.js")
+    if "quote-form" not in html_low and "quote-form" not in js_low:
+        penalize(2, "JS missing contact form handler",
+                 "Implement contact form handler in script.js")
+    if "scrollintoview" not in js_low and "scroll-behavior" not in css.lower():
+        penalize(2, "JS missing smooth anchor scrolling",
+                 "Implement smooth anchor scrolling in script.js")
+    if "setinterval" not in js_low and "slider" not in js_low and "review" not in html.lower():
+        penalize(2, "No interactive review slider behavior",
+                 "Auto-rotate testimonials + dot navigation in script.js")
+    if "<table" not in html.lower() and "hour" not in body_text.lower():
+        penalize(2, "No hours table", "Add an hours table in the visit section")
 
     score = max(0, min(100, score))
     passed = score >= threshold

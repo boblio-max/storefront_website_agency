@@ -90,6 +90,91 @@ def utc_now_iso() -> str:
     return datetime.datetime.now(datetime.timezone.utc).isoformat()
 
 
+EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
+BAD_EMAIL_SUBS = ("example.", "sentry", "wixpress", "schema.", "email-protection",
+                  "noreply", "no-reply", "donotreply", "mailer-daemon", "postmaster@")
+BAD_EMAIL_EXTS = {"png", "jpg", "jpeg", "gif", "svg", "css", "js",
+                  "webp", "ico", "woff", "woff2"}
+CONTACT_PATHS = ("/contact", "/contact-us", "/contactus", "/about", "/about-us")
+
+
+def extract_emails(html: str, page_url: str) -> list[str]:
+    """Harvest real contact emails from a page, best-first.
+
+    mailto: links win; same-domain addresses beat generic gmail/yahoo ones.
+    Junk (examples, assets, noreply, obfuscated) is dropped. Never invents.
+    """
+    if not html:
+        return []
+    try:
+        site_domain = (urlparse(page_url).netloc or "").lower().removeprefix("www.")
+    except Exception:  # noqa: BLE001
+        site_domain = ""
+    soup = BeautifulSoup(html, "html.parser")
+    mailtos: list[str] = []
+    for a in soup.find_all("a", href=True):
+        href = (a.get("href") or "").strip()
+        if href.lower().startswith("mailto:"):
+            addr = href[7:].split("?")[0].strip()
+            if addr and "@" not in addr:
+                continue
+            if addr:
+                mailtos.append(addr)
+    cands: list[str] = []
+    for m in EMAIL_RE.findall(html):
+        e = m.strip().strip(".,;:").lower()
+        if len(e) > 100 or not e or "@" not in e:
+            continue
+        local, _, domain = e.partition("@")
+        if not local or not domain or "." not in domain:
+            continue
+        if any(s in e for s in BAD_EMAIL_SUBS):
+            continue
+        if local.split(".")[-1] in BAD_EMAIL_EXTS:
+            continue  # asset filename parsed as address (logo.png@x.com)
+        if domain.split(".")[-1] in BAD_EMAIL_EXTS:
+            continue
+        cands.append(e)
+    ordered = list(dict.fromkeys(mailtos + cands))  # dedupe, mailtos first
+    same = [e for e in ordered if site_domain and e.endswith("@" + site_domain)]
+    rest = [e for e in ordered if e not in same]
+    return same + rest
+
+
+def enrich_email(business: dict, fetched: dict, timeout: int) -> dict:
+    """Return business with a harvested 'email' when it has none.
+
+    Tries the fetched homepage first, then /contact-style pages. Never
+    overwrites an email collected upstream; never fabricates one.
+    """
+    if (business.get("email") or "").strip():
+        return business
+    base = (fetched.get("final_url") or business.get("website") or "").strip()
+    url = normalize_url(base)
+    if not url:
+        return business
+    try:
+        root = f"{urlparse(url).scheme}://{urlparse(url).netloc}"
+    except Exception:  # noqa: BLE001
+        return business
+    pages = [fetched.get("html") or ""]
+    if not extract_emails(pages[0], url):
+        for path in CONTACT_PATHS:
+            sub = fetch_site(root + path, timeout=min(timeout, 10))
+            if sub["ok"] and sub["html"]:
+                pages.append(sub["html"])
+                if extract_emails(sub["html"], sub["final_url"]):
+                    break
+    for html in pages:
+        found = extract_emails(html, url)
+        if found:
+            out = dict(business)
+            out["email"] = found[0]
+            out["email_source"] = "website_harvest"
+            return out
+    return business
+
+
 def normalize_url(raw: str) -> str | None:
     if not raw or not isinstance(raw, str):
         return None
@@ -419,7 +504,7 @@ def qualify_one(business: dict, timeout: int) -> dict | None:
                          fetched["https"], fetched["status"])
         analysis = {**a, "final_url": fetched["final_url"]}
         analysis["checked_at"] = checked_at
-        return_enriched = dict(business)
+        return_enriched = enrich_email(dict(business), fetched, timeout)
         return_enriched["website_analysis"] = {
             "score": a["score"],
             "verdict": None,  # set by caller via threshold

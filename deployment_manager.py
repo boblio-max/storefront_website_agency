@@ -55,25 +55,55 @@ def _resolve_cli(cmd: str) -> str:
 def append_deployment_record(deployment_record: dict, record_file: str = "deployments/deployments.json"):
     """Append a deployment record to the deployments JSON file."""
     record_path = Path(record_file)
+    record_path.parent.mkdir(parents=True, exist_ok=True)
+    records: list = []
     if record_path.exists():
-        with open(record_path, "r", encoding="utf-8") as f:
-            records = json.load(f)
-    else:
-        records = []
+        try:
+            raw = json.loads(record_path.read_text(encoding="utf-8"))
+            records = raw if isinstance(raw, list) else [raw]
+        except (json.JSONDecodeError, OSError):
+            records = []
     records.append(deployment_record)
-    with open(record_path, "w", encoding="utf-8") as f:
-        json.dump(records, f, indent=2)
+    record_path.write_text(json.dumps(records, ensure_ascii=False, indent=2) + "\n",
+                           encoding="utf-8")
+    # Per-lead record(s) for Bot 8 (current_lead_generator defaults to
+    # deployments/<lead_id>.json). The folder/repo name is now a
+    # customer-facing slug, so index under both slug and lead_id.
+    seen: set[str] = set()
+    for key in (deployment_record.get("site"), deployment_record.get("lead_id")):
+        if key and key not in seen:
+            seen.add(key)
+            (record_path.parent / f"{key}.json").write_text(
+                json.dumps(deployment_record, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8")
         
-def send_to_github(path_to_file: str):
+def _github_base() -> Path:
+    """Portable base dir for GitHub push folders.
+
+    Old code hardcoded one machine's OneDrive path. Prefer explicit env
+    ``AGENCY_GITHUB_DIR``, else the repo root (parent of this file), so a
+    fresh clone works anywhere.
+    """
+    env = os.environ.get("AGENCY_GITHUB_DIR", "").strip()
+    if env:
+        return Path(env)
+    return Path(__file__).resolve().parent
+
+
+def send_to_github(path_to_file: str, dest_base: str | Path | None = None):
     """Send the website to GitHub (folder).
 
-    Skips the local .vercel link dir — project IDs don't belong in git.
+    Skips local/deploy-only files — project links, secrets, and logs must
+    never land in the public repo.
     """
     source = Path(path_to_file)
     name = source.name
-    destination = Path(r"C:\Users\smile\OneDrive\Documents\GitHub") / name
+    base = Path(dest_base) if dest_base else _github_base()
+    destination = base / name
     shutil.copytree(source, destination, dirs_exist_ok=True,
-                    ignore=shutil.ignore_patterns(".vercel"))
+                    ignore=shutil.ignore_patterns(
+                        ".vercel", ".git", "*.log",
+                        ".env", ".env.*", "qa_report.json"))
     return destination
 
 def create_github_repo(path_to_file: str) -> str:
@@ -89,6 +119,21 @@ def create_github_repo(path_to_file: str) -> str:
         raise RuntimeError(f"create_github_repo: path not found: {folder}")
     if not folder.is_dir():
         raise RuntimeError(f"create_github_repo: not a folder: {folder}")
+    # Agency guard: never publish client sites from the wrong account.
+    expected = os.environ.get("AGENCY_GH_USER", "").strip()
+    if expected:
+        try:
+            out_login = subprocess.run(
+                [_resolve_cli("gh"), "api", "user", "-q", ".login"],
+                capture_output=True, text=True, timeout=30)
+            active = (out_login.stdout or "").strip()
+        except (OSError, subprocess.TimeoutExpired):
+            active = ""
+        if active.lower() != expected.lower():
+            raise RuntimeError(
+                f"wrong GitHub account active ({active or 'unknown'}); "
+                f"agency deploys require '{expected}'. "
+                f"Run: gh auth switch --user {expected}")
     # Refuse empty folders early — git cannot create a commit from nothing.
     if not any(p for p in folder.iterdir() if p.name != ".git"):
         raise RuntimeError(f"create_github_repo: folder is empty: {folder} "
@@ -112,6 +157,17 @@ def create_github_repo(path_to_file: str) -> str:
             _run(["git", "init", "-b", "main"])
         except subprocess.CalledProcessError:
             _run(["git", "init"])  # older git without -b
+    # Agency commit identity (local to the deploy repo only — never touches
+    # the user's global git config). Set AGENCY_GIT_NAME/AGENCY_GIT_EMAIL
+    # to author client-repo commits as the agency.
+    for _key, _val in (("user.name", os.environ.get("AGENCY_GIT_NAME", "")),
+                       ("user.email", os.environ.get("AGENCY_GIT_EMAIL", ""))):
+        if _val.strip():
+            try:
+                _run(["git", "config", _key, _val.strip()])
+            except subprocess.CalledProcessError as e:
+                raise RuntimeError(f"git config {_key} failed: "
+                                   f"{((e.stdout or '') + (e.stderr or ''))[-300:]}")
     _run(["git", "add", "."])
 
     # 2. Commit only when there is something to commit.
@@ -148,7 +204,21 @@ def create_github_repo(path_to_file: str) -> str:
     except subprocess.CalledProcessError as e:
         out = (e.stdout or "") + (e.stderr or "")
         if "already exists" in out.lower():
-            _run(["git", "push", "-u", "origin", "HEAD"])
+            _ensure_origin(_run, repo_name)
+            try:
+                _run(["git", "push", "-u", "origin", "HEAD"])
+            except subprocess.CalledProcessError as e2:
+                err = (e2.stdout or "") + (e2.stderr or "")
+                if "fetch first" in err or "non-fast-forward" in err \
+                        or "[rejected]" in err:
+                    # Deploy repos mirror generated output — local wins.
+                    try:
+                        _run(["git", "push", "-f", "-u", "origin", "HEAD:main"])
+                    except subprocess.CalledProcessError as e3:
+                        err3 = (e3.stdout or "") + (e3.stderr or "")
+                        raise RuntimeError(f"git push failed: {err3[-800:]}")
+                else:
+                    raise RuntimeError(f"git push failed: {err[-800:]}")
         else:
             raise RuntimeError(f"gh repo create failed: {out[-800:]}")
 
@@ -166,6 +236,31 @@ def create_github_repo(path_to_file: str) -> str:
             pass
     print(f"GitHub repository created: {url}")
     return url
+
+
+def _ensure_origin(_run, repo_name: str) -> None:
+    """Reattach the origin remote when a stale local folder lost it.
+
+    Happens when the GitHub repo already exists (prior deploy) but the
+    local folder's .git has no origin — e.g. the folder was recopied
+    without its remote. Owner comes from `gh api user`.
+    """
+    try:
+        _run(["git", "remote", "get-url", "origin"])
+        return
+    except subprocess.CalledProcessError:
+        pass
+    owner = ""
+    try:
+        owner = _run(["gh", "api", "user", "-q", ".login"]).stdout.strip()
+    except subprocess.CalledProcessError:
+        pass
+    if not owner:
+        raise RuntimeError(
+            "repo already exists on GitHub but local has no origin remote "
+            "and the owner could not be determined via `gh api user`")
+    _run(["git", "remote", "add", "origin",
+          f"https://github.com/{owner}/{repo_name}.git"])
 
 
 def _normalize_github_url(remote: str) -> str | None:
@@ -233,17 +328,42 @@ def deploy_to_vercel(path_to_file: str, prod: bool = True) -> str:
     return url
 
 
-def main(path_to_file: str, prod: bool = True) -> int:
+def main(argv=None, path_to_file: str | None = None, prod: bool = True,
+         dest_base: str | Path | None = None) -> int:
     """Deploy a QA-approved site: GitHub push, then Vercel (production by default).
 
+    Orchestrator use: ``main(path_to_file="generated_sites/lead_00001")``.
+    CLI use: ``python deployment_manager.py generated_sites/lead_00001 [--no-prod]``.
     Returns 0 on success, non-zero exit code on error.
     """
+    import argparse as _ap
+    if isinstance(argv, (str, Path)):
+        argv, path_to_file = None, str(argv)
+    if argv is not None:
+        _p = _ap.ArgumentParser(description="Bot 7: deploy a QA-approved site")
+        _p.add_argument("path", nargs="?", default=path_to_file)
+        _p.add_argument("--prod", dest="prod", action="store_true", default=True)
+        _p.add_argument("--no-prod", dest="prod", action="store_false")
+        _a = _p.parse_args(argv)
+        path_to_file, prod = _a.path, _a.prod
+    if not path_to_file:
+        print("[deployment_manager] ERROR: pass the site folder, e.g. "
+              'main("generated_sites/lead_00001")', flush=True)
+        return 2
     try:
-        github_path = send_to_github(path_to_file)
+        github_path = send_to_github(path_to_file, dest_base=dest_base)
         github_url = create_github_repo(str(github_path))
         preview_url = deploy_to_vercel(path_to_file, prod=prod)
+        lead_id = Path(path_to_file).name
+        try:
+            _meta = json.loads((Path(path_to_file) / "meta.json").read_text(encoding="utf-8"))
+            if isinstance(_meta, dict) and _meta.get("lead_id"):
+                lead_id = str(_meta["lead_id"])
+        except (OSError, json.JSONDecodeError):
+            pass
         append_deployment_record({
             "site": Path(path_to_file).name,
+            "lead_id": lead_id,
             "status": "deployed",
             "github_url": github_url,
             "preview_url": preview_url,
@@ -256,3 +376,8 @@ def main(path_to_file: str, prod: bool = True) -> int:
     print(f"[deployment_manager] Deployment completed for {path_to_file}.", flush=True)
     print(f"[deployment_manager] preview_url: {preview_url}", flush=True)
     return 0
+
+
+if __name__ == "__main__":
+    import sys as _sys
+    raise SystemExit(main(_sys.argv[1:]))

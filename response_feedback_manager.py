@@ -145,7 +145,131 @@ def parse_args(argv=None):
     p.add_argument("--current", default="current_leads.json")
     p.add_argument("--output", "-o", default=None, help="Write feedback JSON here")
     p.add_argument("--record", action="store_true", help="Append incoming msg to history as direction=incoming")
+    p.add_argument("--poll", action="store_true", help="Poll IMAP inbox for unseen replies instead of --incoming")
+    p.add_argument("--limit", type=int, default=20, help="Max inbox messages per poll")
     return p.parse_args(argv)
+
+
+def imap_config() -> dict | None:
+    """IMAP inbox from env; None when not configured."""
+    import os as _os
+    host = _os.environ.get("AGENCY_IMAP_HOST", "").strip()
+    if not host:
+        return None
+    return {
+        "host": host,
+        "port": int(_os.environ.get("AGENCY_IMAP_PORT", "993")),
+        "user": _os.environ.get("AGENCY_IMAP_USER", "").strip(),
+        "password": _os.environ.get("AGENCY_IMAP_PASS", ""),
+        "mailbox": _os.environ.get("AGENCY_IMAP_MAILBOX", "INBOX"),
+    }
+
+
+def _decode_body(msg) -> str:
+    if msg.is_multipart():
+        for part in msg.walk():
+            ctype = part.get_content_type()
+            disp = str(part.get("Content-Disposition") or "")
+            if ctype == "text/plain" and "attachment" not in disp:
+                try:
+                    return part.get_payload(decode=True).decode(
+                        part.get_content_charset() or "utf-8", errors="replace")
+                except Exception:  # noqa: BLE001
+                    continue
+        for part in msg.walk():
+            if part.get_content_type() == "text/html":
+                try:
+                    html = part.get_payload(decode=True).decode(
+                        part.get_content_charset() or "utf-8", errors="replace")
+                    return re.sub(r"<[^>]+>", " ", html)
+                except Exception:  # noqa: BLE001
+                    continue
+        return ""
+    try:
+        payload = msg.get_payload(decode=True)
+        if isinstance(payload, bytes):
+            return payload.decode(msg.get_content_charset() or "utf-8", errors="replace")
+        return str(payload or "")
+    except Exception:  # noqa: BLE001
+        return ""
+
+
+def poll_inbox(current: str = "current_leads.json",
+               history: str = "email_history.json",
+               limit: int = 20) -> list[dict]:
+    """Fetch unseen inbox replies via IMAP (BODY.PEEK — nothing marked seen).
+
+    Returns [{uid, lead_id (or None), from, subject, body, message_id}].
+    Raises RuntimeError when IMAP is unconfigured or unreachable.
+    """
+    import imaplib
+    import email as _email
+    import email.utils as _eu
+    cfg = imap_config()
+    if cfg is None:
+        raise RuntimeError("IMAP not configured "
+                           "(AGENCY_IMAP_HOST/PORT/USER/PASS)")
+    known: dict[str, str] = {}
+    for src in (load_list(Path(current)), load_list(Path(history))):
+        for r in src:
+            if isinstance(r, dict) and r.get("email") and r.get("lead_id"):
+                known[str(r["email"]).lower()] = str(r["lead_id"])
+    try:
+        box = imaplib.IMAP4_SSL(cfg["host"], cfg["port"])
+        box.login(cfg["user"], cfg["password"])
+        box.select(cfg["mailbox"], readonly=True)
+        _, data = box.search(None, "UNSEEN")
+        uids = (data[0] or b"").split()[:max(1, limit)]
+    except Exception as e:  # noqa: BLE001
+        raise RuntimeError(f"IMAP poll failed: {e}")
+    out: list[dict] = []
+    try:
+        for uid in uids:
+            try:
+                _, fetched = box.fetch(uid, "(BODY.PEEK[])")
+            except Exception:  # noqa: BLE001
+                continue
+            raw = fetched[0][1] if fetched and fetched[0] else b""
+            try:
+                msg = _email.message_from_bytes(raw)
+            except Exception:  # noqa: BLE001
+                continue
+            sender = _eu.parseaddr(str(msg.get("From") or ""))[1].lower()
+            subject = str(msg.get("Subject") or "")
+            body = _decode_body(msg).strip()
+            mid = str(msg.get("Message-ID") or f"uid_{uid.decode(errors='replace')}")
+            out.append({"uid": uid.decode(errors="replace"),
+                        "lead_id": known.get(sender),
+                        "from": sender, "subject": subject,
+                        "body": body or subject, "message_id": mid})
+    finally:
+        try:
+            box.close()
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            box.logout()
+        except Exception:  # noqa: BLE001
+            pass
+    return out
+
+
+def mark_seen(uids: list[str]) -> None:
+    """Flag inbox messages as \\Seen after handling. Raises RuntimeError."""
+    import imaplib
+    cfg = imap_config()
+    if cfg is None:
+        raise RuntimeError("IMAP not configured")
+    try:
+        box = imaplib.IMAP4_SSL(cfg["host"], cfg["port"])
+        box.login(cfg["user"], cfg["password"])
+        box.select(cfg["mailbox"])
+        for uid in uids:
+            box.store(uid, "+FLAGS", "\\Seen")
+        box.close()
+        box.logout()
+    except Exception as e:  # noqa: BLE001
+        raise RuntimeError(f"IMAP mark-seen failed: {e}")
 
 
 def main(argv=None, **kwargs) -> str | dict | int:
@@ -165,9 +289,22 @@ def main(argv=None, **kwargs) -> str | dict | int:
         if not hasattr(args, _k):
             raise TypeError(f"response_feedback_manager.main() got an unexpected option {_k!r}")
         setattr(args, _k, _v)
-    if not args.incoming:
-        print("[response_feedback_manager] ERROR: --incoming is required", file=sys.stderr)
+    if not args.incoming and not args.poll:
+        print("[response_feedback_manager] ERROR: --incoming is required (or --poll)",
+              file=sys.stderr)
         return 2
+    if args.poll and not args.incoming:
+        try:
+            found = poll_inbox(current=args.current, history=args.history,
+                               limit=args.limit)
+        except RuntimeError as e:
+            print(f"[response_feedback_manager] ERROR: {e}", file=sys.stderr)
+            return 1
+        print(f"[response_feedback_manager] {len(found)} unseen message(s)", flush=True)
+        for m in found:
+            print(f"  uid={m['uid']} lead={m['lead_id'] or '?'} "
+                  f"from={m['from']} subj={m['subject'][:60]}", flush=True)
+        return found
     incoming = read_incoming(args.incoming)
     body = str(incoming.get("body") or "")
     if not body.strip():

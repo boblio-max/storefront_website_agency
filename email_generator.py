@@ -42,6 +42,7 @@ except Exception:  # noqa: BLE001
     pass
 
 OPENCODE_CMD = "opencode"
+AGENCY_NAME = os.environ.get("AGENCY_NAME", "Storefront Web")
 
 
 def utc_now_iso() -> str:
@@ -139,6 +140,7 @@ def build_prompt(biz: dict, history: list[dict], purpose: str) -> str:
         "Generate a natural, personalized response with a subject line and body.",
         "Do not invent facts (no fake owner names, addresses, prices, or past meetings).",
         "Do not claim something happened unless the history confirms it.",
+        f"Sign off as {AGENCY_NAME} (the agency that built the preview).",
         "Keep it under 180 words. End with a clear next step (review the preview link).",
         "Reply in this exact format:\nSubject: <subject>\n\n<body>",
     ])
@@ -167,8 +169,13 @@ def template_email(biz: dict, history: list[dict], purpose: str) -> tuple[str, s
             + ("Since we haven't connected yet, I'll keep this short: " if n == 0 and purpose == "initial_outreach" else "")
             + "if you like the direction, I can connect it to your domain and launch it this week.\n\n"
               "Worth a 2-minute look? Just reply and tell me what you'd change.\n\n"
-              "Best regards,\nYour Local Web Team")
+              f"Best regards,\n{AGENCY_NAME}")
     return subject, body
+
+
+UNSUB_RE = __import__("re").compile(
+    r"unsubscribe|remove me|stop emailing|opt.?out|not interested|no thanks|"
+    r"don'?t (call|email|contact)|stop", __import__("re").I)
 
 
 def parse_opencode_output(text: str) -> tuple[str, str]:
@@ -178,6 +185,69 @@ def parse_opencode_output(text: str) -> tuple[str, str]:
         subject = m.group(1).strip()
         body = text[m.end():].strip()
     return subject, body
+
+
+SUPPRESS_ACTIONS = {"opt_out"}
+
+
+def is_suppressed(history_all: list, lead_id: str) -> dict | None:
+    """Return the suppressing incoming message if the lead opted out."""
+    for m in history_all:
+        if not isinstance(m, dict) or m.get("lead_id") != lead_id:
+            continue
+        if m.get("direction") == "incoming" and m.get("action") in SUPPRESS_ACTIONS:
+            return m
+        body = str(m.get("body") or "")
+        if m.get("direction") == "incoming" and UNSUB_RE.search(body):
+            return m
+    return None
+
+
+def already_sent(history_all: list, lead_id: str, purpose: str) -> bool:
+    """True if an outgoing email for (lead, purpose) is already recorded."""
+    return any(isinstance(m, dict) and m.get("lead_id") == lead_id
+               and m.get("direction") == "outgoing"
+               and m.get("purpose") == purpose for m in history_all)
+
+
+def load_history(path: str = "email_history.json") -> list:
+    h = load_json(Path(path), [])
+    return h if isinstance(h, list) else []
+def smtp_config() -> dict | None:
+    """SMTP transport from env; None when not configured (draft-only mode)."""
+    host = os.environ.get("AGENCY_SMTP_HOST", "").strip()
+    if not host:
+        return None
+    return {
+        "host": host,
+        "port": int(os.environ.get("AGENCY_SMTP_PORT", "587")),
+        "user": os.environ.get("AGENCY_SMTP_USER", "").strip(),
+        "password": os.environ.get("AGENCY_SMTP_PASS", ""),
+        "from": os.environ.get("AGENCY_FROM", "").strip()
+                or os.environ.get("AGENCY_SMTP_USER", "").strip(),
+    }
+
+
+def smtp_send(cfg: dict, to_addr: str, subject: str, body: str,
+              reply_to: str | None = None) -> None:
+    """Send one plain-text email via SMTP STARTTLS. Raises RuntimeError."""
+    import smtplib
+    from email.message import EmailMessage
+    msg = EmailMessage()
+    msg["From"] = cfg["from"]
+    msg["To"] = to_addr
+    msg["Subject"] = subject
+    if reply_to:
+        msg["Reply-To"] = reply_to
+    msg.set_content(body)
+    try:
+        with smtplib.SMTP(cfg["host"], cfg["port"], timeout=30) as s:
+            s.starttls()
+            if cfg["user"]:
+                s.login(cfg["user"], cfg["password"])
+            s.send_message(msg)
+    except Exception as e:  # noqa: BLE001
+        raise RuntimeError(f"SMTP send failed: {e}")
 
 
 def parse_args(argv=None):
@@ -246,16 +316,38 @@ def main(argv=None, **kwargs) -> str | dict | int:
 
     print(f"Subject: {subject}\n\n{body}", flush=True)
     if args.send:
+        to_addr = (biz.get("email") or "").strip()
+        if not to_addr:
+            print(f"[email_generator] SKIP {args.lead}: no verified email "
+                  f"(phone-only lead — never fabricated, never sent)", flush=True)
+            return 2
+        if is_suppressed(history_all, args.lead):
+            print(f"[email_generator] SUPPRESSED {args.lead}: prior opt-out — never email again",
+                  flush=True)
+            return 3
+        cfg = smtp_config()
+        if cfg is None:
+            print("[email_generator] ERROR: --send needs SMTP config "
+                  "(AGENCY_SMTP_HOST/PORT/USER/PASS + AGENCY_FROM); "
+                  "not recorded as sent", file=sys.stderr)
+            return 2
+        try:
+            smtp_send(cfg, to_addr, subject, body, reply_to=cfg["from"])
+        except RuntimeError as e:
+            print(f"[email_generator] ERROR: {e}", file=sys.stderr)
+            return 1
         record = {"message_id": f"msg_{uuid.uuid4().hex[:12]}", "lead_id": args.lead,
                   "direction": "outgoing", "timestamp": utc_now_iso(),
                   "subject": subject, "body": body,
-                  "preview_url": biz.get("preview_url"), "purpose": args.purpose}
+                  "preview_url": biz.get("preview_url"), "purpose": args.purpose,
+                  "to": to_addr, "transport": "smtp"}
         history_all.append(record)
         Path(args.history).write_text(json.dumps(history_all, ensure_ascii=False, indent=2) + "\n",
                                        encoding="utf-8")
-        print(f"[email_generator] sent + recorded {record['message_id']} -> {args.history}", flush=True)
+        print(f"[email_generator] sent via SMTP + recorded {record['message_id']} -> {args.history}",
+              flush=True)
         return str(Path(args.history))
-    print("[email_generator] draft only (use --send to record as sent)", flush=True)
+    print("[email_generator] draft only (use --send to send via SMTP)", flush=True)
     return {"lead_id": args.lead, "subject": subject, "body": body, "sent": False}
 
 
