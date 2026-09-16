@@ -9,9 +9,13 @@
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23141210'/><text x='50' y='72' font-size='58' text-anchor='middle' fill='%23f5f1e8' font-family='Georgia' font-style='italic'>S</text></svg>">
 <title>Storefront Web — a one-person web studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,900;1,9..144,400;1,9..144,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body id="top">
+<div class="progress" aria-hidden="true"><i id="progressBar"></i></div>
 
 <header class="site-header" id="siteHeader">
 <nav class="wrap" aria-label="Main navigation">
@@ -84,9 +88,36 @@
 <p class="reveal"><a class="btn btn-ink" href="#inquiry">Put yours here →</a></p>
 </div></section>
 
+<!-- BEFORE / AFTER -->
+<section id="proof"><div class="wrap">
+<div class="sec-head reveal">
+<p class="mono-label">02 — The difference</p>
+<h2>Drag the line.<br>That's the pitch.</h2>
+</div>
+<div class="ba reveal" id="ba">
+<div class="ba-pane ba-before" aria-hidden="true">
+<p class="ba-url">joes-garage-old.tripod.com</p>
+<p class="ba-h">WELCOME TO JOE'S!!!</p>
+<p class="ba-small">best brakes in town call now!!!</p>
+<p class="ba-small">~*~ under construction ~*~</p>
+<p class="ba-btn">click here</p>
+<p class="ba-visitor">You are visitor #000134</p>
+</div>
+<div class="ba-pane ba-after" id="baAfter" aria-hidden="true">
+<p class="ba-url">joesgarage.com</p>
+<p class="ba-h2">Brakes, done right.</p>
+<p class="ba-small2">Up-front prices · Same-day service · Bothell, WA</p>
+<p class="ba-btn2">Book an inspection →</p>
+<p class="ba-stars">★★★★★ 4.9 · 300+ reviews</p>
+</div>
+<div class="ba-handle" id="baHandle" aria-hidden="true"><span>↔</span></div>
+<input class="ba-range" id="baRange" type="range" min="2" max="98" value="50" aria-label="Reveal before and after">
+</div>
+<p class="ba-cap reveal">An average "before" from last month's inbox. The "after" took six days.</p>
+</div></section>
 <!-- MANIFESTO -->
 <section id="studio"><div class="wrap narrow-ish">
-<p class="mono-label reveal">02 — Why this exists</p>
+<p class="mono-label reveal">03 — Why this exists</p>
 <p class="manifesto reveal"><span class="dropcap">M</span>ost small-business websites are either a dusty Facebook page or a $10k agency invoice. There's a middle that barely exists: <mark>a real designer, a fair price, and a site you're proud to put on your receipts.</mark> That's the whole business. I take on a few shops at a time, draw every page myself, and don't get paid until you like what you see.</p>
 <p class="signed reveal">— Storefront Web, Bothell WA</p>
 </div></section>
@@ -94,7 +125,7 @@
 <!-- SERVICES -->
 <section id="services"><div class="wrap">
 <div class="sec-head reveal">
-<p class="mono-label">03 — Services</p>
+<p class="mono-label">04 — Services</p>
 <h2>One pair of hands,<br>the whole job</h2>
 </div>
 <ol class="svc-list">
@@ -110,7 +141,7 @@
 <!-- PROCESS -->
 <section id="process"><div class="wrap">
 <div class="sec-head reveal">
-<p class="mono-label">04 — How it goes</p>
+<p class="mono-label">05 — How it goes</p>
 <h2>Four emails<br>to a website</h2>
 </div>
 <div class="steps">
@@ -124,7 +155,7 @@
 <!-- PRICING -->
 <section id="pricing"><div class="wrap">
 <div class="sec-head reveal">
-<p class="mono-label">05 — Pricing</p>
+<p class="mono-label">06 — Pricing</p>
 <h2>Numbers,<br>out loud</h2>
 <p class="section-sub">Quoted before anything is owed. No deposits, no retainers, no "premium unlocks."</p>
 </div>
@@ -153,10 +184,15 @@
 </div>
 </div></section>
 
+<!-- GUARANTEE -->
+<section id="promise"><div class="wrap">
+<p class="promise reveal">Love the preview, or <em>pay nothing.</em> That's the entire contract.</p>
+</div></section>
+
 <!-- FAQ -->
 <section id="faq"><div class="wrap narrow-ish">
 <div class="sec-head reveal">
-<p class="mono-label">06 — Fair questions</p>
+<p class="mono-label">07 — Fair questions</p>
 <h2>Asked, answered</h2>
 </div>
 <div class="faq-list">
@@ -171,7 +207,7 @@
 <!-- INQUIRY -->
 <section id="inquiry"><div class="wrap">
 <div class="sec-head reveal">
-<p class="mono-label">07 — Say hello</p>
+<p class="mono-label">08 — Say hello</p>
 <h2 class="huge">Tell me about<br>your <em>shop.</em></h2>
 </div>
 <div class="inq-grid">

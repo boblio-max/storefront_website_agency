@@ -1,4 +1,23 @@
 (function(){
+/* scroll progress */
+var bar=document.getElementById('progressBar');
+if(bar){addEventListener('scroll',function(){
+var max=document.documentElement.scrollHeight-innerHeight;
+bar.style.transform='scaleX('+(max>0?scrollY/max:0)+')'},{passive:true})}
+
+/* before/after slider */
+var ba=document.getElementById('ba'),range=document.getElementById('baRange'),
+after=document.getElementById('baAfter'),handle=document.getElementById('baHandle');
+if(ba&&range&&after&&handle){range.addEventListener('input',function(){
+var v=Math.max(2,Math.min(98,Number(range.value)||50));
+after.style.clipPath='inset(0 0 0 '+v+'%)';handle.style.left=v+'%'})}
+
+/* magnetic buttons (fine pointers only) */
+if(matchMedia('(pointer:fine)').matches){document.querySelectorAll('.btn-ink').forEach(function(b){
+b.addEventListener('mousemove',function(e){var r=b.getBoundingClientRect();
+b.style.transform='translate('+((e.clientX-r.left-r.width/2)*.12)+'px,'+((e.clientY-r.top-r.height/2)*.18)+'px)'});
+b.addEventListener('mouseleave',function(){b.style.transform=''})})}
+
 /* mobile nav */
 var t=document.querySelector('.nav-toggle'),l=document.querySelector('.nav-links');
 if(t&&l){t.addEventListener('click',function(){var o=l.classList.toggle('open');t.setAttribute('aria-expanded',String(o));t.textContent=o?'Close':'Menu'})}

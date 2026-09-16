@@ -6,9 +6,10 @@ font-family:"Helvetica Neue",Helvetica,Arial,system-ui,sans-serif;
 font-size:17px;line-height:1.65;overflow-x:hidden}
 body::after{content:"";position:fixed;inset:0;z-index:90;pointer-events:none;opacity:.5;
 background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .05 0'/></filter><rect width='140' height='140' filter='url(%23n)'/></svg>")}
-h1,h2,h3{font-family:Georgia,"Times New Roman",serif;font-weight:400;
-line-height:1.04;letter-spacing:-.015em;margin:0 0 .8rem}
-h1 em,h2 em,h3 em{font-style:italic;color:var(--accent)}
+h1,h2,h3{font-family:"Fraunces",Georgia,"Times New Roman",serif;font-weight:600;
+line-height:1.02;letter-spacing:-.02em;margin:0 0 .8rem}
+h1{font-weight:900}h2{font-weight:600}
+h1 em,h2 em,h3 em{font-style:italic;color:var(--accent);font-weight:400}
 h2{font-size:clamp(2.4rem,6vw,4.4rem)}
 a{color:var(--ink)}
 .wrap{max-width:1180px;margin:auto;padding-left:1.5rem;padding-right:1.5rem}
@@ -19,7 +20,7 @@ a{color:var(--ink)}
 .site-header{position:sticky;top:0;z-index:50;background:rgba(245,241,232,.92);
 backdrop-filter:blur(10px);border-bottom:1px solid var(--ink)}
 .site-header nav{display:flex;align-items:center;gap:1.4rem;padding-top:.85rem;padding-bottom:.85rem}
-.wordmark{font-family:Georgia,serif;font-size:1.3rem;text-decoration:none;
+.wordmark{font-family:"Fraunces",Georgia,serif;font-weight:600;font-size:1.35rem;text-decoration:none;
 margin-right:auto;letter-spacing:-.01em}
 .wordmark sup{font-size:.6em;color:var(--accent)}
 .nav-links{display:flex;gap:1.5rem;list-style:none;margin:0;padding:0}
@@ -67,6 +68,43 @@ letter-spacing:.32em;fill:var(--ink);font-weight:700}
 .marquee-track i{font-style:normal;color:var(--sun);padding:0 .6rem}
 @keyframes slide{to{transform:translateX(-50%)}}
 
+/* progress */
+.progress{position:fixed;top:0;left:0;right:0;height:3px;z-index:80;background:transparent}
+.progress i{display:block;height:100%;width:100%;background:var(--accent);
+transform-origin:0 50%;transform:scaleX(0)}
+
+/* before/after */
+.ba{position:relative;border:1.5px solid var(--ink);border-radius:var(--radius);
+overflow:hidden;min-height:26rem;user-select:none;touch-action:pan-y}
+.ba-pane{position:absolute;inset:0;padding:2.2rem;display:flex;flex-direction:column;
+justify-content:center;gap:.7rem}
+.ba-before{background:#c9c2b4;color:#3d3a33;font-family:"Courier New",monospace}
+.ba-url{font-size:.8rem;opacity:.7;margin:0;text-decoration:underline}
+.ba-h{font-size:clamp(1.6rem,4.5vw,2.6rem);font-weight:700;margin:0;color:#203a8f;
+text-decoration:underline}
+.ba-small{margin:0;font-size:1rem}
+.ba-btn{display:inline-block;background:#999;color:#fff;font-size:.9rem;
+padding:.3rem .9rem;width:fit-content}
+.ba-visitor{font-size:.8rem;margin:1rem 0 0}
+.ba-after{background:var(--paper);clip-path:inset(0 0 0 50%)}
+.ba-after .ba-url{font-family:ui-monospace,Menlo,monospace;color:var(--muted);text-decoration:none}
+.ba-h2{font-family:"Fraunces",Georgia,serif;font-size:clamp(2rem,5.5vw,3.4rem);margin:0}
+.ba-small2{margin:0;color:var(--muted)}
+.ba-btn2{display:inline-block;background:var(--ink);color:var(--paper);
+font-weight:700;padding:.55rem 1.3rem;border-radius:999px;width:fit-content;font-size:.95rem}
+.ba-stars{color:var(--accent);font-weight:700;margin:0}
+.ba-handle{position:absolute;top:0;bottom:0;left:50%;width:3px;background:var(--ink);z-index:2}
+.ba-handle span{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+background:var(--sun);border:1.5px solid var(--ink);border-radius:50%;
+width:3rem;height:3rem;display:grid;place-items:center;font-weight:900}
+.ba-range{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:ew-resize;margin:0;z-index:3}
+.ba-cap{text-align:center;color:var(--muted);font-size:.92rem;margin-top:1rem}
+
+/* guarantee */
+#promise{padding:2rem 0}
+.promise{font-family:"Fraunces",Georgia,serif;font-size:clamp(1.8rem,5vw,3.2rem);
+text-align:center;max-width:22ch;margin:0 auto}
+.promise em{color:var(--accent)}
 /* sections */
 section{padding:5.5rem 0}
 .sec-head{margin-bottom:2.5rem}
@@ -90,7 +128,7 @@ font-weight:600;max-width:44rem}
 
 /* manifesto */
 #studio{background:var(--paper2);border-top:1px solid var(--ink);border-bottom:1px solid var(--ink)}
-.manifesto{font-family:Georgia,serif;font-size:clamp(1.4rem,3.4vw,2.2rem);line-height:1.4}
+.manifesto{font-family:"Fraunces",Georgia,serif;font-weight:400;font-size:clamp(1.4rem,3.4vw,2.2rem);line-height:1.4}
 .manifesto mark{background:linear-gradient(transparent 58%,var(--sun) 58%,var(--sun) 95%,transparent 95%);color:inherit}
 .dropcap{float:left;font-size:3.4em;line-height:.85;padding:.06em .12em 0 0;color:var(--accent)}
 .signed{font-family:Georgia,serif;font-style:italic;color:var(--muted);margin-top:1.4rem}
@@ -134,7 +172,7 @@ padding:1.9rem;display:grid;gap:.5rem;align-content:start;background:var(--paper
 /* faq */
 .faq-list{border-top:1.5px solid var(--ink);margin-top:2rem}
 .faq-list details{border-bottom:1.5px solid var(--ink);padding:1.3rem .2rem}
-.faq-list summary{cursor:pointer;font-family:Georgia,serif;font-size:clamp(1.2rem,2.8vw,1.6rem);
+.faq-list summary{cursor:pointer;font-family:"Fraunces",Georgia,serif;font-weight:600;font-size:clamp(1.2rem,2.8vw,1.6rem);
 list-style:none;display:flex;justify-content:space-between;gap:1rem;align-items:baseline}
 .faq-list summary::-webkit-details-marker{display:none}
 .faq-list summary::after{content:"+";font-family:inherit;color:var(--accent);font-size:1.6rem;line-height:1}
@@ -161,7 +199,7 @@ select option{background:var(--paper)}
 
 /* footer */
 footer{border-top:1px solid var(--ink);padding:3rem 0 0}
-.giant{font-family:Georgia,serif;font-size:clamp(2.6rem,10vw,8rem);letter-spacing:-.02em;
+.giant{font-family:"Fraunces",Georgia,serif;font-weight:900;font-size:clamp(2.6rem,10vw,8rem);letter-spacing:-.02em;
 margin:0;white-space:nowrap;overflow:hidden}
 .foot-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2rem;padding:2rem 0}
 .foot-h{font-family:ui-monospace,Menlo,monospace;font-size:.75rem;text-transform:uppercase;
