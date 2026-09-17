@@ -1,0 +1,50 @@
+[
+  {
+    "lead_id": "lead_00001",
+    "passed": true,
+    "score": 85,
+    "issues": [
+      "Only 0 service cards — looks unfinished",
+      "Default/generic brand styling (template blue or no theme)",
+      "No utility top bar (address/hours/phone strip)",
+      "JS missing contact form handler"
+    ],
+    "recommendations": [
+      "Add a topbar with address, hours, and click-to-call",
+      "Define a category palette via --brand/--brand2/--gold custom properties",
+      "Implement contact form handler in script.js",
+      "Offer 6 specific service cards for this category, not 3 generic ones"
+    ],
+    "checked_at": "2026-09-17T01:13:34.141319+00:00",
+    "site_dir": "generated_sites\\la-gloria-modern-mexican-bar",
+    "details": {
+      "bytes": {
+        "html": 17644,
+        "css": 18626,
+        "js": 5299,
+        "total_kb": 40.6
+      },
+      "words": 658,
+      "sections": 7
+    }
+  },
+  {
+    "lead_id": "lead_00001",
+    "passed": true,
+    "score": 100,
+    "issues": [],
+    "recommendations": [],
+    "checked_at": "2026-09-17T01:35:11.516444+00:00",
+    "site_dir": "generated_sites\\la-gloria-modern-mexican-bar",
+    "details": {
+      "bytes": {
+        "html": 30679,
+        "css": 22517,
+        "js": 6607,
+        "total_kb": 58.4
+      },
+      "words": 1004,
+      "sections": 7
+    }
+  }
+]

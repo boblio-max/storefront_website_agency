@@ -1,0 +1,19 @@
+{
+  "lead_id": "lead_00001",
+  "slug": "la-gloria-modern-mexican-bar",
+  "business": {
+    "name": "La Gloria Modern Mexican Bar",
+    "category": "Mexican restaurant",
+    "address": "22010 17th Ave SE, Bothell, WA 98021",
+    "phone": "(425) 219-9957",
+    "website": "https://m.facebook.com/lagloriabothell/",
+    "rating": 4.7,
+    "review_count": 348
+  },
+  "lead_type": "bad_website",
+  "opportunity_score": 91.0,
+  "engine": "opencode",
+  "created_at": "2026-09-17T01:35:11.351811+00:00",
+  "preview_mode": true,
+  "feedback_applied": false
+}

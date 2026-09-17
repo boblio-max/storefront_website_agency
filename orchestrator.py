@@ -101,6 +101,7 @@ def _latest_preview(record_file: str | Path, lid: str) -> str:
 def run(queries: list[str] | None = None, max_per_query: int = 20,
         threshold: int = 60, output_dir: str = "generated_sites",
         force: bool = False, no_opencode: bool = False,
+        require_opencode: bool = False,
         limit: int = 1, qa_threshold: int = 80,
         max_qa_attempts: int = 5, prod: bool = True,
         current_output: str = "current_leads.json",
@@ -175,8 +176,9 @@ def run(queries: list[str] | None = None, max_per_query: int = 20,
         lid = entry.get("lead_id", "?")
         try:
             _process_lead(entry, lid, leads_path, output_dir, force, no_opencode,
-                          max_qa_attempts, qa_threshold, prod, current_output,
-                          send_emails, history, notify, notify_to, preview)
+                          require_opencode, max_qa_attempts, qa_threshold, prod,
+                          current_output, send_emails, history, notify, notify_to,
+                          preview)
         except RuntimeError as e:
             failures += 1
             print(f"[orchestrator] lead {lid} failed ({e}) — continuing "
@@ -192,7 +194,8 @@ def run(queries: list[str] | None = None, max_per_query: int = 20,
 
 
 def _process_lead(entry: dict, lid: str, leads_path: str, output_dir: str,
-                  force: bool, no_opencode: bool, max_qa_attempts: int,
+                  force: bool, no_opencode: bool, require_opencode: bool,
+                  max_qa_attempts: int,
                   qa_threshold: int, prod: bool, current_output: str,
                   send_emails: bool, history: str,
                   notify: bool, notify_to: str | None,
@@ -200,7 +203,8 @@ def _process_lead(entry: dict, lid: str, leads_path: str, output_dir: str,
     """Generate → QA → deploy → outreach for one lead. Raises RuntimeError."""
     website_path = _require(
         wg.main(lead_data=entry, output_dir=output_dir,
-                force=force, no_opencode=no_opencode, preview=preview),
+                force=force, no_opencode=no_opencode,
+                require_opencode=require_opencode, preview=preview),
         "website_generator",
     )
 
@@ -210,7 +214,8 @@ def _process_lead(entry: dict, lid: str, leads_path: str, output_dir: str,
         if attempt > 1:
             website_path = _require(
                 wg.main(lead_data=entry, output_dir=output_dir,
-                        force=True, no_opencode=no_opencode, preview=preview),
+                        force=True, no_opencode=no_opencode,
+                        require_opencode=require_opencode, preview=preview),
                 "website_generator",
             )
         qa_res = qb.main(website_path, threshold=qa_threshold)
@@ -273,9 +278,10 @@ def _process_lead(entry: dict, lid: str, leads_path: str, output_dir: str,
  
 def handle_reply(incoming: str, lead: str | None = None,
                  leads: str = "target_leads.json",
-                 output_dir: str = "generated_sites",
-                 no_opencode: bool = False,
-                 qa_threshold: int = 80,
+                  output_dir: str = "generated_sites",
+                  no_opencode: bool = False,
+                  require_opencode: bool = False,
+                  qa_threshold: int = 80,
                  max_qa_attempts: int = 5,
                  prod: bool = False,
                  current_output: str = "current_leads.json",
@@ -317,7 +323,8 @@ def handle_reply(incoming: str, lead: str | None = None,
 
     site = _require(
         wg.main(lead_data=entry, output_dir=output_dir, force=True,
-                no_opencode=no_opencode, feedback=feedback, preview=True),
+                no_opencode=no_opencode, require_opencode=require_opencode,
+                feedback=feedback, preview=True),
         "website_generator",
     )
     for attempt in range(1, max_qa_attempts + 1):
@@ -330,7 +337,8 @@ def handle_reply(incoming: str, lead: str | None = None,
                   f"(attempt {attempt}/{max_qa_attempts}), regenerating...", flush=True)
             site = _require(
                 wg.main(lead_data=entry, output_dir=output_dir, force=True,
-                        no_opencode=no_opencode, feedback=feedback, preview=True),
+                        no_opencode=no_opencode, require_opencode=require_opencode,
+                        feedback=feedback, preview=True),
                 "website_generator",
             )
             continue
@@ -401,6 +409,7 @@ def watch(interval: int = 3600, poll_inbox: bool = True, **run_kwargs) -> None:
                         leads=run_kwargs.get("leads", "target_leads.json"),
                         output_dir=run_kwargs.get("output_dir", "generated_sites"),
                         no_opencode=run_kwargs.get("no_opencode", False),
+                        require_opencode=run_kwargs.get("require_opencode", False),
                         qa_threshold=run_kwargs.get("qa_threshold", 80),
                         max_qa_attempts=run_kwargs.get("max_qa_attempts", 5),
                         prod=run_kwargs.get("prod", True),
@@ -437,6 +446,8 @@ def parse_args(argv=None):
     p.add_argument("--output-dir", default="generated_sites")
     p.add_argument("--force", action="store_true")
     p.add_argument("--no-opencode", action="store_true")
+    p.add_argument("--require-opencode", action="store_true",
+                   help="Fail loudly if OpenCode is unavailable instead of using the template engine")
     p.add_argument("--final", dest="preview", action="store_false", default=True,
                    help="Paid final builds: unlock preview blockers (default: locked previews)")
     p.add_argument("--limit", type=int, default=1, help="Leads to process (0 = all)")
@@ -471,7 +482,8 @@ def parse_args(argv=None):
 def _run_kwargs(_a) -> dict:
     return {"queries": _a.queries or None, "max_per_query": _a.max_per_query,
             "threshold": _a.threshold, "output_dir": _a.output_dir,
-            "force": _a.force, "no_opencode": _a.no_opencode, "limit": _a.limit,
+            "force": _a.force, "no_opencode": _a.no_opencode,
+            "require_opencode": _a.require_opencode, "limit": _a.limit,
             "qa_threshold": _a.qa_threshold, "max_qa_attempts": _a.max_qa_attempts,
             "prod": _a.prod, "current_output": _a.current_output,
             "send_emails": _a.send_emails, "skip_scrape": _a.skip_scrape,
@@ -490,6 +502,7 @@ if __name__ == "__main__":
         try:
             _fb = handle_reply(_incoming, lead=_a.reply_lead, leads="target_leads.json",
                                output_dir=_a.output_dir, no_opencode=_a.no_opencode,
+                               require_opencode=_a.require_opencode,
                                qa_threshold=_a.qa_threshold,
                                max_qa_attempts=_a.max_qa_attempts, prod=_a.prod,
                                current_output=_a.current_output,

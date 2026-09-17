@@ -12,12 +12,6 @@ if(ba&&range&&after&&handle){range.addEventListener('input',function(){
 var v=Math.max(2,Math.min(98,Number(range.value)||50));
 after.style.clipPath='inset(0 0 0 '+v+'%)';handle.style.left=v+'%'})}
 
-/* magnetic buttons (fine pointers only) */
-if(matchMedia('(pointer:fine)').matches){document.querySelectorAll('.btn-ink').forEach(function(b){
-b.addEventListener('mousemove',function(e){var r=b.getBoundingClientRect();
-b.style.transform='translate('+((e.clientX-r.left-r.width/2)*.12)+'px,'+((e.clientY-r.top-r.height/2)*.18)+'px)'});
-b.addEventListener('mouseleave',function(){b.style.transform=''})})}
-
 /* demo tabs + desktop/phone toggle */
 document.querySelectorAll('.mini-tab').forEach(function(tab){tab.addEventListener('click',function(){
 document.querySelectorAll('.mini-tab').forEach(function(o){o.classList.remove('active');o.setAttribute('aria-selected','false')});
@@ -62,17 +56,27 @@ var vh=innerHeight;shots.forEach(function(s){var r=s.getBoundingClientRect();
 var p=(r.top+r.height/2-vh/2)/vh;if(Math.abs(p)<1){s.style.backgroundPosition='50% '+(50+p*14)+'%'}});
 ticking=false})}},{passive:true})}
 
-/* inquiry form -> prefilled email */
+/* inquiry form -> POST /api/inquiry, mailto fallback */
 var f=document.getElementById('inquiry-form');
 if(f){f.addEventListener('submit',function(e){e.preventDefault();
 var name=f.name.value.trim(),biz=f.business.value.trim(),em=f.email.value.trim(),
 ph=f.phone.value.trim(),topic=f.topic.value,ms=f.message.value.trim(),
-note=f.querySelector('.form-note');
-if(!name||!biz||!em){note.textContent='Name, business, and email — that\u2019s all I need to start.';return}
+note=f.querySelector('.form-note'),btn=f.querySelector('button[type="submit"]');
+function fail(msg){note.innerHTML=msg+' <a href="mailto:storefront.webs@gmail.com?subject='
++encodeURIComponent('New project inquiry \u2014 '+biz)+'">Email me directly instead</a>.';
+if(btn){btn.disabled=false;btn.textContent='Send it over \u2192'}}
+if(!name||!biz||!em){note.textContent='Name, business, and email \u2014 that\u2019s all I need to start.';return}
 if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){note.textContent='That email doesn\u2019t look right \u2014 mind checking it?';return}
-var subject=encodeURIComponent('New project inquiry \u2014 '+biz),
-body=encodeURIComponent('Name: '+name+'\nBusiness: '+biz+'\nEmail: '+em+'\nPhone: '+(ph||'(rather email)')+'\nProject: '+topic+'\n\n'+(ms||'(they left this blank)'));
-window.location.href='mailto:storefront.webs@gmail.com?subject='+subject+'&body='+body;
-note.textContent='Thanks '+name.split(' ')[0]+' \u2014 your email app should open with it all filled in. Just press send.'})}
+if(btn){btn.disabled=true;btn.textContent='Sending\u2026'}
+note.textContent='';
+fetch('/api/inquiry',{method:'POST',headers:{'Content-Type':'application/json'},
+body:JSON.stringify({name:name,business:biz,email:em,phone:ph,topic:topic,message:ms,
+company_website:(f.company_website&&f.company_website.value)||''})})
+.then(function(r){return r.json().then(function(d){return{ok:r.ok&&d&&d.ok,err:(d&&d.err)||(d&&d.error)}})})
+.then(function(out){
+if(out.ok){note.textContent='Received \u2014 thanks '+name.split(' ')[0]+'! I\u2019ll reply within a day or so.';f.reset()}
+else{fail(out.err||'Something went wrong sending that.')}}
+,function(){fail('Network trouble sending that.')})
+.finally(function(){if(btn&&note.textContent.indexOf('Received')!==0){btn.disabled=false;btn.textContent='Send it over \u2192'}})})}
 var y=document.getElementById('year');if(y){y.textContent=new Date().getFullYear()}
 })();

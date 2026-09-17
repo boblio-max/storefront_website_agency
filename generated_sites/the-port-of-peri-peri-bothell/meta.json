@@ -1,0 +1,19 @@
+{
+  "lead_id": "lead_00001",
+  "slug": "the-port-of-peri-peri-bothell",
+  "business": {
+    "name": "The Port Of Peri Peri - Bothell",
+    "category": "Chicken restaurant",
+    "address": "22612 Bothell Everett Hwy Ste C, Bothell, WA 98021",
+    "phone": "(425) 286-6608",
+    "website": "https://myperiperi.com/pppbothell?utm_source=google",
+    "rating": 4.6,
+    "review_count": 1273
+  },
+  "lead_type": "bad_website",
+  "opportunity_score": 93.0,
+  "engine": "template",
+  "created_at": "2026-09-16T23:07:35.454237+00:00",
+  "preview_mode": true,
+  "feedback_applied": false
+}

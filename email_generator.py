@@ -143,6 +143,8 @@ def build_prompt(biz: dict, history: list[dict], purpose: str) -> str:
         "Do not invent facts (no fake owner names, addresses, prices, or past meetings).",
         "Do not claim something happened unless the history confirms it.",
         f"Sign off as {AGENCY_NAME} (the agency that built the preview).",
+        "Include our agency website in the email signature: https://storefront-web-agency.vercel.app/",
+        "This is the agency website, not the business's preview; keep the preview link separate.",
         "Keep it under 180 words. End with a clear next step (review the preview link).",
         "Reply in this exact format:\nSubject: <subject>\n\n<body>",
     ])

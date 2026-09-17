@@ -22,11 +22,11 @@
       "details": {
         "fetch_error": "HTTP 400",
         "final_url": "https://www.facebook.com/lagloriabothell/?_rdr",
-        "load_ms": 4824,
+        "load_ms": 4299,
         "size_kb": 1.5,
         "http_status": 400
       },
-      "checked_at": "2026-09-09T04:31:44.133512+00:00",
+      "checked_at": "2026-09-17T01:30:56.062254+00:00",
       "final_url": "https://www.facebook.com/lagloriabothell/?_rdr"
     },
     "lead_type": "bad_website",
@@ -40,50 +40,7 @@
     ],
     "stable_key": "e1d61677ae",
     "lead_id": "lead_00001",
-    "prioritized_at": "2026-09-09T04:31:49.213161+00:00"
-  },
-  {
-    "name": "Bothell Way Garage",
-    "category": "Auto repair shop",
-    "address": "17210 Bothell Way NE, Bothell, WA 98011",
-    "phone": "(425) 949-7627",
-    "website": "https://bothellwaygarage.com/",
-    "rating": 4.9,
-    "review_count": 345,
-    "maps_url": "https://www.google.com/maps/place/Bothell+Way+Garage/data=!4m7!3m6!1s0x54900e12341ff23b:0x808b7cc22e1d1dd2!8m2!3d47.7530573!4d-122.2117249!16s%2Fg%2F1td60f7_!19sChIJO_IfNBIOkFQR0h0dLsJ8i4A?authuser=0&hl=en&g_ep=EgoyMDI2MDkwMi4wIJJjKgBIAVAD&rclk=1",
-    "source": "google_maps",
-    "discovered_at": "2026-09-09T01:46:17.596467+00:00",
-    "website_analysis": {
-      "score": 0,
-      "verdict": "bad",
-      "problems": [
-        "Website unreachable: SSLError: HTTPSConnectionPool(host='bothellwaygarage.com', port=443): Max retries exceeded with url: / (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)')))",
-        "No clear contact / booking path",
-        "Weak call-to-action"
-      ],
-      "strengths": [],
-      "details": {
-        "fetch_error": "SSLError: HTTPSConnectionPool(host='bothellwaygarage.com', port=443): Max retries exceeded with url: / (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)')))",
-        "final_url": "https://bothellwaygarage.com/",
-        "load_ms": 2583,
-        "size_kb": 0.0,
-        "http_status": null
-      },
-      "checked_at": "2026-09-09T04:31:13.805260+00:00",
-      "final_url": "https://bothellwaygarage.com/"
-    },
-    "lead_type": "bad_website",
-    "opportunity_score": 91.0,
-    "opportunity_reasons": [
-      "High rating (4.9)",
-      "Established (345 reviews)",
-      "Bad website (site score 0, 3 problems) — strong replacement case",
-      "Phone available for outreach",
-      "High-value local-service category"
-    ],
-    "stable_key": "4c23b26ac3",
-    "lead_id": "lead_00002",
-    "prioritized_at": "2026-09-09T04:31:49.213161+00:00"
+    "prioritized_at": "2026-09-17T01:31:17.172630+00:00"
   },
   {
     "name": "Safety Auto Repair - Bothell",
@@ -108,11 +65,11 @@
       "details": {
         "fetch_error": "ConnectionError: HTTPSConnectionPool(host='www.safetyautorepairs.com', port=443): Max retries exceeded with url: / (Caused by NewConnectionError(\"HTTPSConnection(host='www.safetyautorepairs.com', port=443): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it\"))",
         "final_url": "https://www.safetyautorepairs.com/",
-        "load_ms": 2117,
+        "load_ms": 2102,
         "size_kb": 0.0,
         "http_status": null
       },
-      "checked_at": "2026-09-09T04:31:15.919548+00:00",
+      "checked_at": "2026-09-17T01:29:58.836336+00:00",
       "final_url": "https://www.safetyautorepairs.com/"
     },
     "lead_type": "bad_website",
@@ -125,8 +82,8 @@
       "High-value local-service category"
     ],
     "stable_key": "6678e2f92c",
-    "lead_id": "lead_00003",
-    "prioritized_at": "2026-09-09T04:31:49.213161+00:00"
+    "lead_id": "lead_00002",
+    "prioritized_at": "2026-09-17T01:31:17.172630+00:00"
   },
   {
     "name": "One Repair",
@@ -149,8 +106,94 @@
       "High-value local-service category"
     ],
     "stable_key": "d377d779c6",
+    "lead_id": "lead_00003",
+    "prioritized_at": "2026-09-17T01:31:17.172630+00:00"
+  },
+  {
+    "name": "JDM House Motorsports",
+    "category": "Auto repair shop",
+    "address": "17205 Hwy 99, Lynnwood, WA 98037",
+    "phone": "(425) 683-6500",
+    "website": "https://www.jdmhousemotorsports.com/",
+    "rating": 4.9,
+    "review_count": 141,
+    "maps_url": "https://www.google.com/maps/place/JDM+House+Motorsports/data=!4m7!3m6!1s0x549005d986d9d501:0xe0bcc7a424eef194!8m2!3d47.84264!4d-122.295945!16s%2Fg%2F11ylbyhqhl!19sChIJAdXZhtkFkFQRlPHuJKTHvOA?authuser=0&hl=en&g_ep=EgoyMDI2MDkwMi4wIJJjKgBIAVAD&rclk=1",
+    "source": "google_maps",
+    "discovered_at": "2026-09-09T01:46:08.507165+00:00",
+    "email": "service@jdmhousemotorsports.com",
+    "email_source": "website_harvest",
+    "website_analysis": {
+      "score": 54,
+      "verdict": "bad",
+      "problems": [
+        "Difficult navigation",
+        "Thin or poorly structured content",
+        "Missing basic business info (phone / address / hours)",
+        "Weak call-to-action",
+        "No clear contact / booking path"
+      ],
+      "strengths": [
+        "Clean, modern visual presentation"
+      ],
+      "details": {
+        "outdated_signals": 0,
+        "inline_styles": 0,
+        "css_links": 2,
+        "copyright_years": [],
+        "stale_copyright": false,
+        "has_viewport": true,
+        "media_queries": 9,
+        "has_nav": false,
+        "link_count": 0,
+        "load_ms": 5712,
+        "size_kb": 368.4,
+        "images": 0,
+        "scripts": 3,
+        "words": 8,
+        "has_h1": false,
+        "title": "JDM House MotorSports — Auto Repair Lynnwood, WA",
+        "has_phone": false,
+        "has_address": false,
+        "has_hours": false,
+        "cta_hits": 0,
+        "tel_links": 0,
+        "forms": 0,
+        "has_contact_link": false,
+        "map_embed": false,
+        "https": true,
+        "has_meta_description": true,
+        "has_favicon": true,
+        "social_links": true,
+        "http_status": 200,
+        "dimension_scores": {
+          "visual_design": 10,
+          "modernity": 10,
+          "mobile_responsiveness": 10,
+          "navigation_ux": 0,
+          "performance": 7,
+          "readability": 2,
+          "business_info": 1,
+          "cta": 2,
+          "contact_booking": 2,
+          "professionalism": 10
+        }
+      },
+      "checked_at": "2026-09-17T01:30:01.443671+00:00",
+      "final_url": "https://jdmhousemotorsports.com/"
+    },
+    "lead_type": "bad_website",
+    "opportunity_score": 86.5,
+    "opportunity_reasons": [
+      "High rating (4.9)",
+      "Active (141 reviews)",
+      "Bad website (site score 54, 5 problems) — strong replacement case",
+      "Phone available for outreach",
+      "Email available for outreach",
+      "High-value local-service category"
+    ],
+    "stable_key": "a4a6c30d47",
     "lead_id": "lead_00004",
-    "prioritized_at": "2026-09-09T04:31:49.213161+00:00"
+    "prioritized_at": "2026-09-17T01:31:17.172630+00:00"
   },
   {
     "name": "Sidekick Coffee",
@@ -188,8 +231,8 @@
         "media_queries": 1,
         "has_nav": false,
         "link_count": 0,
-        "load_ms": 5306,
-        "size_kb": 54.2,
+        "load_ms": 5145,
+        "size_kb": 54.1,
         "images": 0,
         "scripts": 7,
         "words": 4,
@@ -221,7 +264,7 @@
           "professionalism": 10
         }
       },
-      "checked_at": "2026-09-09T04:31:34.297875+00:00",
+      "checked_at": "2026-09-17T01:30:31.731438+00:00",
       "final_url": "https://www.sidekick.coffee"
     },
     "lead_type": "bad_website",
@@ -235,7 +278,7 @@
     ],
     "stable_key": "369127b7f4",
     "lead_id": "lead_00005",
-    "prioritized_at": "2026-09-09T04:31:49.213161+00:00"
+    "prioritized_at": "2026-09-17T01:31:17.172630+00:00"
   },
   {
     "name": "Milky Way Espresso",
@@ -258,7 +301,7 @@
     ],
     "stable_key": "176a3009fc",
     "lead_id": "lead_00006",
-    "prioritized_at": "2026-09-09T04:31:49.213161+00:00"
+    "prioritized_at": "2026-09-17T01:31:17.172630+00:00"
   },
   {
     "name": "Mama Bear's Espresso",
@@ -281,90 +324,7 @@
     ],
     "stable_key": "ebd888a190",
     "lead_id": "lead_00007",
-    "prioritized_at": "2026-09-09T04:31:49.213161+00:00"
-  },
-  {
-    "name": "JDM House Motorsports",
-    "category": "Auto repair shop",
-    "address": "17205 Hwy 99, Lynnwood, WA 98037",
-    "phone": "(425) 683-6500",
-    "website": "https://www.jdmhousemotorsports.com/",
-    "rating": 4.9,
-    "review_count": 141,
-    "maps_url": "https://www.google.com/maps/place/JDM+House+Motorsports/data=!4m7!3m6!1s0x549005d986d9d501:0xe0bcc7a424eef194!8m2!3d47.84264!4d-122.295945!16s%2Fg%2F11ylbyhqhl!19sChIJAdXZhtkFkFQRlPHuJKTHvOA?authuser=0&hl=en&g_ep=EgoyMDI2MDkwMi4wIJJjKgBIAVAD&rclk=1",
-    "source": "google_maps",
-    "discovered_at": "2026-09-09T01:46:08.507165+00:00",
-    "website_analysis": {
-      "score": 54,
-      "verdict": "bad",
-      "problems": [
-        "Difficult navigation",
-        "Thin or poorly structured content",
-        "Missing basic business info (phone / address / hours)",
-        "Weak call-to-action",
-        "No clear contact / booking path"
-      ],
-      "strengths": [
-        "Clean, modern visual presentation"
-      ],
-      "details": {
-        "outdated_signals": 0,
-        "inline_styles": 0,
-        "css_links": 2,
-        "copyright_years": [],
-        "stale_copyright": false,
-        "has_viewport": true,
-        "media_queries": 9,
-        "has_nav": false,
-        "link_count": 0,
-        "load_ms": 5803,
-        "size_kb": 368.6,
-        "images": 0,
-        "scripts": 3,
-        "words": 8,
-        "has_h1": false,
-        "title": "JDM House MotorSports — Auto Repair Lynnwood, WA",
-        "has_phone": false,
-        "has_address": false,
-        "has_hours": false,
-        "cta_hits": 0,
-        "tel_links": 0,
-        "forms": 0,
-        "has_contact_link": false,
-        "map_embed": false,
-        "https": true,
-        "has_meta_description": true,
-        "has_favicon": true,
-        "social_links": true,
-        "http_status": 200,
-        "dimension_scores": {
-          "visual_design": 10,
-          "modernity": 10,
-          "mobile_responsiveness": 10,
-          "navigation_ux": 0,
-          "performance": 7,
-          "readability": 2,
-          "business_info": 1,
-          "cta": 2,
-          "contact_booking": 2,
-          "professionalism": 10
-        }
-      },
-      "checked_at": "2026-09-09T04:31:17.026959+00:00",
-      "final_url": "https://jdmhousemotorsports.com/"
-    },
-    "lead_type": "bad_website",
-    "opportunity_score": 82.5,
-    "opportunity_reasons": [
-      "High rating (4.9)",
-      "Active (141 reviews)",
-      "Bad website (site score 54, 5 problems) — strong replacement case",
-      "Phone available for outreach",
-      "High-value local-service category"
-    ],
-    "stable_key": "a4a6c30d47",
-    "lead_id": "lead_00008",
-    "prioritized_at": "2026-09-09T04:31:49.213161+00:00"
+    "prioritized_at": "2026-09-17T01:31:17.172630+00:00"
   },
   {
     "name": "Ridge Coffee",
@@ -389,11 +349,11 @@
       "details": {
         "fetch_error": "HTTP 400",
         "final_url": "https://www.facebook.com/ridgecoffeebothell",
-        "load_ms": 2478,
+        "load_ms": 1838,
         "size_kb": 1.5,
         "http_status": 400
       },
-      "checked_at": "2026-09-09T04:31:25.615333+00:00",
+      "checked_at": "2026-09-17T01:30:14.154042+00:00",
       "final_url": "https://www.facebook.com/ridgecoffeebothell"
     },
     "lead_type": "bad_website",
@@ -406,8 +366,8 @@
       "Consumer-facing category benefits from a site"
     ],
     "stable_key": "79d0616198",
-    "lead_id": "lead_00009",
-    "prioritized_at": "2026-09-09T04:31:49.213161+00:00"
+    "lead_id": "lead_00008",
+    "prioritized_at": "2026-09-17T01:31:17.172630+00:00"
   },
   {
     "name": "Noli Coffee",
@@ -421,7 +381,7 @@
     "source": "google_maps",
     "discovered_at": "2026-09-09T04:29:09.019207+00:00",
     "website_analysis": {
-      "score": 52,
+      "score": 53,
       "verdict": "bad",
       "problems": [
         "Difficult navigation",
@@ -443,8 +403,8 @@
         "media_queries": 2,
         "has_nav": false,
         "link_count": 0,
-        "load_ms": 2689,
-        "size_kb": 608.2,
+        "load_ms": 2279,
+        "size_kb": 611.8,
         "images": 2,
         "scripts": 44,
         "words": 1,
@@ -468,7 +428,7 @@
           "modernity": 10,
           "mobile_responsiveness": 10,
           "navigation_ux": 0,
-          "performance": 7,
+          "performance": 8,
           "readability": 2,
           "business_info": 1,
           "cta": 2,
@@ -476,21 +436,21 @@
           "professionalism": 8
         }
       },
-      "checked_at": "2026-09-09T04:31:27.366539+00:00",
+      "checked_at": "2026-09-17T01:30:16.437492+00:00",
       "final_url": "https://www.instagram.com/nolicoffee/"
     },
     "lead_type": "bad_website",
-    "opportunity_score": 75.8,
+    "opportunity_score": 75.6,
     "opportunity_reasons": [
       "High rating (5.0)",
       "Growing (63 reviews)",
-      "Bad website (site score 52, 5 problems) — strong replacement case",
+      "Bad website (site score 53, 5 problems) — strong replacement case",
       "Phone available for outreach",
       "Consumer-facing category benefits from a site"
     ],
     "stable_key": "d78306ff6c",
-    "lead_id": "lead_00010",
-    "prioritized_at": "2026-09-09T04:31:49.213161+00:00"
+    "lead_id": "lead_00009",
+    "prioritized_at": "2026-09-17T01:31:17.172630+00:00"
   },
   {
     "name": "BOTHELL IMPORT SERVICE auto repair",
@@ -513,7 +473,7 @@
       "High-value local-service category"
     ],
     "stable_key": "df85dc4b60",
-    "lead_id": "lead_00011",
-    "prioritized_at": "2026-09-09T04:31:49.213161+00:00"
+    "lead_id": "lead_00010",
+    "prioritized_at": "2026-09-17T01:31:17.172630+00:00"
   }
 ]
