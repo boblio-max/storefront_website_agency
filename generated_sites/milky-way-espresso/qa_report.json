@@ -1,0 +1,45 @@
+[
+  {
+    "lead_id": "lead_00006",
+    "passed": true,
+    "score": 92,
+    "issues": [
+      "[reviewer] index.html services cards (lines 74), strip items (68) and about-card (86-92): all six cards, four strip items and the about card reuse the exact same coffee-cup SVG icon, so the motif communicates nothing and the grid reads as repetitive/templated — give each item a distinct glyph (croissant, bean bag, catering tray, commuter to-go cup).",
+      "[reviewer] index.html #visit Hours section (118-119): the one fact a coffee-stand visitor needs is deferred to 'call for today's hours' — and the CTA banner (105) promises 'join us tonight' that the page can't substantiate; if hours are known, render the weekly schedule. styles.css:85-86 already define an unused `.hours` table you clearly intended to fill.",
+      "[reviewer] index.html 'Crowd favorites' cards (74): six cards describe categories, not menu; adding 2-3 named drinks with prices (e.g. 'House Vanilla Latte — $5.50') would ground this in the actual stand instead of generic 'rotating lattes, cold brew'.",
+      "[reviewer] styles.css:43-45 marquee: loops only the brand name, so it's pure filler; give it a real strip message ('Single-origin espresso • Pastries gone by noon • 19005 Bothell Way NE') or drop it."
+    ],
+    "recommendations": [],
+    "checked_at": "2026-09-22T02:57:04.121394+00:00",
+    "site_dir": "generated_sites\\milky-way-espresso",
+    "details": {
+      "bytes": {
+        "html": 27652,
+        "css": 14430,
+        "js": 9384,
+        "total_kb": 50.3,
+        "images_kb": 0.0,
+        "n_images": 0
+      },
+      "words": 477,
+      "sections": 8
+    },
+    "reviewer": {
+      "engine": "opencode",
+      "model": "opencode/big-pickle",
+      "verdict": "pass",
+      "issues": [
+        "index.html services cards (lines 74), strip items (68) and about-card (86-92): all six cards, four strip items and the about card reuse the exact same coffee-cup SVG icon, so the motif communicates nothing and the grid reads as repetitive/templated — give each item a distinct glyph (croissant, bean bag, catering tray, commuter to-go cup).",
+        "index.html #visit Hours section (118-119): the one fact a coffee-stand visitor needs is deferred to 'call for today's hours' — and the CTA banner (105) promises 'join us tonight' that the page can't substantiate; if hours are known, render the weekly schedule. styles.css:85-86 already define an unused `.hours` table you clearly intended to fill.",
+        "index.html 'Crowd favorites' cards (74): six cards describe categories, not menu; adding 2-3 named drinks with prices (e.g. 'House Vanilla Latte — $5.50') would ground this in the actual stand instead of generic 'rotating lattes, cold brew'.",
+        "styles.css:43-45 marquee: loops only the brand name, so it's pure filler; give it a real strip message ('Single-origin espresso • Pastries gone by noon • 19005 Bothell Way NE') or drop it."
+      ],
+      "praise": [
+        "Palette is unmistakably this business — chocolate brown, gold, cream over a cream background with fine grain — disciplined, no gradient soup, and the dark hero + stats anchor the page between warm light sections.",
+        "Fraunces/Inter pairing is a confident, considered choice; h1 clamp(2.6rem,7.2vw,4.6rem) with tight tracking carries weight, and short-copy cards stay scannable.",
+        "Copy is local and specific: real street address, real phone, '4.9 · 34 Google reviews', 'dialed in daily', 'gone by noon', genuine-seeming review quotes — no lorem, no welcome-fluff.",
+        "One-visit test passes outright: business name, offer and phone are reachable from the topbar, header, hero, about card, banner and footer within 10 seconds."
+      ]
+    }
+  }
+]

@@ -22,9 +22,20 @@ If it fails:
 
 A failed QA stops the pipeline (exit code 1) — no automatic retry loop.
 
+Two gates:
+  Gate 1 (structural, always): deterministic checks — files, responsive
+    CSS, nav/forms, content accuracy, contrast, SEO identity. Fast.
+  Gate 2 (reviewer, opencode): a fresh `opencode run` instance whose only
+    job is taste — hierarchy, typography, spacing, color restraint, copy
+    quality, mobile feel. Its issues merge into the report (prefixed
+    [reviewer]) so Bot 5 fixes them on rebuild. Skipped with --no-reviewer
+    or when the CLI is unreachable (structural verdict stands, report notes
+    the abstention).
+
 Usage:
     python qa_bot.py generated_sites/lead_00001
     python qa_bot.py --site generated_sites/lead_00001
+    python qa_bot.py generated_sites/lead_00001 --no-reviewer
 """
 
 from __future__ import annotations
@@ -32,7 +43,9 @@ from __future__ import annotations
 import argparse
 import datetime
 import json
+import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -48,6 +61,63 @@ PASS_THRESHOLD = 80
 
 def utc_now_iso() -> str:
     return datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+
+def _hex_to_rgb(h: str) -> tuple[float, float, float] | None:
+    h = h.strip().lstrip("#")
+    if len(h) == 3:
+        h = "".join(c * 2 for c in h)
+    if len(h) not in (6, 8) or any(c not in "0123456789abcdefABCDEF" for c in h[:6]):
+        return None
+    v = int(h[:6], 16)
+    return ((v >> 16 & 255) / 255.0, (v >> 8 & 255) / 255.0, (v & 255) / 255.0)
+
+
+def _rel_lum(rgb: tuple[float, float, float]) -> float:
+    def lin(c: float) -> float:
+        return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+    r, g, b = rgb
+    return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+
+
+def _contrast(a: str, b: str) -> float | None:
+    ra, rb = _hex_to_rgb(a), _hex_to_rgb(b)
+    if not ra or not rb:
+        return None
+    la, lb = _rel_lum(ra), _rel_lum(rb)
+    hi, lo = (la, lb) if la >= lb else (lb, la)
+    return (hi + 0.05) / (lo + 0.05)
+
+
+def _root_var(css: str, name: str) -> str | None:
+    m = re.search(r"--" + re.escape(name) + r"\s*:\s*([^;{}]+)", css)
+    if not m:
+        return None
+    h = re.search(r"#[0-9a-fA-F]{3,8}", m.group(1))
+    return h.group(0) if h else None
+
+
+def _body_text_color(css: str) -> str | None:
+    """The color actually used for body copy: body{color: ...}, resolving
+    var(--x). Falls back to common text-variable names; None if unknowable."""
+    m = re.search(r"(?<![\w-])body\s*\{([^}]*)\}", css)
+    if m:
+        c = re.search(r"(?<![\w-])color\s*:\s*([^;}]+)", m.group(1))
+        if c:
+            val = c.group(1).strip()
+            vm = re.match(r"var\(\s*--([\w-]+)", val)
+            if vm:
+                v = _root_var(css, vm.group(1))
+                if v:
+                    return v
+            h = re.search(r"#[0-9a-fA-F]{3,8}", val)
+            if h:
+                return h.group(0)
+    for cand in ("ink", "cream", "text", "fg", "body", "foreground", "copy"):
+        v = _root_var(css, cand)
+        if v:
+            return v
+    return None
 
 
 def load_lead_from_site(site_dir: Path) -> dict:
@@ -71,6 +141,166 @@ def load_lead_from_site(site_dir: Path) -> dict:
             if business.get(k) is not None:
                 lead[k] = business[k]
     return lead
+
+
+DEFAULT_REVIEWER_MODEL = "opencode/big-pickle"
+REVIEW_TIMEOUT = 180
+
+
+def _reviewer_model() -> str:
+    return (os.environ.get("AGENCY_QA_MODEL", "").strip()
+            or os.environ.get("AGENCY_OPENCODE_MODEL", "").strip()
+            or DEFAULT_REVIEWER_MODEL)
+
+
+def reviewer_available() -> bool:
+    """True when a working OpenCode CLI exists for the reviewer gate."""
+    try:
+        from website_generator import opencode_available
+        return opencode_available()
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def run_reviewer_command(site_dir: Path, prompt: str, timeout: int = REVIEW_TIMEOUT) -> str:
+    """Run a fresh opencode reviewer instance in site_dir; return stdout.
+
+    Raises RuntimeError on any failure — callers treat it as abstention.
+    """
+    from website_generator import _opencode_argv
+    site_dir.mkdir(parents=True, exist_ok=True)
+    prefix = _opencode_argv()
+    model = _reviewer_model()
+    command = [*prefix, "run", "--agent", "build", "--auto", "--model", model]
+    print(f"[qa_bot] reviewer starting in {site_dir} "
+          f"(model={model}, timeout={timeout}s)", flush=True)
+    try:
+        proc = subprocess.run(
+            command, input=prompt,
+            cwd=str(site_dir), capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=timeout)
+    except subprocess.TimeoutExpired as e:
+        raise RuntimeError(f"reviewer timed out after {timeout}s") from e
+    except OSError as e:
+        raise RuntimeError(f"could not start reviewer: {e}") from e
+    if proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout or "no diagnostic output").strip()
+        raise RuntimeError(f"reviewer exited {proc.returncode}: {detail[-2000:]}")
+    return proc.stdout or ""
+
+
+def build_review_prompt(lead: dict, structural: dict) -> str:
+    """Reviewer brief: taste only (structure already passed Gate 1)."""
+    name = lead.get("name") or lead.get("lead_id") or "this business"
+    category = lead.get("category") or "local business"
+    struct_issues = structural.get("issues") or []
+    return f"""You are a senior UI/UX design critic judging a website like an
+Awwwards juror. The site for "{name}" ({category}) lives in this directory:
+read index.html, styles.css, and script.js IN FULL before judging.
+
+Structural checks already passed — your job is TASTE ONLY:
+- Visual hierarchy: does the eye land on the business name, then the offer,
+  then one clear CTA? Or does everything shout at once?
+- Typography: display + body pairing, sizes, line length, rhythm. Any
+  system-font fallback smell, awkward wraps, oversized paragraphs?
+- Spacing: section padding, card gutters, alignment. Anything cramped or
+  swimming in whitespace?
+- Color restraint: does the palette feel designed for THIS business, or
+  generic gradient soup? Max 2 accent colors used with discipline?
+- Copy quality: specific (streets, dishes, services, prices, hours) or
+  adjective-stuffed filler? No lorem ipsum, no "welcome to our website".
+- Mobile feel (infer from CSS): will this hold together at 360px? Hero
+  type scale, nav collapse, tap targets.
+- One-visit test: after 10 seconds, could a visitor name the business,
+  what it does, and how to contact it?
+
+IMPORTANT CONTEXT — this is a locked outreach preview, not the final site:
+a preview banner, noindex tag, and demo-only form messaging ("goes live
+when the site launches") are INTENTIONAL. Never flag them as issues.
+
+Context: structural gate found {len(struct_issues)} issue(s):
+{json.dumps(struct_issues[:10], ensure_ascii=False) or "none"}.
+
+Reply with EXACTLY one JSON block and nothing else:
+```json
+{{"verdict": "pass" | "fail", "issues": ["concrete fix", ...], "praise": ["..."]}}
+```
+Rules: verdict "fail" REQUIRES at least one concrete issue (file + element +
+fix). Never invent pages or images. Be strict but fair: pass genuinely good
+work, fail the forgettable. Maximum 6 issues, most important first.
+"""
+
+
+def parse_review_output(out: str) -> dict | None:
+    """Extract the reviewer verdict JSON; None when unparseable (abstain)."""
+    if not (out or "").strip():
+        return None
+    m = re.search(r"```json\s*(\{.*?\})\s*```", out, re.S)
+    blob = m.group(1) if m else out.strip()
+    if not m:
+        start, end = blob.find("{"), blob.rfind("}")
+        if start < 0 or end <= start:
+            return None
+        blob = blob[start:end + 1]
+    try:
+        data = json.loads(blob)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(data, dict) or data.get("verdict") not in ("pass", "fail"):
+        return None
+    issues = data.get("issues") or []
+    if not isinstance(issues, list):
+        return None
+    issues = [str(i).strip() for i in issues if str(i).strip()][:6]
+    if data["verdict"] == "fail" and not issues:
+        return None  # fail with no fixes is unactionable — abstain
+    praise = data.get("praise") or []
+    praise = [str(p).strip() for p in praise if str(p).strip()][:4] \
+        if isinstance(praise, list) else []
+    return {"verdict": data["verdict"], "issues": issues, "praise": praise}
+
+
+def review_with_opencode(site_dir: Path, lead: dict, structural: dict,
+                         timeout: int = REVIEW_TIMEOUT) -> dict:
+    """Gate 2: fresh reviewer instance. Never raises; abstains on failure.
+
+    Returns {"engine": "opencode"|"abstained"|"skipped", "model": str,
+    "issues": [...], "praise": [...], "verdict": ...}.
+    """
+    model = _reviewer_model()
+    if not reviewer_available():
+        print("[qa_bot] reviewer skipped (no OpenCode CLI) — structural verdict stands",
+              flush=True)
+        return {"engine": "skipped", "model": model, "issues": [],
+                "praise": [], "verdict": "abstain"}
+    prompt = build_review_prompt(lead, structural)
+    out = ""
+    parsed = None
+    try:
+        out = run_reviewer_command(site_dir, prompt, timeout=timeout)
+        parsed = parse_review_output(out)
+        if parsed is None:
+            # One retry with an explicit format nudge — models sometimes
+            # bury the verdict in prose on the first attempt.
+            print("[qa_bot] reviewer reply unparseable — retrying once", flush=True)
+            out = run_reviewer_command(
+                site_dir, prompt + "\nReply with ONLY the JSON block, no other text.",
+                timeout=timeout)
+            parsed = parse_review_output(out)
+    except RuntimeError as e:
+        print(f"[qa_bot] reviewer abstained ({e}) — structural verdict stands", flush=True)
+        return {"engine": "abstained", "model": model, "issues": [],
+                "praise": [], "verdict": "abstain", "error": str(e)}
+    parsed = parse_review_output(out)
+    if parsed is None:
+        print("[qa_bot] reviewer abstained (unparseable verdict) — structural verdict stands",
+              flush=True)
+        return {"engine": "abstained", "model": model, "issues": [],
+                "praise": [], "verdict": "abstain",
+                "raw_snippet": (out or "")[:300]}
+    print(f"[qa_bot] reviewer verdict: {parsed['verdict']} "
+          f"({len(parsed['issues'])} issue(s))", flush=True)
+    return {"engine": "opencode", "model": model, **parsed}
 
 
 def check_site(site_dir: Path, lead: dict, threshold: int) -> dict:
@@ -101,6 +331,10 @@ def check_site(site_dir: Path, lead: dict, threshold: int) -> dict:
     soup = BeautifulSoup(html, "html.parser") if html else None
     details["bytes"] = {"html": len(html), "css": len(css), "js": len(js),
                         "total_kb": round((len(html) + len(css) + len(js)) / 1024, 1)}
+    local_imgs = [p for p in site_dir.glob("photo-*.*")
+                  if p.suffix.lower() in (".jpg", ".jpeg", ".png", ".webp")]
+    details["bytes"]["images_kb"] = round(sum(p.stat().st_size for p in local_imgs) / 1024, 1)
+    details["bytes"]["n_images"] = len(local_imgs)
 
     if soup is None:
         return {"lead_id": lid, "passed": False, "score": 0, "issues": issues,
@@ -192,6 +426,24 @@ def check_site(site_dir: Path, lead: dict, threshold: int) -> dict:
                  "Compress images, drop unused CSS/JS")
     if len(re.findall(r"<img", html, re.I)) > 15:
         penalize(2, "Many unoptimized images", "Lazy-load below-fold images (loading='lazy')")
+    if details["bytes"]["images_kb"] > 1500:
+        penalize(3, f"Local photos total {details['bytes']['images_kb']}KB — too heavy",
+                 "Recompress photos (each ≤450KB, total ≤1.5MB)")
+    for p in local_imgs:
+        if p.stat().st_size > 500 * 1024:
+            penalize(2, f"Photo {p.name} is {round(p.stat().st_size / 1024)}KB (cap 500KB)",
+                     "Recompress this photo before deploy")
+            break
+    if soup:
+        hotlinked = [i.get("src", "") for i in soup.find_all("img", src=True)
+                     if re.match(r"https?://", (i.get("src") or "").strip(), re.I)]
+        if hotlinked:
+            penalize(3, f"Hotlinked remote image(s): {hotlinked[0][:80]}",
+                     "Download real photos into the site folder — never hotlink (they rot/get blocked)")
+        no_alt = [i for i in soup.find_all("img") if not (i.get("alt") or "").strip()]
+        if no_alt:
+            penalize(2, f"{len(no_alt)} image(s) missing alt text",
+                     "Describe every photo with a real alt attribute")
 
     # -- Broken local elements -------------------------------------------------------
     for tag, attr in (("a", "href"), ("img", "src"), ("link", "href"), ("script", "src")):
@@ -215,7 +467,7 @@ def check_site(site_dir: Path, lead: dict, threshold: int) -> dict:
     if words < 400:
         penalize(6, f"Only ~{words} words of copy — too thin to sell anything",
                  "Write 400+ words of specific copy (services, about, reviews, hours)")
-    n_cards = len(soup.select(".cards li, .card, .cap-list li, .price-card, .svc-list li")) if soup else 0
+    n_cards = len(soup.select(".cards li, .card, .stack-card, .cap-list li, .price-card, .svc-list li")) if soup else 0
     if n_cards < 4:
         penalize(6, f"Only {n_cards} service cards — looks unfinished",
                  "Offer 6 specific service cards for this category, not 3 generic ones")
@@ -270,6 +522,105 @@ def check_site(site_dir: Path, lead: dict, threshold: int) -> dict:
     if "<table" not in html.lower() and "hour" not in body_text.lower():
         penalize(2, "No hours table", "Add an hours table in the visit section")
 
+    # -- SEO / sharing identity ---------------------------------------------
+    canonical_ok = any(
+        lk.get("rel") and "canonical" in [str(r).lower() for r in lk.get("rel")]
+        for lk in soup.find_all("link"))
+    if not canonical_ok:
+        penalize(2, "No canonical URL", "Add <link rel='canonical'> so shares/SEO point to one URL")
+    if not soup.find("meta", attrs={"property": re.compile(r"^og:", re.I)}):
+        penalize(2, "No Open Graph metadata",
+                 "Add og:title/og:description/og:image so link previews render correctly")
+    if not soup.find("meta", attrs={"name": re.compile(r"^twitter:card$", re.I)}):
+        penalize(1, "No Twitter card metadata", "Add name='twitter:card' meta")
+    ld = soup.find("script", attrs={"type": re.compile(r"^application/ld\+json$", re.I)})
+    if not ld:
+        penalize(2, "No JSON-LD structured data",
+                 "Add a LocalBusiness/Restaurant JSON-LD block (name, address, phone)")
+    if "overflow-x:clip" not in css and "overflow-x:hidden" not in css \
+            and "overflow-x:clip" not in html_low and "overflow-x:hidden" not in html_low:
+        penalize(3, "No layout overflow guard — page may scroll horizontally",
+                 "Add overflow-x:clip on html/body AND keep the marquee in an overflow:hidden wrapper")
+    if "marquee" in html_low and 'class="marquee"' in html and "aria-hidden" not in html_low:
+        penalize(1, "Marquee duplicates not hidden from screen readers",
+                 "Set aria-hidden='true' on the decorative marquee")
+
+    # -- Review carousel ARIA -----------------------------------------------
+    tablist = soup.find(attrs={"role": "tablist"})
+    tabpanels = soup.find_all(attrs={"role": "tabpanel"})
+    if tablist and not tabpanels:
+        penalize(2, "Review slider tabs have no tab panels",
+                 "Pair each dot (role=tab) with a quote card (role=tabpanel + aria-labelledby)")
+    if tabpanels and not soup.find(attrs={"role": "tab"}):
+        penalize(2, "Review tab panels have no tab controls",
+                 "Give the dot controls role='tab' with aria-controls pointing at each panel")
+
+    # -- Award-tier design rubric (Awwwards bar: Design 40, Usability 30) ----
+    brand = _root_var(css, "brand") or "#000000"
+    brand2 = _root_var(css, "brand2") or brand
+    gold = _root_var(css, "gold") or "#000000"
+    bg = _root_var(css, "bg") or "#ffffff"
+    dark = _root_var(css, "dark") or "#000000"
+    ink = _body_text_color(css)
+    muted = _root_var(css, "muted")
+    btn_bg = brand if (_contrast("#ffffff", brand) or 0) >= \
+        (_contrast("#ffffff", brand2) or 0) else brand2
+    c_btn = _contrast("#ffffff", btn_bg)
+    if c_btn is not None and c_btn < 4.5:
+        penalize(3, f"Button text contrast {c_btn:.1f}:1 on brand (needs 4.5:1)",
+                 "Darken --brand/--brand2 until white button text passes WCAG AA")
+    if ink is not None:
+        c_body = _contrast(ink, bg)
+        if c_body is not None and c_body < 4.5:
+            penalize(3, f"Body text contrast {c_body:.1f}:1 (needs 4.5:1)",
+                     "Fix body text/background pairing until it passes WCAG AA")
+    c_gold = _contrast(gold, dark)
+    if c_gold is not None and c_gold < 3.0:
+        penalize(2, f"Gold accent contrast {c_gold:.1f}:1 on dark (needs 3:1)",
+                 "Brighten --gold until accents pass 3:1 on dark surfaces")
+    c_muted = _contrast(muted, bg) if muted else None
+    if c_muted is not None and c_muted < 4.5:
+        penalize(2, f"Secondary text contrast {c_muted:.1f}:1 (needs 4.5:1)",
+                 "Darken --muted until secondary copy passes WCAG AA")
+    if not re.search(r"font-size:\s*clamp\([^)]*vw", css):
+        penalize(2, "No fluid display typography (clamp + viewport units)",
+                 "Set the hero H1 with clamp() + vw so display type scales cinematically")
+    fams = set()
+    for link in soup.find_all("link", href=True):
+        m = re.search(r"family=([^:&]+)", link["href"])
+        if m:
+            fams.add(m.group(1).lower())
+    if len(fams) > 3:
+        penalize(1, f"{len(fams)} font families loaded — pick two at most",
+                 "Limit Google Fonts to one display + one body family")
+    if "prefers-reduced-motion" not in css and "prefers-reduced-motion" not in js_low:
+        penalize(2, "Motion ignores prefers-reduced-motion",
+                 "Gate every animation/auto-rotate on prefers-reduced-motion")
+    if (re.search(r"class=\"[^\"]*\breveal\b", html_low) and ".reveal" in css
+            and "opacity:0" in css.replace(" ", "") and "body.js" not in css):
+        penalize(3, "Scroll reveals hide content when JS is off",
+                 "Scope hidden initial states behind a JS-added class (e.g. body.js)")
+    wow_markers = ("heroAurora" in html, 'class="stack"' in html,
+                   "data-count" in html, "hero-ghost" in html,
+                   "horizontal-scroll" in html, "sticky-stack" in html)
+    if not any(wow_markers):
+        penalize(2, "No signature moment — competent but forgettable",
+                 "Add ONE: aurora/canvas hero, sticky-stacking cards, count-up stats, "
+                 "or scroll-driven horizontal gallery")
+    if "feTurbulence" not in css and "feTurbulence" not in html \
+            and "::selection" not in css and "hero-ghost" not in html:
+        penalize(1, "No texture craft (grain, selection color, ghost art)",
+                 "Add film grain, ::selection styling, or layered ghost art")
+
+    day_only = re.compile(
+        r"^(mon(day)?|tue(sday)?|wed(nesday)?|thu(rsday)?|fri(day)?|"
+        r"sat(urday)?|sun(day)?)\s*:?\s*$", re.I)
+    split_days = [p.get_text(strip=True) for p in soup.find_all("p")
+                  if day_only.match(p.get_text(strip=True) or "")]
+    if split_days:
+        penalize(2, f"Footer hours split across lines ({', '.join(split_days)})",
+                 "Keep each day paired with its hours on a single line, e.g. 'Fri: 11 AM – 2 AM'")
+
     score = max(0, min(100, score))
     passed = score >= threshold
     if not passed:
@@ -288,6 +639,10 @@ def parse_args(argv=None):
     p.add_argument("--threshold", "-t", type=int, default=PASS_THRESHOLD)
     p.add_argument("--output", "-o", default=None,
                    help="Report path (default: <site>/qa_report.json)")
+    p.add_argument("--no-reviewer", action="store_true",
+                   help="Skip Gate 2 (opencode taste review); structural checks only")
+    p.add_argument("--review-timeout", type=int, default=REVIEW_TIMEOUT,
+                   help="Seconds for the reviewer instance (default: 180)")
     return p.parse_args(argv)
 
 
@@ -354,6 +709,23 @@ def main(argv=None, site_path: str | Path | None = None, **kwargs) -> str | int:
         print(f"[qa_bot] ERROR: site not found: {site_dir}", file=sys.stderr)
         return 2
     report = check_site(site_dir, load_lead_from_site(site_dir), args.threshold)
+    # Gate 2 (taste): only when structure passed — no point having a critic
+    # review a site missing files. Reviewer issues merge into the report so
+    # Bot 5 fixes them on rebuild; each costs 2 points (cap 10).
+    reviewer: dict = {"engine": "skipped", "model": _reviewer_model(),
+                      "issues": [], "praise": [], "verdict": "abstain"}
+    if report.get("passed") and not args.no_reviewer:
+        reviewer = review_with_opencode(site_dir, load_lead_from_site(site_dir),
+                                        report, timeout=args.review_timeout)
+        tagged = [f"[reviewer] {i}" for i in reviewer.get("issues", [])]
+        if tagged:
+            report["issues"].extend(tagged)
+            report["score"] = max(0, report["score"] - min(10, 2 * len(tagged)))
+            if reviewer.get("verdict") == "fail":
+                report["passed"] = False
+                report.setdefault("recommendations", []).append(
+                    "Fix the [reviewer] taste issues above in Bot 5, then re-run QA")
+    report["reviewer"] = reviewer
     out_path = Path(args.output) if args.output else (site_dir / "qa_report.json")
     append_report(out_path, report)
     # Always mirror inside the site folder for the pipeline.

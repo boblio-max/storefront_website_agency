@@ -1,0 +1,47 @@
+[
+  {
+    "lead_id": "lead_00010",
+    "passed": true,
+    "score": 90,
+    "issues": [
+      "[reviewer] index.html #visit (lines 118-119): no real hours anywhere - 'Hours vary by day - call for today's hours' pushes work onto the visitor and a coffee shop's hours are core info. Fix: publish the actual weekly schedule via the .hours table styles that already exist (styles.css:85) or an open/closed state.",
+      "[reviewer] index.html line 80: 'The neighborhood spot for Coffee shop at 10610 Woodinville Dr' reads as template glue around a business-type slug. Fix: natural copy, e.g. 'A neighborhood coffee shop at 10610 Woodinville Dr, Bothell - quick counter, warm dining room, everything made to order.'",
+      "[reviewer] index.html line 51: brand and slogan share one h1 ('Noli Coffee Freshly brewed in the neighborhood'), so at 360px the display line wraps into an awkward 3-4 word stack and the accent fights the name. Fix: h1 'Noli Coffee' + a styled strapline below, or trim the accent to one tight line ('freshly brewed locally').",
+      "[reviewer] styles.css:78 .dot is 12x12px - the review carousel controls fail the ~44px thumb target at 360px. Fix: keep the 12px visual but wrap it in a 32px+ hit area (padding + flex centering).",
+      "[reviewer] Dead code shipped: .hero-aurora (styles.css:118) and #heroAurora canvas logic (script.js:130) reference an element that does not exist in index.html, and .hours styles (styles.css:85-86) are unused. Fix: remove or wire up before final build."
+    ],
+    "recommendations": [],
+    "checked_at": "2026-09-22T03:03:51.886270+00:00",
+    "site_dir": "generated_sites\\noli-coffee",
+    "details": {
+      "bytes": {
+        "html": 27812,
+        "css": 14430,
+        "js": 9384,
+        "total_kb": 50.4,
+        "images_kb": 0.0,
+        "n_images": 0
+      },
+      "words": 465,
+      "sections": 8
+    },
+    "reviewer": {
+      "engine": "opencode",
+      "model": "opencode/big-pickle",
+      "verdict": "pass",
+      "issues": [
+        "index.html #visit (lines 118-119): no real hours anywhere - 'Hours vary by day - call for today's hours' pushes work onto the visitor and a coffee shop's hours are core info. Fix: publish the actual weekly schedule via the .hours table styles that already exist (styles.css:85) or an open/closed state.",
+        "index.html line 80: 'The neighborhood spot for Coffee shop at 10610 Woodinville Dr' reads as template glue around a business-type slug. Fix: natural copy, e.g. 'A neighborhood coffee shop at 10610 Woodinville Dr, Bothell - quick counter, warm dining room, everything made to order.'",
+        "index.html line 51: brand and slogan share one h1 ('Noli Coffee Freshly brewed in the neighborhood'), so at 360px the display line wraps into an awkward 3-4 word stack and the accent fights the name. Fix: h1 'Noli Coffee' + a styled strapline below, or trim the accent to one tight line ('freshly brewed locally').",
+        "styles.css:78 .dot is 12x12px - the review carousel controls fail the ~44px thumb target at 360px. Fix: keep the 12px visual but wrap it in a 32px+ hit area (padding + flex centering).",
+        "Dead code shipped: .hero-aurora (styles.css:118) and #heroAurora canvas logic (script.js:130) reference an element that does not exist in index.html, and .hours styles (styles.css:85-86) are unused. Fix: remove or wire up before final build."
+      ],
+      "praise": [
+        "Palette is genuinely coffee-branded - roast brown #4a2c17 + gold #d9a441 on cream, exactly two accents used with discipline, no generic gradient soup",
+        "Fraunces/Inter pairing with a confident clamp-based display scale and tight letter-spacing; the hero hierarchy lands name, offer, CTA in one glance",
+        "Copy is specific and believable - real street address, phone, single-origin espresso, pour-overs, take-home beans, catering, 5.0/63 reviews - passes the one-visit test",
+        "Sticky stacked service cards, marquee, layered hero and count-ups give it real motion personality without noise"
+      ]
+    }
+  }
+]

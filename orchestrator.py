@@ -17,6 +17,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import time as _time
 from pathlib import Path
 
 import maps_scraper as ms
@@ -34,6 +35,14 @@ def _require(result, stage: str):
     if isinstance(result, int):
         raise RuntimeError(f"{stage} failed with exit code {result}")
     return result
+
+
+def _stage(t0: float, label: str) -> float:
+    """Heartbeat: timestamped progress line so long autonomous runs never
+    look hung. Returns a fresh timestamp (stages chain)."""
+    now = _time.monotonic()
+    print(f"[orchestrator] {label} (t+{now - t0:.0f}s)", flush=True)
+    return now
 
 
 def notify_owner(subject: str, body: str, notify_to: str | None = None) -> bool:
@@ -201,12 +210,15 @@ def _process_lead(entry: dict, lid: str, leads_path: str, output_dir: str,
                   notify: bool, notify_to: str | None,
                   preview: bool = True) -> None:
     """Generate → QA → deploy → outreach for one lead. Raises RuntimeError."""
+    t0 = _time.monotonic()
+    print(f"[orchestrator] {lid}: Bot 5 generate...", flush=True)
     website_path = _require(
         wg.main(lead_data=entry, output_dir=output_dir,
                 force=force, no_opencode=no_opencode,
                 require_opencode=require_opencode, preview=preview),
         "website_generator",
     )
+    t0 = _stage(t0, f"{lid}: Bot 5 done → Bot 6 QA")
 
     # Bot 6: loop until QA passes, then print good.
     # Retries force a regenerate so QA re-checks fresh output.
@@ -235,6 +247,7 @@ def _process_lead(entry: dict, lid: str, leads_path: str, output_dir: str,
     rc = dmgr.main(path_to_file=website_path, prod=prod)
     if rc != 0:
         raise RuntimeError(f"deployment_manager failed for {lid} (exit {rc})")
+    t0 = _stage(t0, f"{lid}: Bot 6 QA good → Bot 7 deployed")
 
     # Lead secured: site is live. Tell the owner.
     name = entry.get("name", lid)
@@ -265,7 +278,9 @@ def _process_lead(entry: dict, lid: str, leads_path: str, output_dir: str,
         raise RuntimeError(f"email_generator failed for {lid} (exit 1)")
     if isinstance(email_res, int):
         print(f"[orchestrator] email skipped for {lid} (exit {email_res}: "
-              f"no address, suppressed, or no SMTP transport)", flush=True)
+              f"no verified address, opt-out suppression, or no SMTP transport "
+              f"— set AGENCY_SMTP_PASS/AGENCY_IMAP_PASS app passwords to enable mail)",
+              flush=True)
     else:
         print(f"[orchestrator] email {'sent' if send_emails else 'drafted'} for {lid}",
               flush=True)

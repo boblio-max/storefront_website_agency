@@ -1,0 +1,45 @@
+[
+  {
+    "lead_id": "lead_00004",
+    "passed": true,
+    "score": 92,
+    "issues": [
+      "[reviewer] Crowded hero CTA stack: three buttons (Call / Get a Free Quote / Explore Services) plus the header Call button and topbar phone all compete in the first viewport. Keep the primary 'Call' + secondary 'Get a Free Quote'; demote 'Explore Services' to a plain text link or remove it (index.html:53-57).",
+      "[reviewer] Motion-decor overload undercuts the garage's trust tone: pulsing loader, spinning dashed ring + wrench geometry in the hero (styles.css:104-106), magnetic buttons, word-mask reveals, count-ups, and grain add up to 'award template' rather than 'neighborhood shop'. Replace the abstract ring/wrench visual with real photographic texture (workshop or a quoted-bill motif) and cut the ring spin + magnetic cursor effect.",
+      "[reviewer] Hours are dodged everywhere — the Visit section only says 'Hours vary by day — call' (index.html:122) and the topbar echoes it; hours are the top info need for a local repair visitor. Publish a real weekly hours block (or a concrete 'Open today until 6pm' line) in the Visit section.",
+      "[reviewer] Redundant triple reassurance in sequence: the marquee band (index.html:68-70) repeating 'One Repair', the four-item trust strip (index.html:71), and the stats row (index.html:72) all re-state the same up-front-quote/warranty claims back-to-back. Keep the strip + stats and cut the marquee, or space them apart."
+    ],
+    "recommendations": [],
+    "checked_at": "2026-09-22T02:54:23.333989+00:00",
+    "site_dir": "generated_sites\\one-repair",
+    "details": {
+      "bytes": {
+        "html": 27568,
+        "css": 15076,
+        "js": 9384,
+        "total_kb": 50.8,
+        "images_kb": 0.0,
+        "n_images": 0
+      },
+      "words": 475,
+      "sections": 8
+    },
+    "reviewer": {
+      "engine": "opencode",
+      "model": "opencode/big-pickle",
+      "verdict": "pass",
+      "issues": [
+        "Crowded hero CTA stack: three buttons (Call / Get a Free Quote / Explore Services) plus the header Call button and topbar phone all compete in the first viewport. Keep the primary 'Call' + secondary 'Get a Free Quote'; demote 'Explore Services' to a plain text link or remove it (index.html:53-57).",
+        "Motion-decor overload undercuts the garage's trust tone: pulsing loader, spinning dashed ring + wrench geometry in the hero (styles.css:104-106), magnetic buttons, word-mask reveals, count-ups, and grain add up to 'award template' rather than 'neighborhood shop'. Replace the abstract ring/wrench visual with real photographic texture (workshop or a quoted-bill motif) and cut the ring spin + magnetic cursor effect.",
+        "Hours are dodged everywhere — the Visit section only says 'Hours vary by day — call' (index.html:122) and the topbar echoes it; hours are the top info need for a local repair visitor. Publish a real weekly hours block (or a concrete 'Open today until 6pm' line) in the Visit section.",
+        "Redundant triple reassurance in sequence: the marquee band (index.html:68-70) repeating 'One Repair', the four-item trust strip (index.html:71), and the stats row (index.html:72) all re-state the same up-front-quote/warranty claims back-to-back. Keep the strip + stats and cut the marquee, or space them apart."
+      ],
+      "praise": [
+        "Copy is specific and confident — real street address, phone, 4.9/83 reviews, 'Diagnostics before dollars', 'approve before we wrench', 'fast scheduling, most jobs within days', no lorem ipsum or generic welcome.",
+        "Color restraint is disciplined: navy/gold/orange built from one family, applied consistently across hero, badges, and CTAs; the palette actually whispers 'automotive' instead of default gradient soup.",
+        "Type pairing (Archivo Black display + Archivo body) with a proper clamp scale and capped line-length tagline gives a clean rhythm from hero through foot.",
+        "Strong one-visit result: name, trade, offer, and phone are unmissable via topbar, sticky header, hero, CTA banner, and footer."
+      ]
+    }
+  }
+]

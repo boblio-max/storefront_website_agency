@@ -35,3 +35,6 @@ py orchestrator.py --reply "..." --reply-lead <id>         # manual reply handli
 - Env: `AGENCY_SMTP_PASS` + `AGENCY_IMAP_PASS` (Gmail app passwords;
   mailbox defaults to `storefront.webs@gmail.com`),
   `AGENCY_GIT_NAME/EMAIL`, `AGENCY_GH_USER`, `AGENCY_NAME`.
+- Wallet env: `AGENCY_STRIPE_KEY` (secret, live cards), `AGENCY_STRIPE_LINK_BASE`,
+  `AGENCY_BANK_REF` (public reference only), `AGENCY_CRYPTO_ADDRESSES` (watch-only JSON),
+  `AGENCY_DEFAULT_PRICE_CENTS` (default 29900). Never commit secrets (`.env*` ignored).

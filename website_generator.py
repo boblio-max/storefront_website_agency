@@ -46,10 +46,16 @@ import hashlib
 import html as htmlmod
 import json
 import os
+import re
 import shutil
+import struct
 import subprocess
 import sys
+import urllib.parse
+from html.parser import HTMLParser
 from pathlib import Path
+
+import requests
 
 try:  # Windows consoles default to cp1252; keep unicode output from crashing
     sys.stdout.reconfigure(encoding="utf-8")
@@ -208,7 +214,11 @@ FONT_PAIRINGS = {
     "friendly_rounded": ("'Poppins', sans-serif", "'Nunito Sans', sans-serif",
         "https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Nunito+Sans:wght@400;600;700&display=swap"),
     "elegant_serif": ("'Playfair Display', serif", "'Source Sans 3', sans-serif",
-        "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700&display=swap"),
+        "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,500;1,600&family=Source+Sans+3:wght@400;500;600;700&display=swap"),
+    "condensed_punch": ("'Anton', sans-serif", "'Inter', sans-serif",
+        "https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&display=swap"),
+    "modern_grotesk": ("'Space Grotesk', sans-serif", "'Inter', sans-serif",
+        "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap"),
 }
 
 # Small inline-SVG icon set (currentColor, 24x24 viewBox) — replaces emoji.
@@ -241,6 +251,59 @@ def _icon(name: str, size: int = 22) -> str:
     return (f'<svg viewBox="0 0 24 24" width="{size}" height="{size}" fill="none" '
             f'stroke="currentColor" stroke-width="1.8" stroke-linecap="round" '
             f'stroke-linejoin="round" aria-hidden="true">{body}</svg>')
+
+
+# Film grain overlay shared by every template build (award-level texture).
+_GRAIN_URI = ("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'>"
+              "<filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/>"
+              "</filter><rect width='140' height='140' filter='url(%23n)' opacity='0.55'/></svg>")
+
+
+def _texture_uri(icon: str) -> str:
+    """Tileable SVG pattern data-URI giving each category its own art world
+    (papel-picado dots for food, blueprint grid for trades, pinstripes for
+    pros, ...). White motifs at low opacity — designed for dark heroes."""
+    bodies = {
+        "dots": "<circle cx='2' cy='2' r='1.5' fill='%23FFFFFF' fill-opacity='0.20'/>",
+        "grid": ("<path d='M28 0H0V28' fill='none' stroke='%23FFFFFF' stroke-opacity='0.12'/>"
+                 "<circle cx='0' cy='0' r='1.4' fill='%23FFFFFF' fill-opacity='0.22'/>"),
+        "plus": ("<path d='M13 10h6M16 7v6' stroke='%23FFFFFF' stroke-opacity='0.16' stroke-width='1.6'/>"
+                 "<circle cx='16' cy='16' r='1.2' fill='%23FFFFFF' fill-opacity='0.16'/>"),
+        "diamond": ("<path d='M16 8l5 8-5 8-5-8Z' fill='none' stroke='%23FFFFFF' stroke-opacity='0.16'/>"),
+        "pinstripe": "<path d='M0 32L32 0' stroke='%23FFFFFF' stroke-opacity='0.10' stroke-width='5'/>",
+        "chevron": ("<path d='M0 16L16 0M0 32L32 0M16 32L32 16' stroke='%23FFFFFF' "
+                    "stroke-opacity='0.10' stroke-width='2'/>"),
+        "rings": ("<circle cx='16' cy='16' r='9' fill='none' stroke='%23FFFFFF' stroke-opacity='0.14'/>"
+                  "<circle cx='16' cy='16' r='2' fill='%23FFFFFF' fill-opacity='0.18'/>"),
+    }
+    fam = {
+        "dots": ("flame", "coffee", "star", "pin", "clock", "phone", "check", "shield"),
+        "grid": ("wrench", "bolt", "home"),
+        "plus": ("heart", "leaf"),
+        "diamond": ("sparkle",),
+        "pinstripe": ("scale", "chart", "key"),
+        "chevron": ("dumbbell",),
+        "rings": ("camera", "paw"),
+    }
+    body = bodies["dots"]
+    for kind, icons in fam.items():
+        if icon in icons:
+            body = bodies[kind]
+            break
+    return ("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'>"
+            + body + "</svg>")
+
+
+FOOD_CATEGORY_KEYS = ("coffee", "espresso", "cafe", "café", "tea", "bakery", "bagel",
+                       "mexican", "restaurant", "taco", "pizza", "sushi", "burger",
+                       "chicken", "deli", "bar", "grill", "bistro", "eatery", "food",
+                       "bbq", "noodle", "thai", "italian")
+
+
+def _is_food_category(category: str) -> bool:
+    """True for restaurants/bars/cafes: order-and-visit language, never quotes."""
+    c = (category or "").lower()
+    return any(k in c for k in FOOD_CATEGORY_KEYS)
 
 
 def _category_profile(category: str, name: str) -> dict:
@@ -286,15 +349,16 @@ def _category_profile(category: str, name: str) -> dict:
             font="warm_editorial", icon="flame",
             hero_kicker="Cooked fresh, served fast",
             hero_sub=("House recipes, generous portions, and food made to order. "
-                       "Dine in, take out, or feed the whole crew — check the menu below."),
+                       "Dine in, take out, or feed the whole crew — see crowd favorites below."),
             services=[
-                ("Signature Mains", "The dishes regulars drive across town for, made to order."),
-                ("Family & Party Platters", "Feed 3–8 with sides, bread, and sauces included."),
-                ("Takeout in ~15 Min", "Call ahead and skip the wait — hot at the counter."),
-                ("Lunch Specials", "Fast midday plates that beat fast food on price and taste."),
-                ("Catering", "Trays and platters for offices, teams, and celebrations."),
+                ("Signature Mains", "The dishes regulars drive across town for — entrees $14–$24, made to order."),
+                ("Family & Party Platters", "Feed 3–8 with sides, bread, and sauces included — from $45."),
+                ("Takeout in ~15 Min", "Call ahead and skip the wait — hot at the counter in about 15 minutes."),
+                ("Lunch Specials", "Fast midday plates $11–$14 that beat fast food on price and taste."),
+                ("Catering", "Trays and platters for offices, teams, and celebrations — quotes within a day."),
                 ("Daily Specials", "Ask what's cooking today — it sells out most days."),
             ],
+            icons=["flame", "heart", "clock", "star", "bolt", "coffee"],
             strip=[("flame", "Made Fresh", "Cooked to order, never frozen"),
                    ("heart", "Family Platters", "Feed the whole crew"),
                    ("clock", "Fast Takeout", "Ready in ~15 minutes"),
@@ -438,7 +502,7 @@ def _category_profile(category: str, name: str) -> dict:
                             "personal train", "boxing", "climbing")):
         return profile(
             palette=("#1a1a1a", "#e63946", "#f4a261", "#f7f7f5", "#0d0d0d", "#e6e6e2"),
-            font="bold_industrial", icon="dumbbell",
+            font="condensed_punch", icon="dumbbell",
             hero_kicker="Real results, real community",
             hero_sub=("Coached workouts, a welcoming crew, and programming that scales "
                        "to every fitness level. Your first class is on us."),
@@ -513,7 +577,7 @@ def _category_profile(category: str, name: str) -> dict:
     if any(k in c for k in ("photo", "studio", "videograph", "design agency", "marketing")):
         return profile(
             palette=("#111111", "#6c5ce7", "#00d4c8", "#f7f7fb", "#0a0a0a", "#e6e6f0"),
-            font="clean_modern", icon="camera",
+            font="modern_grotesk", icon="camera",
             hero_kicker="Work that actually gets noticed",
             hero_sub=("Concept to final delivery, handled by people who care about the "
                        "small details that make work look genuinely professional."),
@@ -563,10 +627,513 @@ def _category_profile(category: str, name: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Production hardening: SEO identity metadata, overflow guard, carousel ARIA,
+# marquee handling, and optional real form endpoint. Applied to every built
+# site (both engines) so these outcomes are never left to model luck.
+# ---------------------------------------------------------------------------
+
+# Production base URL template. Set AGENCY_BASE_URL to a stable domain that
+# maps to each generated site (use {slug} as the site placeholder, e.g.
+# "https://{slug}.example.com/"); otherwise default to the per-site Vercel URL.
+AGENCY_BASE_URL = os.environ.get("AGENCY_BASE_URL", "").rstrip("/")
+
+
+def _site_base_url(slug: str) -> str:
+    if AGENCY_BASE_URL:
+        return AGENCY_BASE_URL.replace("{slug}", slug) + \
+            ("" if AGENCY_BASE_URL.endswith("/") else "/")
+    return f"https://{slug}.vercel.app/"
+
+
+def _schema_type(category: str) -> str:
+    c = (category or "").lower()
+    if any(k in c for k in ("restaurant", "bar", "cafe", "coffee", "bakery", "taco",
+                            "pizza", "burger", "grill", "cantina", "taqueria", "eatery",
+                            "food", "kitchen", "brewery", "nightclub")):
+        return "Restaurant"
+    if any(k in c for k in ("auto", "car", "tire", "mechanic", "repair", "garage",
+                            "detailing", "body shop", "truck")):
+        return "AutoRepair"
+    if any(k in c for k in ("dent", "ortho")):
+        return "Dentist"
+    if any(k in c for k in ("salon", "barber", "hair", "spa", "nail", "beauty", "lash", "tattoo")):
+        return "HealthAndBeautyBusiness"
+    if any(k in c for k in ("plumb", "hvac", "electric", "roof", "landscap", "pest",
+                            "clean", "janitor", "window", "remodel", "paint", "floor")):
+        return "HomeAndConstructionBusiness"
+    if any(k in c for k in ("veterinar", "vet ", "pet", "groom")):
+        return "VeterinaryCare"
+    if any(k in c for k in ("gym", "fitness", "yoga", "pilates", "crossfit", "martial")):
+        return "HealthClub"
+    if any(k in c for k in ("law", "legal", "attorney")):
+        return "Attorney"
+    if any(k in c for k in ("hotel", "inn", "motel", "lodg")):
+        return "Hotel"
+    if any(k in c for k in ("church", "religious", "temple", "mosque")):
+        return "Church"
+    return "LocalBusiness"
+
+
+def _jsonld_data(b: dict, url: str) -> dict:
+    """LocalBusiness JSON-LD built strictly from lead data (name, category,
+    address, phone, website, rating). Hours are intentionally NOT invented
+    here — many leads have no verified hours, and a wrong opening-hours
+    block is worse than none."""
+    address_raw = (b.get("address") or "").strip()
+    addr: dict = {}
+    if address_raw:
+        fields = [f.strip() for f in address_raw.split(",") if f.strip()]
+        if len(fields) >= 1:
+            addr["streetAddress"] = fields[0]
+        if len(fields) >= 2:
+            addr["addressLocality"] = fields[1]
+            rest = ", ".join(fields[2:])
+            m = re.search(r"([A-Za-z]{2})\s+(\d{4,5}(?:-\d{4})?)\s*$", rest)
+            if m:
+                addr["addressRegion"] = m.group(1)
+                addr["postalCode"] = m.group(2)
+    phone_digits = "".join(ch for ch in (b.get("phone") or "") if ch.isdigit())
+    name = b.get("name") or "Local Business"
+    category = b.get("category") or ""
+    data = {
+        "@context": "https://schema.org",
+        "@type": _schema_type(category),
+        "name": name,
+        "description": ((f"{category} serving the neighborhood at {address_raw}."
+                         if category else f"Serving the neighborhood at {address_raw}.")),
+        "image": url + "og-image.svg",
+        "url": url,
+    }
+    if addr:
+        data["address"] = {"@type": "PostalAddress", **addr}
+    elif address_raw:
+        data["address"] = address_raw
+    if phone_digits:
+        data["telephone"] = "+1" + phone_digits[-10:] if len(phone_digits) >= 10 else "+" + phone_digits
+    if b.get("website"):
+        data["sameAs"] = [str(b["website"])]
+    if b.get("rating"):
+        agg = {"@type": "AggregateRating", "ratingValue": str(b["rating"])}
+        if b.get("review_count"):
+            agg["reviewCount"] = str(b["review_count"])
+        data["aggregateRating"] = agg
+    return data
+
+
+def _seo_head(b: dict, slug: str) -> str:
+    """Canonical + Open Graph + Twitter card + JSON-LD block for <head>.
+    Gap-filling: callers add only the pieces still missing from the page."""
+    url = _site_base_url(slug)
+    name = b.get("name") or "Local Business"
+    category = b.get("category") or ""
+    address = b.get("address") or ""
+    phone = b.get("phone") or "us today"
+    image = url + "og-image.svg"
+    desc = f"{name} — {category} at {address}. Call {phone} for a free quote."
+    if len(desc) > 200:
+        desc = desc[:197].rstrip() + "..."
+    head = [
+        f'<link rel="canonical" href="{esc(url)}">',
+        f'<meta property="og:type" content="website">',
+        f'<meta property="og:site_name" content="{esc(name)}">',
+        f'<meta property="og:url" content="{esc(url)}">',
+        f'<meta property="og:title" content="{esc(name)} — {esc(category)}">',
+        f'<meta property="og:description" content="{esc(desc)}">',
+        f'<meta property="og:image" content="{esc(image)}">',
+        f'<meta name="twitter:card" content="summary_large_image">',
+        f'<meta name="twitter:title" content="{esc(name)}">',
+        f'<meta name="twitter:description" content="{esc(desc)}">',
+        f'<meta name="twitter:image" content="{esc(image)}">',
+        f'<script type="application/ld+json">{json.dumps(_jsonld_data(b, url), ensure_ascii=False)}</script>',
+    ]
+    return "\n".join(head)
+
+
+def _write_og_image(target: Path, b: dict) -> Path:
+    """1200x630 composed share card: palette scene, ghost monogram, name in
+    display scale, rating proof, gold rule, builder credit."""
+    name = b.get("name") or "Local Business"
+    category = b.get("category") or "Local Business"
+    prof = _category_profile(category, name)
+    brand, brand2, gold, bg, dark, _line = prof["palette"]
+    initials = "".join(w[0] for w in str(name).split()[:2]).upper() or "LB"
+    fs = 72 if len(name) <= 22 else (58 if len(name) <= 32 else 46)
+    rating = b.get("rating")
+    reviews = b.get("review_count")
+    proof = (f"★ {rating} · {reviews} verified reviews" if rating and reviews
+             else (f"★ {rating} rated" if rating else "Trusted local business"))
+    svg = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">'
+        f'<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">'
+        f'<stop offset="0" stop-color="{dark}"/><stop offset=".55" stop-color="{brand}"/>'
+        f'<stop offset="1" stop-color="{brand2}"/></linearGradient></defs>'
+        f'<rect width="1200" height="630" fill="url(#g)"/>'
+        f'<circle cx="1050" cy="80" r="320" fill="{gold}" opacity="0.16"/>'
+        f'<circle cx="1050" cy="80" r="200" fill="none" stroke="{gold}" stroke-width="2" opacity="0.35"/>'
+        f'<circle cx="80" cy="580" r="240" fill="#000000" opacity="0.14"/>'
+        f'<text x="1020" y="480" font-family="Georgia, serif" font-size="340" font-weight="700" '
+        f'fill="#ffffff" opacity="0.10" text-anchor="middle">{esc(initials)}</text>'
+        f'<rect x="80" y="120" width="120" height="120" rx="26" fill="{gold}"/>'
+        f'<text x="140" y="202" font-family="Georgia, serif" font-size="64" font-weight="700" '
+        f'fill="{dark}" text-anchor="middle">{esc(initials)}</text>'
+        f'<text x="80" y="330" font-family="Georgia, serif" font-size="{fs}" font-weight="700" '
+        f'fill="#ffffff">{esc(name)}</text>'
+        f'<rect x="80" y="360" width="120" height="6" fill="{gold}"/>'
+        f'<text x="80" y="412" font-family="Arial, Helvetica, sans-serif" font-size="34" '
+        f'fill="{gold}">{esc(proof)}</text>'
+        f'<text x="80" y="470" font-family="Arial, Helvetica, sans-serif" font-size="30" '
+        f'fill="#ffffff" opacity="0.85">{esc(category)}</text>'
+        f'<text x="80" y="560" font-family="Arial, Helvetica, sans-serif" font-size="24" '
+        f'fill="#ffffff" opacity="0.6">Site by {esc(AGENCY_NAME)}</text>'
+        f'</svg>'
+    )
+    img = target / "og-image.svg"
+    img.write_text(svg, encoding="utf-8")
+    return img
+
+
+# ---------------------------------------------------------------------------
+# Real-photo pipeline: scrape the business's own site, download locally.
+# Never hotlink — remote URLs rot, get blocked, and leak referrers. If no
+# usable photos exist, builders fall back to crafted inline-SVG scenes.
+# ---------------------------------------------------------------------------
+
+PHOTO_MAX_FILES = 4
+PHOTO_MIN_WIDTH = 600
+PHOTO_MIN_BYTES = 15_000
+PHOTO_MAX_BYTES = 450_000
+_PHOTO_REJECT = ("logo", "icon", "sprite", "favicon", "pixel", "tracker",
+                 "spacer", "blank", "placeholder", "avatar", "badge", "arrow",
+                 "divider", "schema", ".svg", "1x1", "transparent")
+_PHOTO_UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) StorefrontBot/1.0"}
+
+
+def _img_dimensions(data: bytes) -> tuple[int, int] | None:
+    """Width/height from image bytes (PNG/JPEG/GIF/WebP), stdlib only."""
+    try:
+        if data[:8] == b"\x89PNG\r\n\x1a\n" and len(data) >= 24:
+            return struct.unpack(">II", data[16:24])
+        if data[:6] in (b"GIF87a", b"GIF89a") and len(data) >= 10:
+            return struct.unpack("<HH", data[6:10])
+        if data[:2] == b"\xff\xd8":
+            i = 2
+            while i + 4 < len(data):
+                if data[i] != 0xFF:
+                    break
+                marker = data[i + 1]
+                if marker in (0xC0, 0xC1, 0xC2, 0xC3):
+                    h, w = struct.unpack(">HH", data[i + 5:i + 9])
+                    return w, h
+                if marker in (0xD8, 0xD9) or (0xD0 <= marker <= 0xD7) or marker == 0x01:
+                    i += 2
+                    continue
+                ln = struct.unpack(">H", data[i + 2:i + 4])[0]
+                i += 2 + ln
+            return None
+        if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+            if data[12:16] == b"VP8X" and len(data) >= 30:
+                w = int.from_bytes(data[24:27], "little") + 1
+                h = int.from_bytes(data[27:30], "little") + 1
+                return w, h
+            if data[12:16] == b"VP8L" and len(data) >= 25:
+                bits = int.from_bytes(data[21:25], "little")
+                return (bits & 0x3FFF) + 1, ((bits >> 14) & 0x3FFF) + 1
+            if data[12:16] == b"VP8 " and len(data) >= 30:
+                w = int.from_bytes(data[26:28], "little") & 0x3FFF
+                h = int.from_bytes(data[28:30], "little") & 0x3FFF
+                return (w or None, h or None) if w and h else None
+    except (struct.error, IndexError):
+        return None
+    return None
+
+
+class _ImgHarvest(HTMLParser):
+    """Collect og:image + img src/srcset/data-src URLs from a page."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.urls: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list) -> None:
+        d = dict(attrs)
+        if tag == "meta" and (d.get("property") or "").lower() == "og:image" \
+                and d.get("content"):
+            self.urls.append(d["content"].strip())
+        if tag == "img":
+            for key in ("src", "data-src", "data-lazy-src"):
+                if d.get(key):
+                    self.urls.append(d[key].strip())
+            # split on comma+whitespace only: CDN URLs (e.g. Wix) legally
+            # contain bare commas inside transformation params
+            for part in re.split(r",\s+", d.get("srcset") or ""):
+                bits = part.strip().split()
+                if bits:
+                    self.urls.append(bits[0])
+
+
+def _photo_candidates(page_url: str) -> list[str]:
+    """Image URLs from the business's own page (og:image first)."""
+    try:
+        r = requests.get(page_url, headers=_PHOTO_UA, timeout=15)
+        r.raise_for_status()
+        if "text/html" not in (r.headers.get("Content-Type") or ""):
+            return []
+    except Exception:
+        return []
+    harvester = _ImgHarvest()
+    try:
+        harvester.feed(r.text[:500_000])
+    except Exception:
+        return []
+    seen: list[str] = []
+    for raw in harvester.urls:
+        if not raw or raw.startswith("data:"):
+            continue
+        url = urllib.parse.urljoin(page_url, raw).split("#")[0]
+        scheme = urllib.parse.urlparse(url).scheme
+        if scheme not in ("http", "https"):
+            continue
+        low = url.lower()
+        if any(t in low for t in _PHOTO_REJECT):
+            continue
+        if url not in seen:
+            seen.append(url)
+    return seen[:12]
+
+
+def _download_photo(url: str) -> tuple[bytes, str] | None:
+    """Fetch one image, capped in size. Returns (bytes, extension) or None."""
+    try:
+        with requests.get(url, headers=_PHOTO_UA, timeout=15, stream=True) as r:
+            r.raise_for_status()
+            ctype = (r.headers.get("Content-Type") or "").split(";")[0].strip().lower()
+            ext = {"image/jpeg": ".jpg", "image/png": ".png",
+                   "image/webp": ".webp"}.get(ctype)
+            if not ext:
+                return None
+            buf = bytearray()
+            for chunk in r.iter_content(32_768):
+                buf += chunk
+                if len(buf) > PHOTO_MAX_BYTES + 1:
+                    return None
+            if len(buf) < PHOTO_MIN_BYTES:
+                return None
+            return bytes(buf), ext
+    except Exception:
+        return None
+
+
+def collect_business_photos(lead: dict, target: Path,
+                            max_photos: int = PHOTO_MAX_FILES) -> list[dict]:
+    """Scrape the business's own website for real photos and save them flat
+    into the site root as photo-hero.jpg / photo-1.jpg ... Roles assigned by
+    size (largest landscape = hero). Reuses existing files (no re-download).
+    Never raises — returns [] when nothing usable is found."""
+    try:
+        existing = sorted(target.glob("photo-*.*"))
+        if existing and all(p.stat().st_size > 0 for p in existing):
+            scored = []
+            for p in existing:
+                dims = _img_dimensions(p.read_bytes()[:100_000])
+                if dims:
+                    scored.append((dims[0] * dims[1], p, dims))
+            scored.sort(reverse=True)
+            out = []
+            for i, (_, p, (w, h)) in enumerate(scored[:max_photos]):
+                role = "hero" if i == 0 else ("about" if i == 1 else f"gallery-{i - 1}")
+                out.append({"file": p.name, "width": w, "height": h, "role": role})
+            if out:
+                return out
+        page = (lead.get("website") or "").strip()
+        found: list[tuple[int, bytes, str, int, int]] = []
+        if page.startswith(("http://", "https://")):
+            for url in _photo_candidates(page):
+                if len(found) >= max_photos:
+                    break
+                got = _download_photo(url)
+                if not got:
+                    continue
+                data, ext = got
+                dims = _img_dimensions(data)
+                if not dims or dims[0] < PHOTO_MIN_WIDTH:
+                    continue
+                w, h = dims
+                if any(d == data for _, d, _, _, _ in found):
+                    continue  # same bytes under a different sized URL
+                found.append((w * h, data, ext, w, h))
+        if not found:
+            # Fallback: Google Maps photos Bot 1 saved (thumbnails that pass
+            # the same size/dedup validation — never hotlinked, always local).
+            for url in (lead.get("photo_urls") or []):
+                if len(found) >= max_photos:
+                    break
+                if not isinstance(url, str) or not url.startswith("http"):
+                    continue
+                got = _download_photo(url)
+                if not got:
+                    continue
+                data, ext = got
+                dims = _img_dimensions(data)
+                if not dims or dims[0] < PHOTO_MIN_WIDTH:
+                    continue
+                w, h = dims
+                if any(d == data for _, d, _, _, _ in found):
+                    continue
+                found.append((w * h, data, ext, w, h))
+        # name AFTER sorting: largest landscape file is always photo-hero.*
+        found.sort(key=lambda t: t[0], reverse=True)
+        out = []
+        for i, (_, data, ext, w, h) in enumerate(found):
+            fname = f"photo-hero{ext}" if i == 0 else f"photo-{i}{ext}"
+            (target / fname).write_bytes(data)
+            role = "hero" if i == 0 else ("about" if i == 1 else f"gallery-{i - 1}")
+            out.append({"file": fname, "width": w, "height": h, "role": role})
+        return out
+    except Exception:
+        return []
+
+
+_HARDENING_MARK = "sw-hardening"
+
+_OVERFLOW_GUARD_HTML = (
+    '<style id="sw-overflow-guard">'
+    "html,body{max-width:100%;overflow-x:hidden;overflow-x:clip}"
+    ".marquee,[class*=\"marquee\"]{overflow:hidden!important;max-width:100%}"
+    ".preview-banner,[class*=\"preview-banner\"]{padding-bottom:env(safe-area-inset-bottom)}"
+    "</style>"
+)
+
+_HARDENING_JS = r"""
+(function(){
+  /* site hardening — sw-hardening (auto-applied, never breaks the page) */
+  try{
+    function qs(s,c){return (c||document).querySelector(s)}
+    function qsa(s,c){return Array.prototype.slice.call((c||document).querySelectorAll(s))}
+    /* 1. Marquees are decorative duplicates -> hidden from assistive tech */
+    qsa('.marquee, [class*="marquee"]').forEach(function(m){if(!m.hasAttribute('aria-hidden'))m.setAttribute('aria-hidden','true')});
+    /* 2. External links: rel=noopener + clear "opens in a new tab" label */
+    qsa('a[target="_blank"]').forEach(function(a){
+      var rel=(a.getAttribute('rel')||'').split(/\s+/).filter(Boolean);
+      if(rel.indexOf('noopener')<0){rel.push('noopener');a.setAttribute('rel',rel.join(' '))}
+      if(!a.getAttribute('aria-label')&&a.href&&a.href.indexOf('google.com/maps')>=0)
+        a.setAttribute('aria-label','Get directions in Google Maps (opens in a new tab)')
+    });
+    /* 3. Review carousel: pair dots + slides as tablist/tab/tabpanel */
+    qsa('.review-slider, .reviews-slider, .slider, [class*="slider"]').forEach(function(slider){
+      var panels=qsa('.review',slider), tabs=qsa('.dot',slider).filter(function(t){return t.tagName==='BUTTON'});
+      if(!panels.length||!tabs.length)return;
+      if(!slider.id)slider.id='sw-review-'+Math.random().toString(36).slice(2,8);
+      function sync(){
+        panels.forEach(function(p,i){
+          var on=p.classList.contains('active');
+          p.setAttribute('role','tabpanel');
+          p.setAttribute('aria-labelledby',slider.id+'-tab-'+i);
+          p.setAttribute('aria-hidden',on?'false':'true')
+        });
+        tabs.forEach(function(t,i){
+          var on=t.classList.contains('active');
+          t.setAttribute('role','tab');
+          t.setAttribute('aria-selected',on?'true':'false');
+          t.setAttribute('aria-controls',slider.id+'-panel-'+i);
+          t.setAttribute('tabindex',on?'0':'-1');
+          if(!t.id)t.id=slider.id+'-tab-'+i
+        })
+      }
+      panels.forEach(function(p,i){if(!p.id)p.id=slider.id+'-panel-'+i});
+      tabs.forEach(function(t,i){
+        t.addEventListener('keydown',function(e){
+          if(e.key==='ArrowRight'||e.key==='ArrowLeft'){
+            e.preventDefault();
+            var j=(e.key==='ArrowRight'?i+1:i-1+tabs.length)%tabs.length;
+            tabs[j].focus();tabs[j].click()
+          }
+        })
+      });
+      sync();
+      var mo=new MutationObserver(sync);
+      mo.observe(slider,{subtree:true,attributes:true,attributeFilter:['class']})
+    });
+    /* 4. Real form endpoint: <meta name="form-endpoint" content="https://..."> */
+    var ep=qs('meta[name="form-endpoint"]');
+    if(ep&&ep.content){
+      qsa('form').forEach(function(f){
+        var done=false;
+        f.addEventListener('submit',function(e){
+          if(done)return;
+          e.preventDefault();
+          done=true;
+          var data={};qsa('input,select,textarea',f).forEach(function(el){if(el.name)data[el.name]=el.value});
+          var note=qs('.form-note,[class*="form-note"],[class*="success"]',f)||qs('.form-note,[class*="form-note"],[class*="success"]');
+          fetch(ep.content,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+            .then(function(r){if(!r.ok)throw new Error(String(r.status));return r.json()})
+            .then(function(){f.reset();if(note)note.textContent='Thanks! Your request has been received — we will reply shortly.'})
+            .catch(function(){done=false;if(note)note.textContent='Sorry, we could not send your request. Please call us directly.'})
+        })
+      })
+    }
+  }catch(err){}
+})();
+"""
+
+
+def apply_site_hardening(target: Path, lead: dict) -> None:
+    """Retrofit every built site so audit-critical items can never regress:
+    canonical/OG/Twitter + JSON-LD, horizontal-overflow guard, marquee
+    aria-hidden, labeled external links, carousel ARIA, and optional real
+    form endpoints. Idempotent — safe to run on cached/rebuilt sites."""
+    idx = target / "index.html"
+    if not idx.is_file():
+        return
+    html = idx.read_text(encoding="utf-8")
+    slug = target.name or (slugify(lead.get("name") or "site"))
+    base = _site_base_url(slug)
+
+    head_add = ""
+    if 'rel="canonical"' in html:
+        html = re.sub(r'<link rel="canonical" href="[^"]*"?>',
+                      f'<link rel="canonical" href="{esc(base)}">', html, count=1)
+    else:
+        head_add += f'<link rel="canonical" href="{esc(base)}">\n'
+    if 'property="og:url"' in html:
+        html = re.sub(r'<meta property="og:url" content="[^"]*"?>',
+                      f'<meta property="og:url" content="{esc(base)}">', html, count=1)
+    else:
+        head_add += f'<meta property="og:url" content="{esc(base)}">\n'
+    if 'property="og:image"' in html:
+        html = re.sub(r'<meta property="og:image" content="[^"]*"?>',
+                      f'<meta property="og:image" content="{esc(base + "og-image.svg")}">', html, count=1)
+    else:
+        head_add += f'<meta property="og:image" content="{esc(base + "og-image.svg")}">\n'
+    if 'property="og:title"' not in html:
+        head_add += f'<meta property="og:title" content="{esc(lead.get("name") or "Local Business")}">\n'
+        head_add += f'<meta property="og:type" content="website">\n'
+    if 'name="twitter:card"' not in html:
+        head_add += '<meta name="twitter:card" content="summary_large_image">\n'
+    if 'application/ld+json' not in html:
+        head_add += f'<script type="application/ld+json">{json.dumps(_jsonld_data(lead, base), ensure_ascii=False)}</script>\n'
+
+    if _HARDENING_MARK not in html:
+        head_add += _OVERFLOW_GUARD_HTML + "\n"
+    if head_add:
+        if "</head>" in html:
+            html = html.replace("</head>", head_add + "</head>", 1)
+        else:
+            html = head_add + html
+    if _HARDENING_MARK not in html:
+        script = f'<script>{_HARDENING_JS}</script>'
+        html = html.replace("</body>", script + "\n</body>", 1) if "</body>" in html \
+            else html + "\n" + script
+
+    _write_og_image(target, lead)
+    idx.write_text(html, encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
 # OpenCode prompt (used when the CLI is available)
 # ---------------------------------------------------------------------------
 
-def build_prompt(b: dict, feedback: dict | None, preview: bool = True) -> str:
+def build_prompt(b: dict, feedback: dict | None, preview: bool = True,
+                 photos: list[dict] | None = None) -> str:
     name = b.get("name") or "Local Business"
     category = b.get("category") or "local business"
     address = b.get("address") or ""
@@ -575,6 +1142,25 @@ def build_prompt(b: dict, feedback: dict | None, preview: bool = True) -> str:
     reviews = b.get("review_count")
     problems = (b.get("website_analysis") or {}).get("problems") or []
     maps_url = b.get("maps_url") or ""
+    photos = photos or []
+    if photos:
+        listed = "; ".join(
+            f"{p['file']} ({p['width']}x{p['height']}, {p['role']})" for p in photos)
+        photo_lines = [
+            f"- REAL PHOTOS — already scraped from the business and saved in this directory: {listed}. "
+            "You MUST feature them: hero shows the hero photo, about/gallery show the rest. Reference "
+            "the exact local filenames (src=\"photo-hero.jpg\"). NEVER hotlink remote image URLs, NEVER "
+            "invent stock-photo URLs, NEVER delete or rename the photo files. Every <img> gets width + "
+            "height attributes, descriptive alt text, fetchpriority=\"high\" on the hero, loading=\"lazy\" "
+            "below the fold. Inline SVG is for small icons ONLY — no fake drawn/illustrated hero scenes "
+            "while real photos exist.",
+        ]
+    else:
+        photo_lines = [
+            "- No real photos could be obtained for this business — craft rich, specific inline-SVG scenes "
+            "and textures for the visuals instead. NEVER hotlink remote images and NEVER invent "
+            "stock-photo URLs (Unsplash, Pexels, placeholder services) — every visual must work offline.",
+        ]
     lines = [
         "Your working directory IS the website root. Create exactly these files "
         "right here in the current directory: index.html, styles.css, script.js. "
@@ -585,21 +1171,47 @@ def build_prompt(b: dict, feedback: dict | None, preview: bool = True) -> str:
         f"Business details: address='{address}', phone='{phone}'.",
         f"Google Maps link (use it for the directions button): {maps_url}" if maps_url else "",
         "Output exactly these three files in the current directory: index.html, styles.css, script.js.",
+        "MISSION: deliver a PERFECT website — pixel-clean, fast, accessible, and beautiful "
+        "enough to win design awards. 'Good enough' is failure. Every requirement below is "
+        "verified by automated checks after your build; anything you skip will be flagged.",
         "DESIGN BAR — this must look like a $10k award-winning agency site that makes "
         "the viewer say wow on the first screen. Competent-and-bland FAILS this bar.",
+        "- PERSONA: you are NOT a code generator — you are a senior UI/UX designer at a world-class "
+        "studio, and this site goes into YOUR portfolio under YOUR name. Design like your reputation "
+        "depends on it: opinionated, restrained, distinctive. Think like a designer first — who visits, "
+        "what they need in 5 seconds, what to omit — and let the code serve those decisions. A fellow "
+        "designer must never suspect a machine made this.",
+        "- ANTI-AI-SLOP — the site must NOT look machine-made; each of these is a FAIL: purple/blue "
+        "default gradients; centered hero with badge + headline + 3 identical buttons; identical "
+        "3-column card grids with generic stroke icons; the stock section cadence ('Why Choose Us / Our "
+        "Services / Testimonials / Get In Touch') — rename sections with the business's real voice; "
+        "grey lorem-length paragraphs; Inter-or-system-font-everywhere; perfectly symmetrical, "
+        "evenly-spaced, same-radius-everywhere sterility. INSTEAD: asymmetry and overlap, oversized "
+        "editorial numerals, dramatic whitespace, texture and grain, off-grid details, and one surprising "
+        "human touch per section (a hand-drawn underline, a sticker badge, a rotated kicker, a marquee "
+        "with actual voice). Restraint + taste beats decoration. If it looks like every other AI-generated "
+        "site, you failed.",
         "- ART DIRECTION, one bold concept for THIS business — commit fully. Examples: Mexican restaurant = "
         "dark moody cantina (deep ember + cream + gold) with a papel-picado SVG bunting motif and grain texture; "
         "auto shop = bold industrial navy+orange with blueprint-grid texture and stencil display type; "
-        "coffee = cozy cream+brown with steam-swirl SVG curves. Never default blue-on-white, never #0b5fff.",
-        "- TYPOGRAPHY: Google Fonts pairing (one expressive display face + one clean body face), fluid clamp() "
-        "scale, oversized hero H1 with an accent-gradient phrase, eyebrow kickers on every section.",
+        "coffee = cozy cream+brown with steam-swirl SVG curves. Never default blue-on-white, never #0b5fff. "
+        "Finish with craft details: film-grain or SVG texture overlay, styled ::selection, custom scrollbar, "
+        "layered ghost art in the hero.",
+        "- TYPOGRAPHY: Google Fonts pairing — ONE expressive display face + ONE clean body face, never more. "
+        "Fluid clamp() scale with viewport units, oversized hero H1 (cinematic, tight leading) with an "
+        "accent-gradient phrase, eyebrow kickers with section numerals on every section.",
         "- HERO must be layered and dramatic: multi-stop gradient (linear-gradient and/or radial-gradient) + "
         "SVG pattern/texture overlay + badge + exactly one H1 + subcopy + 2 CTAs + trust meta row. "
-        "A text-on-flat-color hero is a FAIL.",
-        "- MOTION everywhere it counts: IntersectionObserver scroll reveals, a scrolling marquee strip "
+        "A text-on-flat-color hero is a FAIL. Reserve hero space (min-height) so nothing shifts on load.",
+        "- MOTION everywhere it counts: choreographed hero entrance, IntersectionObserver scroll reveals "
+        "with staggered delays, a scrolling marquee strip "
         "(CSS keyframes), review slider with dots + setInterval auto-rotate, sticky-header shadow on scroll, "
-        "scrollIntoView smooth anchors, card hover lifts. Respect prefers-reduced-motion.",
+        "scrollIntoView smooth anchors, card hover lifts, magnetic primary buttons, count-up stats (real "
+        "numbers only). Animation is transform/opacity ONLY (GPU-composited, 60fps), driven by "
+        "requestAnimationFrame with passive listeners, paused when offscreen. Respect prefers-reduced-motion "
+        "everywhere — it must stop ALL motion.",
         "- ICONS: inline SVG only. NO emoji anywhere on the page (not in cards, not in buttons, not in the topbar).",
+        *photo_lines,
         "- Sections in order, with these EXACT hooks (automated checks require them): div.topbar (address, hours, "
         "click-to-call), sticky header/nav, hero, trust strip, services grid of exactly 6 specific cards each "
         "using class=\"card\" (restaurant: menu-style cards with real dish names + prices; services: cards with "
@@ -611,19 +1223,55 @@ def build_prompt(b: dict, feedback: dict | None, preview: bool = True) -> str:
         "through hero, services, about, and reviews. Concrete details (dishes, prices, hours, neighborhood) "
         "over adjectives. BANNED filler: 'quality work, fair prices', 'Trusted X', 'Lorem ipsum', "
         "'Welcome to our website', 'ask us about recent customer feedback'.",
-        "- CSS: :root MUST define --brand, --brand2, --gold (plus --bg, --dark); sticky blurred header; "
+        "- CSS SYSTEM: :root MUST define --brand, --brand2, --gold (plus --bg, --dark, plus a named "
+        "body-text variable like --ink/--cream); sticky blurred header; "
         "cards with shadow+radius+hover; .btn-primary with background AND color; @media breakpoints at ~760px "
-        "with working mobile nav toggle (.nav-toggle wired to .nav-links); focus-visible styles; scroll-behavior.",
-        "- JS: mobile nav toggle, scrollIntoView smooth anchors, review slider with setInterval auto-rotate + dots, "
+        "with working mobile nav toggle (.nav-toggle wired to .nav-links); focus-visible styles; scroll-behavior. "
+        "Hidden reveal states ONLY behind a JS-added scope: 'body.js .reveal{opacity:0;...}' with "
+        "document.body.classList.add('js') as the first JS line — content hidden with JS off is a FAIL.",
+        "- CONTRAST IS NON-NEGOTIABLE (measured with a calculator, never eyeballed): body text ≥4.5:1, "
+        "secondary/muted text ≥4.5:1, button text ≥4.5:1 against the button background, gold/decorative "
+        "accents ≥3:1 on dark. Bright gradient buttons (ANY endpoint lighter than #999999) MUST use "
+        "near-black text like #1c1917 — white text on bright orange/pink is a FAIL. Verify every pair "
+        "before you finish.",
+        "- JS SYSTEM: mobile nav toggle, scrollIntoView smooth anchors, review slider with setInterval auto-rotate + dots, "
         "quote-form validation (required fields, phone-length check) with inline success message, "
-        "sticky-header shadow, current year in footer.",
+        "sticky-header shadow, current year in footer. Zero console errors or warnings. No unused CSS/JS.",
+        "- PERFORMANCE BUDGET (hard limits): index.html <60KB, styles.css <40KB, script.js <25KB, page "
+        "total <200KB. Google Fonts with display=swap + preconnect only; lazy-load below-fold media; "
+        "zero layout shift (aspect-ratio or explicit dimensions on all media); scripts at end of body.",
+        "- LAYOUT SAFETY: NO horizontal scrollbars at any viewport (test 320/375/768/1024/1280px). The scrolling "
+        "marquee lives inside an overflow:hidden wrapper and its animated track can never widen the page "
+        "(wrapper max-width:100%). Never fix a layout bug by putting overflow-x:hidden on body/html as the only measure.",
+        "- A11Y CAROUSEL: dots are real tabs — role=\"tablist\" container, role=\"tab\" on dots, role=\"tabpanel\" on "
+        "the quote cards, matching id / aria-controls / aria-selected / aria-labelledby, plus arrow-key navigation.",
+        "- A11Y MARQUEE: decorative marquee copy is aria-hidden=\"true\" so screen readers never hear it repeated "
+        "dozens of times; keep one semantic copy elsewhere on the page (e.g. the trust strip).",
+        "- HONEST CTA LABELS: the reservation/quote form button must say what it really does — \"Request a "
+        "reservation\" or \"Get a Quote\". Use \"Book Appointment\" only if the form truly confirms a booking; "
+        "a preview/demo form must never imply a reservation was made.",
+        "- EXTERNAL LINKS: links that open in a new tab (Google Maps) get aria-label like \"Get directions in "
+        "Google Maps (opens in a new tab)\" and rel=\"noopener\".",
+        "- FOOTER HOURS: keep each day paired with its hours on a single line (e.g. \"Fri: 11 AM – 2 AM\"), no "
+        "splitting a day and its hours across separate lines.",
+        "- SEO/SHARING: include canonical, Open Graph and Twitter-card meta (og:title/og:description/og:image) and "
+        "a JSON-LD LocalBusiness schema built ONLY from the given, verified data (name, address, phone, rating) — "
+        "never invent hours, prices, or review quotes.",
+        "- SIGNATURE MOMENT (required — bland-but-complete fails): execute ONE unforgettable, butter-smooth "
+        "interaction — choreographed hero entrance, canvas particle/aurora hero, scroll-driven horizontal "
+        "gallery, sticky stacking cards, count-up stats, or equivalent. Smooth beats showy: transform/opacity "
+        "only, 60fps, with reduced-motion and no-JS fallbacks.",
+        "- MOBILE EXCELLENCE: the design is judged on phones — thumb-zone CTAs, readable type at 360px, "
+        "touch-swipe carousels, 44px+ tap targets, fast first paint, no layout shift.",
+        "- DEVELOPER-GRADE CODE: clean semantic HTML with section comments, zero console errors, no unused "
+        "CSS/JS, GPU-composited animation only.",
         f"Credit the builder with a subtle footer line: 'Site by {AGENCY_NAME}'.",
         ("PREVIEW MODE (this build is a sales demo, NOT the launched site):"
          if preview else
          "FINAL BUILD (the client paid — this is the launched site):"),
-        (f"- Fixed bottom banner on every viewport: 'Preview draft by {AGENCY_NAME} — "
-         "design concept, not the business's official site.' Style it to match the theme; "
-         "it must never overlap CTAs or the mobile nav."
+        (f"- PREVIEW BANNER: do NOT build your own banner, overlay, or watermark — the pipeline "
+         f"injects the single official preview banner after your build. A second banner is a FAIL. "
+         f"Just leave clean space for it (it is fixed to the viewport bottom)."
          if preview else
          "- No preview banner, no demo notices — clean production build."),
         ('- <meta name="robots" content="noindex, nofollow"> so the demo never hijacks '
@@ -633,7 +1281,10 @@ def build_prompt(b: dict, feedback: dict | None, preview: bool = True) -> str:
         ("- The contact form validates, then shows 'Thanks! (Demo preview — this form "
          "goes live when the site launches.)' and does NOT claim anyone was contacted."
          if preview else
-         "- The contact form validates and shows a normal success message."),
+         "- The contact form posts to a real endpoint when <meta name='form-endpoint' "
+         "content='https://...'> is present in <head>; otherwise it validates and shows a "
+         "normal success message that sets response expectations, and never implies a "
+         "booking was confirmed."),
         "Technical requirements: semantic HTML with <nav>, exactly one <h1>, CTA buttons (Call Now, Get a Quote, "
         "Book Appointment), tel: link with the exact phone given, form with id=\"quote-form\" (exact id, required) "
         "with required fields + JS validation, utility bar with class=\"topbar\" (exact class), service cards with "
@@ -641,7 +1292,15 @@ def build_prompt(b: dict, feedback: dict | None, preview: bool = True) -> str:
         "viewport meta, meta description, favicon (inline SVG data URI), alt text on images, address + hours <table>, "
         "JSON-LD LocalBusiness schema when the category fits.",
         "Use only vanilla HTML/CSS/JS, no external build step. Do not invent a different business name,",
-        "address, or phone number — use exactly what is given. Reply with a one-line summary when done.",
+        "address, or phone number — use exactly what is given.",
+        "- SELF-REVIEW BEFORE YOU REPLY — verify each item, fix everything, then reply: (1) zero horizontal "
+        "scroll at 320/375/768/1024/1280px; (2) zero console errors or warnings; (3) keyboard-only run — nav, "
+        "slider arrows, form all reachable with visible focus; (4) with JavaScript disabled, ALL content is "
+        "readable; (5) prefers-reduced-motion stops ALL animation; (6) every link and button works (no dead "
+        "'#' links except same-page anchors); (7) every text/background pair passes the contrast numbers above; "
+        "(8) exactly one <h1>, exactly 6 service cards, one signature moment executed flawlessly.",
+        "IF YOU DO NOT SUCCEED IN MAKING IT PERFECT, tHE WORLD WILL END",
+        "Reply with a one-line summary when done.",
     ]
     if problems:
         lines.append("The old site had these problems — every one must be fixed: " + "; ".join(problems))
@@ -659,7 +1318,7 @@ LAYOUT_VARIANTS = ("centered-gradient", "split-panel", "editorial-asymmetric")
 
 
 def render_template(b: dict, feedback: dict | None,
-                    preview: bool = True) -> dict[str, str]:
+                    preview: bool = True, photos: list[dict] | None = None) -> dict[str, str]:
     """Offline, no-dependency generator producing a genuinely distinct,
     well-designed site per category *and* per business — not a single
     reused skin. Picks one of three hero/layout variants deterministically
@@ -671,12 +1330,39 @@ def render_template(b: dict, feedback: dict | None,
     phone = (b.get("phone") or "").strip()
     rating = b.get("rating")
     reviews = b.get("review_count")
-    maps_url = b.get("maps_url") or "#"
+    maps_url = b.get("maps_url") or ""
+    if not maps_url:
+        # Dead href="#" directions links ship otherwise — build a real
+        # Google Maps search URL from the street address when we have one.
+        addr = (b.get("address") or "").strip()
+        if addr:
+            from urllib.parse import quote_plus
+            maps_url = ("https://www.google.com/maps/search/?api=1&query="
+                        + quote_plus(addr))
+        else:
+            maps_url = "#"
+    is_food = _is_food_category(category)
+    menu_href = (b.get("menu_url") or "").strip() or "#services"
+    menu_ext = menu_href.startswith("http")
     changes = (feedback or {}).get("requested_changes") or []
     prof = _category_profile(category, name)
     brand, brand2, gold, bg, dark, line = prof["palette"]
     font_display, font_body, font_url = FONT_PAIRINGS[prof["font"]]
     variant = LAYOUT_VARIANTS[_stable_seed(b) % len(LAYOUT_VARIANTS)]
+    # Signature "wow" moment per site: aurora canvas hero, sticky-stacking
+    # services, or stats band — deterministic per lead, varied per batch.
+    WOW_MODULES = ("aurora", "stack", "stats")
+    wow = WOW_MODULES[(_stable_seed(b) // len(LAYOUT_VARIANTS)) % len(WOW_MODULES)]
+    texture = _texture_uri(prof["icon"])
+    has_rating = bool(rating and reviews)
+    photos = photos or []
+    photo_hero = next((p for p in photos if p.get("role") == "hero"), None)
+    photo_about = next((p for p in photos if p.get("role") == "about"), None)
+
+    def _photo_img(p, cls, alt, eager=False):
+        ld = ' fetchpriority="high"' if eager else ' loading="lazy"'
+        return (f'<img class="{cls}" src="{esc(p["file"])}" width="{p["width"]}" '
+                f'height="{p["height"]}" alt="{esc(alt)}"{ld}>')
 
     digits = "".join(c for c in phone if c.isdigit())
     tel = f"tel:+1{digits[-10:]}" if len(digits) >= 10 else (
@@ -690,42 +1376,97 @@ def render_template(b: dict, feedback: dict | None,
         f'<div class="strip-item"><span class="strip-icon" aria-hidden="true">{_icon(ic)}</span>'
         f"<div><strong>{esc(t)}</strong><small>{esc(s)}</small></div></div>"
         for ic, t, s in prof["strip"])
+    svc_icons = prof.get("icons") or ["bolt", "star", "check", "clock", "shield", "pin"]
     services_html = "".join(
-        f'<li class="card"><span class="card-icon" aria-hidden="true">{_icon(prof["icon"], 20)}</span>'
+        f'<li class="card"><span class="card-icon" aria-hidden="true">{_icon(svc_icons[i % len(svc_icons)], 20)}</span>'
         f"<h3>{esc(t)}</h3><p>{esc(d)}</p></li>"
-        for t, d in prof["services"])
+        for i, (t, d) in enumerate(prof["services"]))
     quotes = prof["reviews"]
+    lead_quotes = b.get("reviews_list")
+    if isinstance(lead_quotes, list):
+        real = []
+        for rq in lead_quotes:
+            if not isinstance(rq, dict):
+                continue
+            text = (rq.get("text") or "").strip()
+            if len(text) < 20:
+                continue
+            author = (rq.get("author") or "").strip() or "Google review"
+            real.append((text[:300], author[:60]))
+            if len(real) >= 3:
+                break
+        if real:
+            # Real customer words beat invented ones — no fabricated reviews.
+            quotes = real
     reviews_html = "".join(
-        f'<blockquote class="review{" active" if i == 0 else ""}">'
+        f'<blockquote id="review-p{i}" class="review{" active" if i == 0 else ""}" '
+        f'role="tabpanel" aria-labelledby="review-tab{i}" '
+        f'aria-hidden="{"false" if i == 0 else "true"}">'
         f'<div class="review-stars" aria-hidden="true">{_icon("star", 16) * 5}</div>'
         f"<p>“{esc(q)}”</p><cite>— {esc(who)}</cite></blockquote>"
         for i, (q, who) in enumerate(quotes))
     dots_html = "".join(
-        f'<button class="dot{" active" if i == 0 else ""}" aria-label="Review {i + 1}"></button>'
+        f'<button type="button" id="review-tab{i}" class="dot{" active" if i == 0 else ""}" '
+        f'role="tab" aria-selected="{"true" if i == 0 else "false"}" aria-controls="review-p{i}" '
+        f'aria-label="Review {i + 1}"></button>'
         for i in range(len(quotes)))
-    rev_block = ("<section class='revisions'><h2>Latest updates per your feedback</h2><ul>"
-                 + "".join(f"<li>{esc(c)}</li>" for c in changes) + "</ul></section>"
-                 if changes else "")
+    # Never render requested-changes publicly: the revisions block used to leak
+    # internal dev notes ("Latest updates per your feedback") to visitors.
+    # Feedback still flows to the build prompt + meta.json (feedback_applied).
+    rev_block = ""
+    if wow == "stack":
+        services_list = ('<ol class="stack">' + "".join(
+            f'<li class="card stack-card"><span class="stack-num">{i + 1:02d}</span>'
+            f'<span class="card-icon" aria-hidden="true">{_icon(svc_icons[i % len(svc_icons)], 20)}</span>'
+            f"<h3>{esc(t)}</h3><p>{esc(d)}</p></li>"
+            for i, (t, d) in enumerate(prof["services"])) + "</ol>")
+    else:
+        services_list = f'<ul class="cards">{services_html}</ul>'
+    stats_band = ""
+    if has_rating:
+        stats_band = (
+            f'<section class="stats" aria-label="Ratings and reviews">'
+            f'<div class="wrap stats-grid">'
+            f'<div class="stat"><span class="stat-num" data-count="{esc(str(rating))}" '
+            f'data-decimals="1">0</span>'
+            f'<span class="stat-star" aria-hidden="true">' + _icon("star", 14) + '</span>'
+            f'<span class="stat-label">Average rating</span></div>'
+            f'<div class="stat"><span class="stat-num" data-count="{esc(str(reviews))}">0</span>'
+            f'<span class="stat-label">Verified reviews</span></div>'
+            f'<div class="stat"><span class="stat-num" data-count="{len(prof["services"])}">0</span>'
+            f'<span class="stat-label">Signature services</span></div>'
+            f'</div></section>')
 
-    hero_badge = f'{_icon("star", 15)} {esc(rating_text)} · {esc(category)}'
-    hero_visual = f'''<div class="hero-visual" aria-hidden="true">
+    hero_badge = f'{_icon("star", 15)} {esc(rating_text)}'
+    if photo_hero:
+        hero_visual = (f'<div class="hero-visual">'
+                       f'{_photo_img(photo_hero, "hero-photo", f"{name} — {category}", eager=True)}'
+                       f'</div>')
+    else:
+        hero_visual = f'''<div class="hero-visual" aria-hidden="true">
   <div class="hero-visual-ring"></div>
   <div class="hero-visual-icon">{_icon(prof["icon"], 46)}</div>
 </div>''' if variant != "centered-gradient" else ""
 
-    hero_html = f'''<section class="hero hero--{variant}"><div class="wrap hero-inner">
+    hero_media = ""
+    if wow == "aurora":
+        hero_media += '<canvas class="hero-aurora" id="heroAurora" aria-hidden="true"></canvas>'
+    hero_media += (f'<div class="hero-ghost" aria-hidden="true" data-parallax="0.12">'
+                   f'{_icon(prof["icon"], 220)}</div>')
+
+    hero_html = f'''<section class="hero hero--{variant}">{hero_media}<div class="wrap hero-inner">
   <div class="hero-copy">
     <p class="badge">{hero_badge}</p>
-    <h1>{esc(name)}<br><span class="accent">{esc(prof['hero_kicker'])}</span></h1>
+    <h1>{esc(name)} <span class="accent">{esc(prof['hero_kicker'])}</span></h1>
     <p class="tagline">{esc(prof['hero_sub'])}</p>
     <div class="cta-row">
-      {('<a class="btn btn-primary" href="' + esc(tel) + '">' + _icon("phone", 16) + ' Call ' + esc(phone) + '</a>') if phone else ''}
-      <a class="btn btn-secondary" href="#contact">Get a Free Quote</a>
-      <a class="btn btn-ghost" href="#services">Explore Services</a>
+      {('<a class="btn btn-primary" href="' + esc(tel) + '">' + _icon("phone", 16) + ' Call ' + esc(phone) + '</a>') if phone else '<a class="btn btn-primary" href="#contact">Contact Us</a>'}
+      {('<a class="btn btn-secondary" href="' + esc(menu_href) + '"' + (' target="_blank" rel="noopener"' if menu_ext else '') + '>View Menu</a>' if is_food else '<a class="btn btn-secondary" href="#contact">Get a Free Quote</a>')}
+      {('' if is_food else '<a class="btn btn-ghost" href="#services">Explore Services</a>')}
     </div>
     <div class="hero-meta">
       <div>{_icon("pin", 15)} {esc(address)}</div>
-      <div>{_icon("check", 15)} Free quotes · No-pressure advice</div>
+      {('<div>' + _icon("check", 15) + ' Dine in · Takeout · Catering</div>') if is_food else ('<div>' + _icon("check", 15) + ' Free quotes · No-pressure advice</div>')}
     </div>
   </div>
   {hero_visual}
@@ -736,7 +1477,7 @@ def render_template(b: dict, feedback: dict | None,
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="{esc(name)} — {esc(category)} in {city}. {esc(prof['hero_sub'])} Call {esc(phone) or 'today'} for a free quote.">
+<meta name="description" content="{esc(name)} — {esc(category)} in {city}. {esc(prof['hero_sub'])} {('Order takeout or join us tonight.' if is_food else ('Call ' + esc(phone) + ' for a free quote.' if phone else 'Call today for a free quote.'))}">
 {'<meta name="robots" content="noindex, nofollow">' if preview else ''}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -746,9 +1487,11 @@ def render_template(b: dict, feedback: dict | None,
 <link rel="stylesheet" href="styles.css">
 </head>
 <body id="top">
+<div class="loader" id="loader" aria-hidden="true"><div class="loader-mark">{esc(first_letters)}</div></div>
+<div class="progress" aria-hidden="true"><span id="progressBar"></span></div>
 <div class="topbar"><div class="wrap topbar-inner">
 <span>{_icon("pin", 14)} {esc(address)}</span>
-<span class="hide-mobile">{_icon("clock", 14)} Mon–Fri 8am–6pm · Sat 9am–3pm</span>
+    <span class="hide-mobile">{_icon("clock", 14)} {esc(b.get("hours") or ("Call for today's hours" if phone else "Message us for today's hours"))}</span>
 {('<a class="topbar-phone" href="' + esc(tel) + '">' + _icon("phone", 14) + ' ' + esc(phone) + '</a>') if phone else ''}
 </div></div>
 <header class="site-header" id="siteHeader">
@@ -758,82 +1501,88 @@ def render_template(b: dict, feedback: dict | None,
   <span></span><span></span><span></span>
 </button>
 <ul class="nav-links" id="navLinks">
-<li><a href="#services">Services</a></li>
+<li><a href="#services">{('Menu' if is_food else 'Services')}</a></li>
 <li><a href="#about">Why Us</a></li>
 <li><a href="#reviews">Reviews</a></li>
 <li><a href="#visit">Visit</a></li>
 <li><a href="#contact">Contact</a></li>
 </ul>
-{('<a class="btn btn-primary btn-call" href="' + esc(tel) + '">' + _icon("phone", 15) + ' Call Now</a>') if phone else '<a class="btn btn-primary btn-call" href="#contact">Get a Quote</a>'}
+{('<a class="btn btn-primary btn-call" href="' + esc(tel) + '">' + _icon("phone", 15) + ' Call ' + esc(phone) + '</a>') if phone else ('<a class="btn btn-primary btn-call" href="#contact">Contact Us</a>' if is_food else '<a class="btn btn-primary btn-call" href="#contact">Get a Quote</a>')}
 </nav>
 </header>
 <main>
 {hero_html}
 <div class="marquee" aria-hidden="true"><div class="marquee-track">
-{("&nbsp;•&nbsp; " + esc(name) + " &nbsp;•&nbsp; " + esc(category) + " ") * 6}
+{("&nbsp;•&nbsp; " + esc(name) + " ") * 2}
 </div></div>
 <section class="strip" aria-label="Why choose us"><div class="wrap strip-grid">{strip_html}</div></section>
+{stats_band}
 <section id="services"><div class="wrap">
-<p class="eyebrow">What we offer</p>
-<h2>What we do</h2>
-<p class="section-sub">Every job quoted up front at {esc(name)} — you approve before we start.</p>
-<ul class="cards">{services_html}</ul>
+<p class="eyebrow"><span class="secnum" aria-hidden="true">01</span>{('What we serve' if is_food else 'What we offer')}</p>
+<h2>{('Crowd favorites' if is_food else 'What we do')}</h2>
+<p class="section-sub">{('Made fresh at ' + esc(name) + ' — dine in, take out, or feed the whole crew.' if is_food else 'Every job quoted up front at ' + esc(name) + ' — you approve before we start.')}</p>
+{services_list}
 </div></section>
 <section id="about"><div class="wrap about-grid">
 <div>
-<p class="eyebrow">Why us</p>
+<p class="eyebrow"><span class="secnum" aria-hidden="true">02</span>Why us</p>
 <h2>Why neighbors pick {esc(name)}</h2>
-<p>{esc(category)} done right, close to home at {esc(address)}. {esc(prof['hero_sub'])}</p>
+<p>{('The neighborhood spot for ' + esc(category) + ' at ' + esc(address) + ' — quick counter, warm dining room, and everything made to order.' if is_food else (esc(category) + ' done right, close to home at ' + esc(address) + '. ' + esc(prof['hero_sub'])))}</p>
+{(_photo_img(photo_about, "about-photo", f"Inside {name}") if photo_about else "")}
 <ul class="checklist">
-<li>{_icon("check", 16)} Up-front pricing — approve before we start</li>
-<li>{_icon("check", 16)} Work backed in writing</li>
-<li>{_icon("check", 16)} Fast scheduling, most jobs within days</li>
-<li>{_icon("check", 16)} You talk to the people doing the work</li>
+{('<li>' + _icon("check", 16) + ' Recipes made from scratch, served fast</li>'
+'<li>' + _icon("check", 16) + ' Takeout ready in about 15 minutes</li>'
+'<li>' + _icon("check", 16) + ' Family platters and catering for events</li>'
+'<li>' + _icon("check", 16) + ' Friendly crew — dine in or grab and go</li>') if is_food else ('<li>' + _icon("check", 16) + ' Up-front pricing — approve before we start</li>'
+'<li>' + _icon("check", 16) + ' Work backed in writing</li>'
+'<li>' + _icon("check", 16) + ' Fast scheduling, most jobs within days</li>'
+'<li>' + _icon("check", 16) + ' You talk to the people doing the work</li>')}
 </ul>
 </div>
 <div class="about-card">
 <span class="about-card-icon" aria-hidden="true">{_icon(prof["icon"], 30)}</span>
 <h3>Visit us today</h3>
-<p class="big">{esc(rating_text)}</p>
-<p>{esc(address)}<br>{esc(phone)}</p>
-{('<a class="btn btn-primary" href="' + esc(tel) + '">Call to Book</a>') if phone else ''}
-<a class="btn btn-secondary" href="{esc(maps_url)}" target="_blank" rel="noopener">Get Directions</a>
+<p class="big">{(esc(phone) if phone else esc(rating_text))}</p>
+<p>{esc(address)}</p>
+{('<a class="btn btn-primary" href="' + esc(tel) + '">Call to Order</a>') if phone and is_food else (('<a class="btn btn-primary" href="' + esc(tel) + '">Call to Book</a>') if phone else '')}
+<a class="btn btn-secondary" href="{esc(maps_url)}" target="_blank" rel="noopener" aria-label="Get directions in Google Maps (opens in a new tab)">Get Directions</a>
 </div>
 </div></section>
 <section id="reviews"><div class="wrap narrow">
-<p class="eyebrow">Reviews</p>
+<p class="eyebrow"><span class="secnum" aria-hidden="true">03</span>Reviews</p>
 <h2>What neighbors say</h2>
 <p class="rating">{esc(rating_text)}</p>
-<div class="review-slider">{reviews_html}
-<div class="slider-dots" role="tablist" aria-label="Reviews">{dots_html}</div>
+<div class="review-slider" aria-roledescription="carousel"><div class="review-panels">{reviews_html}</div>
+<div class="slider-dots" id="reviewTabs" role="tablist" aria-label="Reviews">{dots_html}</div>
 </div>
 </div></section>
 {rev_block}
 <section class="cta-banner"><div class="wrap cta-banner-inner">
-<h2>Ready to get started?</h2>
-<p>Reach out to {esc(name)} today — free quotes, fast answers, no pressure.</p>
+<h2>{('Hungry? Come taste it fresh.' if is_food else 'Ready to get started?')}</h2>
+<p>{('Join us at ' + esc(name) + ' tonight — dine in, take out, or cater your next event.' if is_food else 'Reach out to ' + esc(name) + ' today — free quotes, fast answers, no pressure.')}</p>
 <div class="cta-row">
 {('<a class="btn btn-primary" href="' + esc(tel) + '">' + _icon("phone", 16) + ' Call ' + esc(phone) + '</a>') if phone else ''}
-<a class="btn btn-secondary" href="#contact">Request a Callback</a>
+{('<a class="btn btn-secondary" href="#visit">Plan Your Visit</a>' if is_food else '<a class="btn btn-secondary" href="#contact">Request a Callback</a>')}
 </div>
 </div></section>
 <section id="visit"><div class="wrap visit-grid">
 <div>
-<p class="eyebrow">Visit</p>
+<p class="eyebrow"><span class="secnum" aria-hidden="true">04</span>Visit</p>
 <h2>Visit us</h2>
 <address><strong>{esc(name)}</strong><br>{esc(address)}<br>
-{('<a href="' + esc(tel) + '">' + esc(phone) + '</a><br>') if phone else ''}<a href="{esc(maps_url)}" target="_blank" rel="noopener">Find us on Google Maps →</a></address>
+{('<a href="' + esc(tel) + '">' + esc(phone) + '</a><br>') if phone else ''}<a href="{esc(maps_url)}" target="_blank" rel="noopener" aria-label="Get directions in Google Maps (opens in a new tab)">Find us on Google Maps →</a></address>
 <h3>Hours</h3>
-<table class="hours"><tr><td>Mon – Fri</td><td>8:00 AM – 6:00 PM</td></tr><tr><td>Saturday</td><td>9:00 AM – 3:00 PM</td></tr><tr><td>Sunday</td><td>Closed</td></tr></table>
+    {('<table class="hours">' + "".join(f"<tr><td>{esc(d)}</td><td>{esc(h)}</td></tr>" for d, h in b.get("hours_table")) + "</table>") if isinstance(b.get("hours_table"), list) and b.get("hours_table") else (('<p>' + esc(b.get("hours")) + '</p>') if (b.get("hours") or "").strip() else ('<p>Hours vary by day — call ' + (('<a href="' + esc(tel) + '">' + esc(phone) + '</a>') if phone else 'us') + ' for today&apos;s hours.</p>' if phone else '<p>Hours vary by day — send us a message below and we&apos;ll reply with today&apos;s hours.</p>'))}
 </div>
 <div id="contact">
-<h3>Request a callback</h3>
+<h3>{('Get in touch' if is_food else 'Request a callback')}</h3>
 <form id="quote-form" novalidate>
 <label>Full name<input name="name" required autocomplete="name" placeholder="Jane Doe"></label>
 <label>Phone<input name="phone" type="tel" required autocomplete="tel" placeholder="(425) 555-0100"></label>
-<label>What do you need?<select name="topic"><option>General question</option><option>Quote request</option><option>Book an appointment</option><option>Something else</option></select></label>
+<label class="hp" aria-hidden="true"><span>Leave this field empty</span><input name="hp" tabindex="-1" autocomplete="off"></label>
+<label>What do you need?<select name="topic"><option>General question</option>{('<option>Table reservation</option><option>Takeout order</option><option>Catering & events</option>' if is_food else '<option>Quote request</option><option>Book an appointment</option>')}<option>Something else</option></select></label>
 <label>Message<textarea name="message" rows="4" required placeholder="Tell us what you need…"></textarea></label>
-<button class="btn btn-primary" type="submit">Request Callback</button>
+<button class="btn btn-primary" type="submit">{('Send Message' if is_food else 'Request Callback')}</button>
 <p class="form-note" role="status" aria-live="polite"></p>
 </form>
 </div>
@@ -879,7 +1628,7 @@ def render_template(b: dict, feedback: dict | None,
 
     css = f""":root{{--brand:{brand};--brand2:{brand2};--gold:{gold};--bg:{bg};--ink:#1c1917;--muted:#6b6259;--card:#ffffff;--line:{line};--dark:{dark};--radius:16px;--font-display:{font_display};--font-body:{font_body}}}
 *{{box-sizing:border-box}}html{{scroll-behavior:smooth}}
-body{{margin:0;font-family:var(--font-body);color:var(--ink);background:var(--bg);line-height:1.65}}
+body{{margin:0;font-family:var(--font-body);color:var(--ink);background:var(--bg);line-height:1.65;overflow-x:hidden;overflow-x:clip;max-width:100%}}
 h1,h2,h3{{font-family:var(--font-display);line-height:1.1;margin:0 0 .5rem;letter-spacing:-.01em}}
 a{{color:var(--brand)}}
 .wrap{{max-width:1120px;margin:auto;padding-left:1.1rem;padding-right:1.1rem}}
@@ -919,7 +1668,7 @@ a{{color:var(--brand)}}
 .hero-meta div{{display:flex;align-items:center;gap:.4rem}}
 .hero-visual-ring{{animation-name:spin}}
 @keyframes spin{{to{{transform:rotate(360deg)}}}}
-.marquee{{background:var(--dark);color:var(--gold);overflow:hidden;white-space:nowrap;padding:.55rem 0;font-weight:800;letter-spacing:.06em;font-size:.85rem}}
+.marquee{{background:var(--dark);color:var(--gold);overflow:hidden;white-space:nowrap;padding:.55rem 0;font-weight:800;letter-spacing:.06em;font-size:.85rem;max-width:100%}}
 .marquee-track{{display:inline-block;animation:scroll-left 22s linear infinite}}
 @keyframes scroll-left{{from{{transform:translateX(0)}}to{{transform:translateX(-50%)}}}}
 .strip{{margin-top:-1.2rem;position:relative;z-index:2}}
@@ -946,8 +1695,10 @@ section{{padding-top:2.8rem;padding-bottom:2.8rem}}
 .rating{{font-size:1.2rem;font-weight:800}}
 .narrow{{max-width:760px}}
 .review-slider{{max-width:680px;margin:1rem auto 0}}
+.review-panels{{position:relative}}
 .review{{display:none;background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:1.6rem;box-shadow:0 8px 24px rgba(0,0,0,.06)}}
 .review.active{{display:block}}
+.review[aria-hidden="false"]{{display:block}}
 .review-stars{{display:flex;gap:.15rem;justify-content:center;color:var(--gold);margin-bottom:.5rem}}
 .review p{{font-size:1.1rem;margin:0 0 .6rem}}
 .review cite{{color:var(--muted);font-style:normal;font-weight:700}}
@@ -965,6 +1716,7 @@ form{{display:grid;gap:.75rem;background:#fff;border:1px solid var(--line);borde
 label{{display:grid;gap:.3rem;font-weight:700;font-size:.92rem}}
 input,textarea,select{{width:100%;padding:.65rem .75rem;border:1.5px solid #d9c7b4;border-radius:.6rem;font:inherit;background:#fffdfb}}
 .form-note{{min-height:1.4em;color:var(--brand);font-weight:700;margin:0}}
+.hp{{position:absolute!important;left:-9999px!important;width:1px;height:1px;overflow:hidden;opacity:0}}
 footer{{background:var(--dark);color:#cbb9ab;text-align:center;padding:2.2rem 0 2.6rem;margin-top:1rem}}
 footer a{{color:var(--gold)}}
 footer .fine{{font-size:.85rem;opacity:.85}}
@@ -974,6 +1726,58 @@ footer strong{{color:#fff}}
 .preview-banner{{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--dark);color:var(--gold);text-align:center;font-size:.82rem;font-weight:700;padding:.55rem .8rem;border-top:2px solid var(--gold);display:flex;gap:.4rem;align-items:center;justify-content:center}}
 {('body{padding-bottom:2.4rem}') if preview else ''}
 {variant_css}
+::selection{{background:var(--gold);color:#1c1917}}
+::-webkit-scrollbar{{width:11px}}::-webkit-scrollbar-track{{background:var(--bg)}}
+::-webkit-scrollbar-thumb{{background:linear-gradient(var(--brand),var(--brand2));border-radius:8px}}
+body::after{{content:"";position:fixed;inset:0;background-image:url("{_GRAIN_URI}");opacity:.05;pointer-events:none;z-index:5}}
+h2{{font-size:clamp(1.7rem,3.6vw,2.5rem)}}
+.secnum{{font-family:var(--font-display);color:var(--brand2);margin-right:.55rem;font-size:.9em;font-weight:800}}
+.eyebrow{{display:flex;align-items:center}}
+.eyebrow::after{{content:"";height:1px;width:54px;background:var(--line);margin-left:.7rem}}
+#reviews .eyebrow{{justify-content:center}}
+.hero{{overflow:hidden}}
+.hero::before{{content:"";position:absolute;inset:0;background-image:url("{texture}");opacity:.6;pointer-events:none}}
+.hero-inner{{position:relative;z-index:1}}
+.hero-aurora{{position:absolute;inset:0;width:100%;height:100%;opacity:.55;pointer-events:none}}
+.hero-ghost{{position:absolute;right:-24px;bottom:-64px;color:#fff;opacity:.07;pointer-events:none;line-height:0}}
+.hero-photo{{width:100%;height:100%;object-fit:cover;border-radius:18px;display:block;box-shadow:0 20px 50px rgba(0,0,0,.35)}}
+.hero--split-panel .hero-photo{{border-radius:50%;aspect-ratio:1}}
+.hero--centered-gradient .hero-visual{{width:min(640px,100%);margin-top:1.6rem}}
+.hero--editorial-asymmetric .hero-visual{{width:100%;max-width:380px}}
+.about-photo{{width:100%;border-radius:var(--radius);margin:1rem 0 .4rem;display:block;box-shadow:0 10px 26px rgba(0,0,0,.10)}}
+.hero h1{{font-size:clamp(2.6rem,7.2vw,4.6rem);letter-spacing:-.02em}}
+body.js .hero-copy>*{{opacity:0;transform:translateY(26px)}}
+body.js.loaded .hero-copy>*{{opacity:1;transform:none;transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.2,1)}}
+body.js.loaded .hero-copy>*:nth-child(1){{transition-delay:.05s}}
+body.js.loaded .hero-copy>*:nth-child(2){{transition-delay:.14s}}
+body.js.loaded .hero-copy>*:nth-child(3){{transition-delay:.24s}}
+body.js.loaded .hero-copy>*:nth-child(4){{transition-delay:.34s}}
+body.js.loaded .hero-copy>*:nth-child(5){{transition-delay:.44s}}
+.wmask{{display:inline-block;overflow:hidden;vertical-align:bottom;padding-bottom:.08em;margin-bottom:-.08em}}
+.w{{display:inline-block;transform:translateY(110%);transition:transform .6s cubic-bezier(.2,.7,.2,1)}}
+.wmask.in .w{{transform:none}}
+.loader{{display:none}}
+body.js .loader{{display:grid;position:fixed;inset:0;z-index:100;background:var(--dark);place-items:center;transition:opacity .45s ease,visibility .45s}}
+body.js.loaded .loader{{opacity:0;visibility:hidden}}
+.loader-mark{{font-family:var(--font-display);font-weight:800;font-size:2.4rem;color:var(--gold);border:2px solid var(--gold);border-radius:1rem;padding:.6rem 1.3rem;animation:pulse 1s ease infinite}}
+@keyframes pulse{{50%{{opacity:.35}}}}
+.progress{{position:fixed;top:0;left:0;right:0;height:3px;z-index:70}}
+.progress span{{display:block;height:100%;transform:scaleX(0);transform-origin:0 50%;background:linear-gradient(90deg,var(--gold),var(--brand2))}}
+.stats{{background:var(--dark);color:#fff;padding:2.1rem 0}}
+.stats-grid{{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;text-align:center;align-items:center}}
+.stat-num{{font-family:var(--font-display);font-weight:800;font-size:clamp(2rem,5vw,3rem);color:var(--gold)}}
+.stat-star{{color:var(--gold);margin-left:.25rem;vertical-align:super}}
+.stat-label{{display:block;color:#e9dcc9;font-size:.9rem;margin-top:.15rem}}
+.stack{{list-style:none;margin:1.2rem 0 0;padding:0;display:grid;gap:1rem}}
+.stack-card{{position:sticky;top:92px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.6rem;box-shadow:0 12px 30px rgba(0,0,0,.08);display:grid;grid-template-columns:auto 1fr;gap:.3rem 1rem;align-items:start}}
+.stack-card:nth-child(2){{top:102px}}.stack-card:nth-child(3){{top:112px}}
+.stack-card:nth-child(4){{top:122px}}.stack-card:nth-child(5){{top:132px}}
+.stack-card:nth-child(6){{top:142px}}
+.stack-card.card:hover{{transform:none}}
+.stack-num{{font-family:var(--font-display);font-weight:800;font-size:2.4rem;line-height:1;color:transparent;-webkit-text-stroke:1.5px var(--brand);grid-row:span 2}}
+.stack-card h3{{margin-top:.35rem}}
+@media(max-width:760px){{.stats-grid{{grid-template-columns:1fr;gap:1.4rem}}.stack-card{{top:84px}}.hero-ghost{{right:-60px;opacity:.05}}}}
+@media (prefers-reduced-motion:reduce){{body.js .hero-copy>*{{opacity:1;transform:none;transition:none}}body.js .loader,.loader{{display:none}}.w{{transform:none;transition:none}}.hero-aurora{{display:none}}.marquee-track{{animation:none}}}}
 @media(max-width:760px){{
   .nav-links{{display:none;width:100%;flex-direction:column;background:#fff;border:1px solid var(--line);border-radius:12px;padding:.7rem}}
   .nav-links.open{{display:flex}}
@@ -997,24 +1801,55 @@ var h=document.getElementById('siteHeader');
 if(h){addEventListener('scroll',function(){h.classList.toggle('scrolled',scrollY>8)},{passive:true})}
 """ + ("var PREVIEW=true;" if preview else "var PREVIEW=false;") + """
 var f=document.getElementById('quote-form');
+function formNote(f){return f.querySelector('.form-note')}
 if(f){f.addEventListener('submit',function(e){
   e.preventDefault();
-  var n=f.name.value.trim(),p=f.phone.value.trim(),m=f.message.value.trim(),note=f.querySelector('.form-note');
+  var n=f.name.value.trim(),p=f.phone.value.trim(),m=f.message.value.trim(),note=formNote(f);
   if(!n||!p||!m){note.textContent='Please fill in your name, phone, and message.';return}
   if(p.replace(/\\D/g,'').length<7){note.textContent='That phone number looks too short — please double-check.';return}
+  if(f.hp&&f.hp.value){note.textContent='Thanks '+n.split(' ')[0]+'!';f.reset();return}
   if(PREVIEW){note.textContent='Thanks '+n.split(' ')[0]+'! (Design preview — this form goes live when the site launches.)';return}
-  note.textContent='Thanks '+n.split(' ')[0]+'! We will call you back shortly.';f.reset()
+  var ep=document.querySelector('meta[name="form-endpoint"]');
+  if(ep&&ep.content){
+    var data={name:n,phone:p,message:m};
+    if(f.topic)data.topic=f.topic.value;
+    data.hp=f.hp?f.hp.value:'';
+    fetch(ep.content,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+      .then(function(r){if(!r.ok)throw new Error(r.status);return r.json()})
+      .then(function(){note.textContent='Thanks '+n.split(' ')[0]+'! We received your request and will reply shortly.';f.reset()})
+      .catch(function(){note.textContent='Sorry — we could not send your request. Please call us directly.'});
+    return;
+  }
+  note.textContent='Thanks '+n.split(' ')[0]+'! We received your request and will reply shortly.';f.reset()
 })}
 var dots=Array.prototype.slice.call(document.querySelectorAll('.dot')),
     reviews=Array.prototype.slice.call(document.querySelectorAll('.review')),cur=0;
 function show(i){if(!reviews.length)return;cur=(i+reviews.length)%reviews.length;
-  reviews.forEach(function(r,j){r.classList.toggle('active',j===cur)});
-  dots.forEach(function(d,j){d.classList.toggle('active',j===cur)})}
+  reviews.forEach(function(r,j){
+    var on=j===cur;r.classList.toggle('active',on);
+    r.setAttribute('aria-hidden',on?'false':'true')
+  });
+  dots.forEach(function(d,j){
+    var on=j===cur;d.classList.toggle('active',on);
+    if(d.hasAttribute('aria-selected'))d.setAttribute('aria-selected',on?'true':'false');
+    if(d.hasAttribute('aria-controls'))d.setAttribute('tabindex',on?'0':'-1')
+  })}
 dots.forEach(function(d,i){d.addEventListener('click',function(){show(i)})});
-if(reviews.length>1){setInterval(function(){show(cur+1)},6000)}
+var tabs=document.querySelector('.slider-dots');
+if(tabs){tabs.addEventListener('keydown',function(e){
+  if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return;
+  e.preventDefault();
+  var idx=dots.indexOf(document.activeElement);if(idx<0)return;
+  show((e.key==='ArrowRight'?idx+1:idx-1+dots.length)%dots.length);dots[idx<dots.length-1?idx+1:0].focus()
+})}
+var sliderEl=document.querySelector('.review-slider'),autoTimer=null;
+function stopAuto(){if(autoTimer){clearInterval(autoTimer);autoTimer=null}}
+function startAuto(){if(reviews.length>1&&!prefersReducedMotion){if(autoTimer)stopAuto();autoTimer=setInterval(function(){show(cur+1)},6000)}}
+if(sliderEl){sliderEl.addEventListener('mouseenter',stopAuto);sliderEl.addEventListener('mouseleave',startAuto)}
+var prefersReducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 var y=document.getElementById('year');if(y){y.textContent=new Date().getFullYear()}
-var prefersReduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-if('IntersectionObserver' in window && !prefersReduced){
+startAuto();
+if('IntersectionObserver' in window && !prefersReducedMotion){
   var obs=new IntersectionObserver(function(entries){
     entries.forEach(function(en){if(en.isIntersecting){en.target.classList.add('visible');obs.unobserve(en.target)}})
   },{threshold:.12});
@@ -1023,6 +1858,102 @@ if('IntersectionObserver' in window && !prefersReduced){
   });
 } else {
   document.querySelectorAll('.card, .strip-item, .about-card, .review').forEach(function(el){el.classList.add('reveal','visible')});
+}
+/* motion v2 — award-tier entrances, split reveals, magnetic CTAs, progress,
+   parallax, count-ups, aurora canvas. All gated on reduced-motion + no-JS. */
+document.body.classList.add('js');
+var reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function pageLoaded(){document.body.classList.add('loaded')}
+if(document.readyState==='complete'){pageLoaded()}
+else{addEventListener('load',pageLoaded);setTimeout(pageLoaded,2500)}
+if(!reduceMotion&&'IntersectionObserver' in window){
+  var swObs=new IntersectionObserver(function(es){es.forEach(function(en){
+    if(en.isIntersecting){en.target.classList.add('in');swObs.unobserve(en.target)}})},{threshold:.4});
+  document.querySelectorAll('main h2').forEach(function(h){
+    var words=h.textContent.trim().split(/\\s+/);
+    if(words.length<2)return;
+    h.setAttribute('aria-label',h.textContent.trim());
+    h.innerHTML=words.map(function(w,i){return '<span class="wmask" aria-hidden="true"><span class="w" style="transition-delay:'+(i*45)+'ms">'+w+'</span></span>'}).join(' ');
+    Array.prototype.forEach.call(h.querySelectorAll('.wmask'),function(m){swObs.observe(m)});
+  });
+}
+if(!reduceMotion&&matchMedia('(pointer:fine)').matches){
+  document.querySelectorAll('.hero .btn-primary, .cta-banner .btn-primary').forEach(function(btn){
+    btn.addEventListener('pointermove',function(e){
+      var r=btn.getBoundingClientRect();
+      btn.style.transform='translate('+((e.clientX-(r.left+r.width/2))*.18)+'px,'+((e.clientY-(r.top+r.height/2))*.28)+'px)';
+    });
+    btn.addEventListener('pointerleave',function(){
+      btn.style.transition='transform .25s ease';btn.style.transform='';
+      setTimeout(function(){btn.style.transition=''},260);
+    });
+  });
+}
+var pBar=document.getElementById('progressBar');
+var plx=Array.prototype.slice.call(document.querySelectorAll('[data-parallax]'));
+var ticking=false;
+function onScroll2(){ticking=false;
+  if(pBar){var max=document.documentElement.scrollHeight-innerHeight;
+    pBar.style.transform='scaleX('+(max>0?scrollY/max:0)+')'}
+  if(!reduceMotion){plx.forEach(function(el){
+    el.style.transform='translateY('+(scrollY*parseFloat(el.getAttribute('data-parallax')))+'px)'})}
+}
+addEventListener('scroll',function(){if(!ticking){ticking=true;requestAnimationFrame(onScroll2)}},{passive:true});
+onScroll2();
+var counters=document.querySelectorAll('[data-count]');
+function runCount(el){
+  var target=parseFloat(el.getAttribute('data-count'));
+  var dec=parseInt(el.getAttribute('data-decimals')||'0',10);
+  if(reduceMotion){el.textContent=target.toFixed(dec);return}
+  var t0=null,dur=1400;
+  function step(t){if(!t0)t0=t;var p=Math.min((t-t0)/dur,1);
+    el.textContent=(target*(1-Math.pow(1-p,3))).toFixed(dec);
+    if(p<1)requestAnimationFrame(step)}
+  requestAnimationFrame(step);
+}
+if(counters.length){
+  if('IntersectionObserver' in window){
+    var cObs=new IntersectionObserver(function(es){es.forEach(function(en){
+      if(en.isIntersecting){runCount(en.target);cObs.unobserve(en.target)}})},{threshold:.5});
+    counters.forEach(function(c){cObs.observe(c)});
+  }else{counters.forEach(runCount)}
+}
+var aurora=document.getElementById('heroAurora');
+if(aurora&&!reduceMotion){
+  var actx=aurora.getContext('2d'),AW,AH,parts=[],running=true;
+  function sizeAurora(){var r=aurora.parentElement.getBoundingClientRect();
+    AW=aurora.width=Math.max(1,Math.round(r.width));AH=aurora.height=Math.max(1,Math.round(r.height))}
+  sizeAurora();addEventListener('resize',sizeAurora);
+  var cs=getComputedStyle(document.documentElement);
+  var brandC=(cs.getPropertyValue('--brand')||'#ffffff').trim();
+  var goldC=(cs.getPropertyValue('--gold')||'#ffffff').trim();
+  for(var pi=0;pi<46;pi++){parts.push({x:Math.random(),y:Math.random(),
+    r:1+Math.random()*2.6,s:.0004+Math.random()*.0012,o:.15+Math.random()*.5,hue:Math.random()<.5?0:1})}
+  function drawAurora(){
+    if(!running)return;
+    actx.clearRect(0,0,AW,AH);
+    var t=Date.now()*.0002;
+    var g1x=AW*(.25+.15*Math.sin(t)),g1y=AH*(.3+.1*Math.cos(t*1.3));
+    var g=actx.createRadialGradient(g1x,g1y,0,g1x,g1y,AW*.4);
+    g.addColorStop(0,goldC);g.addColorStop(1,'rgba(0,0,0,0)');
+    actx.globalAlpha=.28;actx.fillStyle=g;actx.fillRect(0,0,AW,AH);
+    var g2x=AW*(.8+.12*Math.cos(t*.8)),g2y=AH*(.7+.12*Math.sin(t*1.1));
+    var g2=actx.createRadialGradient(g2x,g2y,0,g2x,g2y,AW*.35);
+    g2.addColorStop(0,brandC);g2.addColorStop(1,'rgba(0,0,0,0)');
+    actx.fillStyle=g2;actx.fillRect(0,0,AW,AH);
+    parts.forEach(function(p){
+      p.y-=p.s;if(p.y<-.02){p.y=1.02;p.x=Math.random()}
+      actx.globalAlpha=p.o;actx.fillStyle=p.hue?goldC:'#ffffff';
+      actx.beginPath();actx.arc(p.x*AW,p.y*AH,p.r,0,6.283);actx.fill();
+    });
+    actx.globalAlpha=1;
+    requestAnimationFrame(drawAurora);
+  }
+  if('IntersectionObserver' in window){
+    new IntersectionObserver(function(es){es.forEach(function(en){
+      var was=running;running=en.isIntersecting;if(running&&!was)drawAurora()})}).observe(aurora);
+  }
+  drawAurora();
 }
 })();""")
     return {"index.html": index, "styles.css": css, "script.js": js}
@@ -1070,6 +2001,10 @@ def apply_preview_lock(target: Path, business_name: str) -> None:
         tag = '<meta name="robots" content="noindex, nofollow">'
         html = html.replace("</head>", tag + "\n</head>", 1) if "</head>" in html \
             else tag + "\n" + html
+    # The prompt forbids self-added banners, but older builds have them:
+    # remove any non-pipeline preview banner so exactly one ever ships.
+    html = re.sub(r'<div class="preview-banner"[^>]*>.*?</div>\s*', "", html,
+                  flags=re.S)
     if "sw-preview-banner" not in html:
         banner = (f'<div class="sw-preview-banner" role="note">Preview draft by '
                   f'{esc(AGENCY_NAME)} — design concept, not the official site of '
@@ -1084,6 +2019,31 @@ def apply_preview_lock(target: Path, business_name: str) -> None:
         html = html.replace("</body>", lock + "\n</body>", 1) if "</body>" in html \
             else html + "\n" + lock
         idx.write_text(html, encoding="utf-8")
+
+
+def _opencode_output_defects(target: Path) -> list[str]:
+    """Reject known-bad OpenCode output before it ships (mojibake check).
+
+    Returns a list of defect descriptions (empty = clean). Currently flags
+    Unicode replacement chars (U+FFFD from undecodable model output) in
+    index.html — the `90-bangkok` class of failure where the shipped
+    `<title>`/meta contained mojibake. Missing/empty files are checked by
+    the caller; this covers content defects.
+    """
+    defects: list[str] = []
+    try:
+        html = (target / "index.html").read_text(encoding="utf-8")
+    except OSError:
+        return ["index.html unreadable"]
+    if "\ufffd" in html:
+        defects.append("index.html contains U+FFFD replacement chars (mojibake)")
+    return defects
+
+
+def _prompt_sha(prompt: str) -> str:
+    """Short stable hash of the build prompt for meta.json diagnosability."""
+    import hashlib
+    return hashlib.sha256(prompt.encode("utf-8")).hexdigest()[:12]
 
 
 def generate_one(lead: dict, out_root: Path, feedback: dict | None,
@@ -1118,13 +2078,25 @@ def generate_one(lead: dict, out_root: Path, feedback: dict | None,
             and last_qa.get("passed") is not False
             and all((target / name).is_file() and (target / name).stat().st_size
                     for name in required)):
+        apply_site_hardening(target, lead)
         return {"lead_id": lid, "dir": str(target), "skipped": True, "engine": engine}
 
     target.mkdir(parents=True, exist_ok=True)
-    prompt = build_prompt(lead, feedback, preview=preview)
+    photos = collect_business_photos(lead, target)
+    if photos:
+        print(f"[website_generator] {len(photos)} real photo(s): "
+              + ", ".join(p["file"] for p in photos), flush=True)
+    prompt = build_prompt(lead, feedback, preview=preview, photos=photos)
+    last_issues = last_qa.get("issues") or []
     if last_qa.get("passed") is False:
         prompt += "\nPREVIOUS QA FAILED — fix these issues: " + json.dumps(
-            last_qa.get("issues", []), ensure_ascii=False)
+            last_issues, ensure_ascii=False)
+    elif last_issues:
+        # Passed, but with warnings: self-heal on the next rebuild instead of
+        # carrying defects forever (passed results are cached, so this only
+        # fires on forced/feedback/polish rebuilds).
+        prompt += ("\nPREVIOUS QA NOTES — the last build passed, but fix these "
+                   "remaining issues too: " + json.dumps(last_issues, ensure_ascii=False))
 
     if want_opencode:
         before = {name: (target / name).read_bytes() if (target / name).is_file() else None
@@ -1140,28 +2112,43 @@ def generate_one(lead: dict, out_root: Path, feedback: dict | None,
                 raise RuntimeError("OpenCode did not produce required files: " + ", ".join(missing))
             if all((target / name).read_bytes() == before[name] for name in required):
                 raise RuntimeError("OpenCode did not change any website files; refusing stale output")
+            bad = _opencode_output_defects(target)
+            if bad:
+                raise RuntimeError("OpenCode output failed validation: " + "; ".join(bad))
         except RuntimeError as e:
             if require_opencode:
                 raise
             print(f"[website_generator] OpenCode failed ({e}); "
                   f"falling back to the built-in template engine.", flush=True)
             engine = "template"
-            files = render_template(lead, feedback, preview=preview)
+            files = render_template(lead, feedback, preview=preview, photos=photos)
             for name, content in files.items():
                 (target / name).write_text(content, encoding="utf-8")
         else:
             if preview:
                 apply_preview_lock(target, lead.get("name") or "this business")
     else:
-        files = render_template(lead, feedback, preview=preview)
+        files = render_template(lead, feedback, preview=preview, photos=photos)
         for name, content in files.items():
             (target / name).write_text(content, encoding="utf-8")
 
+    # Template engine has no banner of its own: lock previews here so every
+    # outreach build ships banner + demo forms (opencode path locks itself).
+    if preview and engine == "template":
+        apply_preview_lock(target, lead.get("name") or "this business")
+
+    # Guarantee canonical/OG/Twitter/JSON-LD + overflow guard + carousel ARIA
+    # for every site, whichever engine produced it (idempotent).
+    apply_site_hardening(target, lead)
+
     meta = {"lead_id": lid, "slug": target.name,
+            "photos": [p["file"] for p in photos],
             "business": {k: lead.get(k) for k in
             ("name", "category", "address", "phone", "website", "rating", "review_count")},
             "lead_type": lead.get("lead_type"), "opportunity_score": lead.get("opportunity_score"),
             "engine": engine, "created_at": utc_now_iso(), "preview_mode": preview,
+            "model": os.environ.get("AGENCY_OPENCODE_MODEL", "").strip() or DEFAULT_OPENCODE_MODEL,
+            "prompt_sha": _prompt_sha(prompt),
             "feedback_applied": bool(feedback and feedback.get("requested_changes"))}
     (target / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
     return {"lead_id": lid, "dir": str(target), "skipped": False, "engine": engine}

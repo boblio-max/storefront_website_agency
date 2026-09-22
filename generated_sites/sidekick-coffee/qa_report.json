@@ -1,0 +1,45 @@
+[
+  {
+    "lead_id": "lead_00008",
+    "passed": true,
+    "score": 92,
+    "issues": [
+      "[reviewer] index.html:83 — about copy reads as an unreplaced template slot: \"The neighborhood spot for Coffee shop at 17255 135th Ave NE Ste 1020...\" is awkwardly grammatical; rewrite as a natural sentence (e.g. \"The neighborhood coffee spot at 17255 135th Ave NE Ste 1020\") so no literal '[category] at [address]' pattern survives.",
+      "[reviewer] index.html:77 — all six service cards render the identical coffee-cup SVG glyph (same path), so the menu grid's icons carry zero signal; assign each item its own meaningful mark (pour-over dripper, croissant, bean bag, plate for catering) or drop the icons for a cleaner stacked list.",
+      "[reviewer] index.html:28 and 121-122 — hours are never published, only 'Call for today's hours' and 'Hours vary by day — call'; for a coffee shop hours are a core one-visit-test fact, so publish the actual daily schedule (and add prices to the menu cards) instead of routing both through the phone.",
+      "[reviewer] styles.css:29,167 — on <=760px the header stacks logo + full-width .btn-call + burger while the topbar phone link and a full-width hero 'Call' button are also visible, stacking three call affordances into the first two viewport rows; suppress the full-width .btn-call once the hero primary CTA is on screen."
+    ],
+    "recommendations": [],
+    "checked_at": "2026-09-22T03:00:04.994119+00:00",
+    "site_dir": "generated_sites\\sidekick-coffee",
+    "details": {
+      "bytes": {
+        "html": 28156,
+        "css": 15066,
+        "js": 9384,
+        "total_kb": 51.4,
+        "images_kb": 0.0,
+        "n_images": 0
+      },
+      "words": 477,
+      "sections": 8
+    },
+    "reviewer": {
+      "engine": "opencode",
+      "model": "opencode/big-pickle",
+      "verdict": "pass",
+      "issues": [
+        "index.html:83 — about copy reads as an unreplaced template slot: \"The neighborhood spot for Coffee shop at 17255 135th Ave NE Ste 1020...\" is awkwardly grammatical; rewrite as a natural sentence (e.g. \"The neighborhood coffee spot at 17255 135th Ave NE Ste 1020\") so no literal '[category] at [address]' pattern survives.",
+        "index.html:77 — all six service cards render the identical coffee-cup SVG glyph (same path), so the menu grid's icons carry zero signal; assign each item its own meaningful mark (pour-over dripper, croissant, bean bag, plate for catering) or drop the icons for a cleaner stacked list.",
+        "index.html:28 and 121-122 — hours are never published, only 'Call for today's hours' and 'Hours vary by day — call'; for a coffee shop hours are a core one-visit-test fact, so publish the actual daily schedule (and add prices to the menu cards) instead of routing both through the phone.",
+        "styles.css:29,167 — on <=760px the header stacks logo + full-width .btn-call + burger while the topbar phone link and a full-width hero 'Call' button are also visible, stacking three call affordances into the first two viewport rows; suppress the full-width .btn-call once the hero primary CTA is on screen."
+      ],
+      "praise": [
+        "Color restraint is genuinely on-brand: warm cream base, deep coffee-brown neutrals, a single gold accent — disciplined and unmistakably THIS shop, not gradient soup.",
+        "Fraunces + Inter pairing with tight tracking and a confident clamp() hero scale (2.2-4.2rem) gives strong display/body separation and clean rhythm.",
+        "Visual hierarchy lands correctly: name, then offer, then one clear primary CTA, with a real street address and tap-able phone repeated throughout.",
+        "Specific, believable copy — 'Beans dialed in daily', 'gone by noon', real 4.7/696 review data, concrete review quotes, and no lorem — plus thorough a11y hardening (tablist carousel, reduced-motion gating, focus-visible) elevate it well past template work."
+      ]
+    }
+  }
+]

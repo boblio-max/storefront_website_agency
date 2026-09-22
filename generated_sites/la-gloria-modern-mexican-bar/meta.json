@@ -1,6 +1,7 @@
 {
   "lead_id": "lead_00001",
   "slug": "la-gloria-modern-mexican-bar",
+  "photos": [],
   "business": {
     "name": "La Gloria Modern Mexican Bar",
     "category": "Mexican restaurant",
@@ -12,8 +13,10 @@
   },
   "lead_type": "bad_website",
   "opportunity_score": 91.0,
-  "engine": "opencode",
-  "created_at": "2026-09-17T01:35:11.351811+00:00",
+  "engine": "template",
+  "created_at": "2026-09-22T02:50:15.616315+00:00",
   "preview_mode": true,
+  "model": "opencode/big-pickle",
+  "prompt_sha": "4d5a391aa8ad",
   "feedback_applied": false
 }

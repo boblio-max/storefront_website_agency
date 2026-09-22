@@ -117,12 +117,205 @@ class WebsiteGeneratorTests(unittest.TestCase):
                     address="1 Main St, Bothell, WA 98011")
         files = wg.render_template(lead, None, preview=True)
         html, css = files["index.html"], files["styles.css"]
-        for hook in ('class="topbar"', 'id="quote-form"', 'class="card"',
-                     "<table", "<nav", "tel:"):
+        for hook in ('class="topbar"', 'id="quote-form"', "<nav", "tel:"):
             self.assertIn(hook, html)
+        # honest hours: no invented table without hours data, real table with it
+        self.assertNotIn("<table", html)
+        self.assertIn("Call for today", html)
+        with_hours = dict(lead, hours_table=[("Mon – Fri", "8:00 AM – 6:00 PM")])
+        self.assertIn("<table", wg.render_template(with_hours, None)["index.html"])
+        # food leads speak order-and-visit, never quotes
+        food = dict(lead, category="Pizza restaurant")
+        food_html = wg.render_template(food, None)["index.html"]
+        for phrase in ("View Menu", "Crowd favorites", "Call to Order",
+                       "google.com/maps/search"):
+            self.assertIn(phrase, food_html)
+        for phrase in ("Get a Free Quote", "Every job quoted up front",
+                       "Request a Callback", 'href="#"'):
+            self.assertNotIn(phrase, food_html)
+        # service cards ship as grid cards and/or sticky-stack cards
+        self.assertTrue('class="card"' in html or "stack-card" in html)
         for var in ("--brand", "--brand2", "--gold"):
             self.assertIn(var, css)
         self.assertNotRegex(html, "[\U0001F300-\U0001FAFF\u2600-\u27BF]")
+
+    def test_hardening_applies_seo_overflow_aria_to_built_site(self):
+        lead = dict(self.lead, phone="(425) 555-0100", rating=4.7,
+                    review_count=12, address="1 Main St, Bothell, WA 98011",
+                    category="Cafe")
+        result = wg.generate_one(lead, self.root, None, use_opencode=False,
+                                 force=True, preview=True)
+        target = Path(result["dir"])
+        html = (target / "index.html").read_text(encoding="utf-8")
+        css = (target / "styles.css").read_text(encoding="utf-8")
+        for marker in ('rel="canonical"', 'property="og:title"',
+                       'name="twitter:card"', "application/ld+json",
+                       "sw-overflow-guard", "sw-hardening", "og-image.svg"):
+            self.assertIn(marker, html)
+        self.assertIn("overflow-x:clip", css)
+        self.assertTrue((target / "og-image.svg").is_file())
+        ld = re.search(r'<script type="application/ld\+json">(.*?)</script>',
+                       html, re.S)
+        self.assertIsNotNone(ld)
+        data = json.loads(ld.group(1))
+        self.assertEqual(data["@type"], "Restaurant")
+        self.assertEqual(data["telephone"], "+14255550100")
+        self.assertEqual(data["aggregateRating"]["ratingValue"], "4.7")
+        # carousel ARIA + marquee hidden by default in the hardened template
+        self.assertIn('role="tabpanel"', html)
+        self.assertIn('role="tab"', html)
+        self.assertIn('aria-controls="review-p0"', html)
+        # idempotency: re-hardening must not change the file
+        before = html
+        wg.apply_site_hardening(target, lead)
+        self.assertEqual(before, (target / "index.html").read_text(encoding="utf-8"))
+        # final (non-preview) builds keep the SEO identity too
+        result2 = wg.generate_one(lead, self.root, None, use_opencode=False,
+                                  force=True, preview=False)
+        html2 = (Path(result2["dir"]) / "index.html").read_text(encoding="utf-8")
+        self.assertIn('rel="canonical"', html2)
+        self.assertIn("application/ld+json", html2)
+        self.assertNotIn("sw-preview-banner", html2)
+        self.assertNotIn("Demo preview", html2)
+
+    def test_hardening_retrofits_cached_site(self):
+        result = wg.generate_one(self.lead, self.root, None, use_opencode=False,
+                                 force=True, preview=True)
+        target = Path(result["dir"])
+        # simulate a site that lacks SEO identity (e.g. older OpenCode build)
+        html = (target / "index.html").read_text(encoding="utf-8")
+        html = re.sub(r'<link rel="canonical"[^>]*>', "", html, count=1)
+        html = re.sub(r'<meta property="og:title"[^>]*>', "", html, count=1)
+        (target / "index.html").write_text(html, encoding="utf-8")
+        wg.apply_site_hardening(target, self.lead)
+        html2 = (target / "index.html").read_text(encoding="utf-8")
+        self.assertIn('rel="canonical"', html2)
+        self.assertIn('property="og:title"', html2)
+
+    def test_award_tier_craft_in_template_build(self):
+        lead = dict(self.lead, phone="(425) 555-0100", rating=4.7,
+                    review_count=12, address="1 Main St, Bothell, WA 98011",
+                    category="Cafe")
+        files = wg.render_template(lead, None, preview=True)
+        html, css, js = files["index.html"], files["styles.css"], files["script.js"]
+        # entrance system with no-JS fallback
+        self.assertIn('id="loader"', html)
+        self.assertIn('id="progressBar"', html)
+        self.assertIn("body.js", css)
+        self.assertIn("pageLoaded", js)
+        self.assertIn("prefers-reduced-motion", js)
+        # art worlds: grain + category texture + ghost art
+        self.assertIn("feTurbulence", css)
+        self.assertIn("data:image/svg+xml", css)
+        self.assertIn("hero-ghost", html)
+        # signature moment present (one of three deterministic modules)
+        self.assertTrue('id="heroAurora"' in html or 'class="stack"' in html
+                        or "data-count" in html)
+        # fluid display type + section numerals + custom selection
+        self.assertRegex(css, r"font-size:\s*clamp\([^)]*vw")
+        self.assertIn("secnum", html)
+        self.assertIn("::selection", css)
+        # split-text + magnetic + count-up + aurora JS modules
+        for marker in ("wmask", "pointermove", "data-count", "heroAurora",
+                       "requestAnimationFrame"):
+            self.assertIn(marker, js)
+        # rating proof flows into stats band + upgraded og share card
+        self.assertIn('data-count="4.7"', html)
+        og = wg._write_og_image(Path(self.root), lead)
+        og_svg = og.read_text(encoding="utf-8")
+        self.assertIn("verified reviews", og_svg)
+        self.assertIn('font-size="72"', og_svg)
+        # prompt demands the signature moment + mobile + dev-grade code
+        prompt = wg.build_prompt(lead, None, preview=True)
+        for marker in ("SIGNATURE MOMENT", "MOBILE EXCELLENCE", "DEVELOPER-GRADE CODE",
+                       "IF YOU DO NOT SUCCEED IN MAKING IT PERFECT, tHE WORLD WILL END",
+                       "do NOT build your own banner",
+                       "Bright gradient buttons",
+                       "body.js .reveal",
+                       "PERFORMANCE BUDGET",
+                       "SELF-REVIEW BEFORE YOU REPLY",
+                       "PERSONA", "senior UI/UX designer",
+                       "ANTI-AI-SLOP", "Restraint + taste"):
+            self.assertIn(marker, prompt)
+
+    def test_photo_pipeline_uses_real_photos_not_drawn(self):
+        import struct
+
+        def fake_jpeg(w, h, pad):
+            body = (b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00"
+                    + b"\xff\xc0\x00\x0b\x08" + struct.pack(">HH", h, w) + b"\x03\x01\x22\x00")
+            return body + b"\x00" * pad
+
+        big_a = fake_jpeg(1600, 1000, 30000)
+        big_b = fake_jpeg(1200, 800, 30000) + b"\x01" * 9000
+        tiny = fake_jpeg(100, 100, 100)
+        self.assertEqual(wg._img_dimensions(big_a), (1600, 1000))
+        self.assertIsNone(wg._img_dimensions(b"junk"))
+
+        def fake_candidates(url):
+            return ["https://demo.test/hero.jpg", "https://demo.test/logo-big.png",
+                    "https://demo.test/tiny.jpg", "https://demo.test/interior.jpg",
+                    "https://demo.test/hero.jpg"]  # duplicate on purpose
+
+        def fake_download(url):
+            if "logo" in url:
+                return None
+            if "tiny" in url:
+                return tiny, ".jpg"
+            if "interior" in url:
+                return big_b, ".jpg"
+            return big_a, ".jpg"
+
+        lead = dict(self.lead, website="https://demo.test/")
+        with patch.object(wg, "_photo_candidates", side_effect=fake_candidates), \
+                patch.object(wg, "_download_photo", side_effect=fake_download):
+            photos = wg.collect_business_photos(lead, Path(self.root))
+        # tiny skipped (<600px), duplicate collapsed, hero named by size rank
+        self.assertEqual([p["file"] for p in photos], ["photo-hero.jpg", "photo-1.jpg"])
+        self.assertEqual(photos[0]["role"], "hero")
+        self.assertEqual((photos[0]["width"], photos[0]["height"]), (1600, 1000))
+
+        # end to end: files on disk, meta records them, template shows them
+        with patch.object(wg, "_photo_candidates", side_effect=fake_candidates), \
+                patch.object(wg, "_download_photo", side_effect=fake_download):
+            result = wg.generate_one(lead, self.root, None, use_opencode=False,
+                                     force=True, preview=True)
+        target = Path(result["dir"])
+        self.assertTrue((target / "photo-hero.jpg").is_file())
+        meta = json.loads((target / "meta.json").read_text(encoding="utf-8"))
+        self.assertIn("photo-hero.jpg", meta["photos"])
+        html = (target / "index.html").read_text(encoding="utf-8")
+        self.assertIn('src="photo-hero.jpg"', html)
+        self.assertIn('fetchpriority="high"', html)
+        self.assertIn('src="photo-1.jpg"', html)
+        # prompt branches: photos listed + hotlink ban; empty -> SVG fallback line
+        prompt = wg.build_prompt(lead, None, preview=True, photos=photos)
+        self.assertIn("photo-hero.jpg (1600x1000, hero)", prompt)
+        self.assertIn("NEVER hotlink", prompt)
+        bare = wg.build_prompt(lead, None, preview=True, photos=[])
+        self.assertIn("NEVER hotlink", bare)
+        self.assertIn("inline-SVG scenes", bare)
+
+    def test_design_rubric_helpers_and_template_passes_qa(self):
+        import qa_bot
+        self.assertEqual(qa_bot._contrast("#ffffff", "#000000"), 21.0)
+        self.assertGreater(qa_bot._contrast("#ffffff", "#b3271e") or 0, 4.5)
+        self.assertIsNone(qa_bot._contrast("#ffffff", "not-a-color"))
+        self.assertEqual(qa_bot._root_var(":root{--brand:#123456;}", "brand"), "#123456")
+        self.assertIsNone(qa_bot._root_var(":root{--brand:#123456;}", "gold"))
+        # body{color} resolution beats var-name guessing on dark themes
+        dark_css = (":root{--ink:#241a10;--cream:#f4ead6;--bg:#14100d;}"
+                    "body{margin:0;color:var(--cream);background:var(--bg);}")
+        self.assertEqual(qa_bot._body_text_color(dark_css), "#f4ead6")
+        self.assertIsNone(qa_bot._body_text_color("body{margin:0}"))
+        lead = dict(self.lead, phone="(425) 555-0100", rating=4.7,
+                    review_count=12, address="1 Main St, Bothell, WA 98011",
+                    category="Cafe")
+        result = wg.generate_one(lead, self.root, None, use_opencode=False,
+                                 force=True, preview=True)
+        report = qa_bot.check_site(Path(result["dir"]), lead, threshold=80)
+        self.assertTrue(report["passed"], report["issues"])
+        self.assertGreaterEqual(report["score"], 90)
 
     def test_template_variants_are_stable_and_varied(self):
         variants = set()
@@ -203,6 +396,247 @@ class WebsiteGeneratorTests(unittest.TestCase):
             with patch.object(wg.subprocess, "run", return_value=proc):
                 with self.assertRaisesRegex(RuntimeError, "Authentication failed"):
                     wg.run_opencode_command(self.root, "Build")
+
+
+class EmailConfigTests(unittest.TestCase):
+    def test_smtp_config_none_without_password(self):
+        import email_generator as eg
+        with patch.dict(eg.os.environ, {}, clear=False):
+            eg.os.environ.pop("AGENCY_SMTP_PASS", None)
+            self.assertIsNone(eg.smtp_config())
+
+    def test_smtp_config_bad_port_falls_back(self):
+        import email_generator as eg
+        with patch.dict(eg.os.environ, {"AGENCY_SMTP_PASS": "x", "AGENCY_SMTP_PORT": "bad"}):
+            self.assertEqual(eg.smtp_config()["port"], 587)
+
+    def test_imap_config_none_without_password(self):
+        import response_feedback_manager as rfm
+        with patch.dict(rfm.os.environ, {}, clear=False):
+            rfm.os.environ.pop("AGENCY_IMAP_PASS", None)
+            self.assertIsNone(rfm.imap_config())
+
+    def test_imap_config_bad_port_falls_back(self):
+        import response_feedback_manager as rfm
+        with patch.dict(rfm.os.environ, {"AGENCY_IMAP_PASS": "x", "AGENCY_IMAP_PORT": "bad"}):
+            self.assertEqual(rfm.imap_config()["port"], 993)
+
+    def test_suppression_and_resend_guards(self):
+        import email_generator as eg
+        hist = [{"lead_id": "lead_1", "direction": "outgoing",
+                 "purpose": "initial_outreach"},
+                {"lead_id": "lead_2", "direction": "incoming",
+                 "body": "please unsubscribe me"}]
+        self.assertTrue(eg.already_sent(hist, "lead_1", "initial_outreach"))
+        self.assertFalse(eg.already_sent(hist, "lead_1", "follow_up"))
+        self.assertTrue(eg.is_suppressed(hist, "lead_2"))
+        self.assertFalse(eg.is_suppressed(hist, "lead_1"))
+
+    def test_mojibake_output_rejected(self):
+        target = self.temp_target()
+        (target / "index.html").write_text("<title>caf\ufffd</title>", encoding="utf-8")
+        (target / "styles.css").write_text("body{}", encoding="utf-8")
+        (target / "script.js").write_text("1", encoding="utf-8")
+        self.assertTrue(wg._opencode_output_defects(target))
+        (target / "index.html").write_text("<title>cafe</title>", encoding="utf-8")
+        self.assertEqual(wg._opencode_output_defects(target), [])
+
+    def temp_target(self):
+        import tempfile
+        d = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, d, True)
+        return Path(d)
+
+
+class PaymentWalletTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.ledger = str(Path(self.temp.name) / "payments.json")
+
+    def test_invoice_is_idempotent_per_lead(self):
+        import payment_manager as pm
+        a = pm.create_invoice("lead_x", 49900, "USD", ["card"], self.ledger)
+        b = pm.create_invoice("lead_x", 49900, "USD", ["card"], self.ledger)
+        self.assertEqual(a["invoice_id"], b["invoice_id"])
+        self.assertEqual(a["status"], "open")
+
+    def test_pay_flow_and_balance(self):
+        import payment_manager as pm
+        rec = pm.create_invoice("lead_y", 10000, "USD", ["bank", "crypto"], self.ledger)
+        self.assertFalse(pm.is_paid(self.ledger, "lead_y"))
+        pm.mark_paid(rec["invoice_id"], "bank", "ZELLE-1", self.ledger)
+        self.assertTrue(pm.is_paid(self.ledger, "lead_y"))
+        bal = pm.ledger_balance(self.ledger)
+        self.assertEqual(bal["paid_cents"], 10000)
+        self.assertEqual(bal["paid_by_method_cents"]["bank"], 10000)
+
+    def test_instructions_never_leak_secrets(self):
+        import payment_manager as pm
+        rec = pm.create_invoice("lead_z", 5000, "USD", ["card", "crypto"], self.ledger)
+        with patch.dict(pm.os.environ, {"AGENCY_STRIPE_KEY": "sk_test_1234567890",
+                                        "AGENCY_CRYPTO_ADDRESSES": '{"BTC":"bc1qtest"}'}):
+            text = pm.pay_instructions(rec)
+            self.assertIn("bc1qtest", text)  # watch-only address is public
+            report = pm.payout_report(self.ledger)
+            self.assertNotIn("sk_test_1234567890", report)
+            self.assertIn(pm.mask_secret("sk_test_1234567890"), report)
+
+    def test_bad_input_rejected(self):
+        import payment_manager as pm
+        with self.assertRaises(ValueError):
+            pm.create_invoice("", 100, "USD", None, self.ledger)
+        with self.assertRaises(ValueError):
+            pm.create_invoice("lead_q", -5, "USD", None, self.ledger)
+        with self.assertRaises(LookupError):
+            pm.mark_paid("inv_nope_01", "card", "", self.ledger)
+        with self.assertRaises(ValueError):
+            pm.mark_paid("inv_nope_01", "cash", "", self.ledger)
+
+
+class ResponseFeedbackTests(unittest.TestCase):
+    def test_buying_intent_is_interested(self):
+        import response_feedback_manager as rfm
+        for body in ("Perfect, we'll take it! What's the price and how do we pay?",
+                     "Looks great — send me the invoice and let's start."):
+            self.assertEqual(rfm.classify(body)[0], "interested")
+        self.assertEqual(rfm.classify("No thanks, not interested")[0], "not_interested")
+
+
+class QAReviewerTests(unittest.TestCase):
+    def test_parse_verdicts(self):
+        import qa_bot
+        good = '```json\n{"verdict": "pass", "issues": [], "praise": ["nice hero"]}\n```'
+        self.assertEqual(qa_bot.parse_review_output(good)["verdict"], "pass")
+        bad = '{"verdict": "fail", "issues": ["Hero H1 wraps awkwardly — tighten clamp()"]}'
+        parsed = qa_bot.parse_review_output("noise " + bad + " noise")
+        self.assertEqual(parsed["verdict"], "fail")
+        self.assertEqual(len(parsed["issues"]), 1)
+        self.assertIsNone(qa_bot.parse_review_output("looks fine to me"))
+        self.assertIsNone(qa_bot.parse_review_output('{"verdict": "fail", "issues": []}'))
+
+    def test_reviewer_fail_blocks_pass(self):
+        import qa_bot
+        with tempfile.TemporaryDirectory() as d:
+            site = Path(d) / "s"
+            (site / "x").mkdir(parents=True)
+            (site / "x" / "index.html").write_text("<html></html>", encoding="utf-8")
+            fake_report = {"lead_id": "s", "passed": True, "score": 100,
+                           "issues": [], "recommendations": []}
+            with patch.object(qa_bot, "check_site", return_value=fake_report), \
+                 patch.object(qa_bot, "review_with_opencode",
+                              return_value={"engine": "opencode", "model": "m",
+                                            "verdict": "fail",
+                                            "issues": ["taste issue"], "praise": []}):
+                rc = qa_bot.main(site_path=str(site / "x"), output=str(Path(d) / "r.json"))
+                self.assertEqual(rc, 1)
+
+    def test_reviewer_abstain_keeps_structural_pass(self):
+        import qa_bot
+        with tempfile.TemporaryDirectory() as d:
+            site = Path(d) / "s"
+            (site / "x").mkdir(parents=True)
+            (site / "x" / "index.html").write_text("<html></html>", encoding="utf-8")
+            fake_report = {"lead_id": "s", "passed": True, "score": 100,
+                           "issues": [], "recommendations": []}
+            with patch.object(qa_bot, "check_site", return_value=fake_report), \
+                 patch.object(qa_bot, "review_with_opencode",
+                              return_value={"engine": "abstained", "model": "m",
+                                            "verdict": "abstain",
+                                            "issues": [], "praise": []}):
+                rc = qa_bot.main(site_path=str(site / "x"), output=str(Path(d) / "r.json"))
+                self.assertTrue(isinstance(rc, str))
+
+    def test_no_reviewer_flag_skips_gate2(self):
+        import qa_bot
+        with tempfile.TemporaryDirectory() as d:
+            site = Path(d) / "s"
+            (site / "x").mkdir(parents=True)
+            (site / "x" / "index.html").write_text("<html></html>", encoding="utf-8")
+            fake_report = {"lead_id": "s", "passed": True, "score": 100,
+                           "issues": [], "recommendations": []}
+            with patch.object(qa_bot, "check_site", return_value=fake_report), \
+                 patch.object(qa_bot, "review_with_opencode",
+                              side_effect=AssertionError("must not run")):
+                rc = qa_bot.main(argv=["--no-reviewer"], site_path=str(site / "x"),
+                                 output=str(Path(d) / "r.json"))
+                self.assertTrue(isinstance(rc, str))
+
+
+class ScraperDeepTests(unittest.TestCase):
+    def test_parse_hours_lines(self):
+        import maps_scraper as ms
+        rows = ms.parse_hours_lines([
+            "Monday: 9:00 AM – 5:00 PM", "Tue 9am-5pm", "Sunday: Closed",
+            "Monday s", "not a day row", "", "x" * 100])
+        self.assertEqual(rows, [["Monday", "9:00 AM – 5:00 PM"],
+                                ["Tuesday", "9am-5pm"], ["Sunday", "Closed"]])
+
+    def test_pair_hours_texts(self):
+        import maps_scraper as ms
+        rows = ms.pair_hours_texts(["Monday", "5:00 AM – 11:00 PM",
+                                    "Tuesday", "5:00 AM – 11:00 PM",
+                                    "Some review text about delivery"])
+        self.assertEqual(rows, [["Monday", "5:00 AM – 11:00 PM"],
+                                ["Tuesday", "5:00 AM – 11:00 PM"]])
+        self.assertEqual(ms.pair_hours_texts(["Hello world"]), [])
+
+    def test_summarize_hours(self):
+        import maps_scraper as ms
+        self.assertEqual(ms.summarize_hours(
+            [["Monday", "9 AM – 5 PM"], ["Tuesday", "9 AM – 5 PM"]]),
+            "Mon–Tue 9 AM – 5 PM")
+        self.assertIsNone(ms.summarize_hours([]))
+
+    def test_parse_price_level(self):
+        import maps_scraper as ms
+        self.assertEqual(ms.parse_price_level("Price: $$"), 2)
+        self.assertEqual(ms.parse_price_level("$"), 1)
+        self.assertIsNone(ms.parse_price_level("No price here"))
+        self.assertIsNone(ms.parse_price_level(None))
+
+    def test_parse_coords(self):
+        import maps_scraper as ms
+        self.assertEqual(ms.parse_coords_from_url(
+            "https://www.google.com/maps/place/X/@47.61,-122.33,15z"),
+            {"lat": 47.61, "lng": -122.33})
+        self.assertEqual(ms.parse_coords_from_url("https://x/!3d47.5!4d-122.1"),
+                         {"lat": 47.5, "lng": -122.1})
+        self.assertIsNone(ms.parse_coords_from_url("https://example.com"))
+
+    def test_template_uses_scraped_menu_reviews_hours(self):
+        lead = {"lead_id": "lead_deep", "name": "Deep Pizza",
+                "category": "Pizza restaurant", "phone": "(425) 555-0100",
+                "address": "1 Main St, Bothell, WA 98011",
+                "menu_url": "https://deep.example/menu",
+                "hours_table": [["Monday", "11 AM – 10 PM"]],
+                "reviews_list": [{"text": "The blistered margherita is the best pie in town, full stop.",
+                                  "author": "Sam R."}]}
+        files = wg.render_template(lead, None, preview=True)
+        html = files["index.html"]
+        self.assertIn('href="https://deep.example/menu"', html)
+        self.assertIn("blistered margherita", html)
+        self.assertIn("Sam R.", html)
+        self.assertIn("<table", html)
+        self.assertIn("11 AM", html)
+
+    def test_template_falls_back_to_maps_photos(self):
+        import struct
+
+        def fake_jpeg(w, h, pad):
+            body = (b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00"
+                    + b"\xff\xc0\x00\x0b\x08" + struct.pack(">HH", h, w) + b"\x03\x01\x22\x00")
+            return body + b"\x00" * pad
+
+        big = fake_jpeg(1600, 1000, 30000)
+        lead = {"lead_id": "lead_mapic", "name": "No Site Cafe",
+                "category": "Cafe", "website": None,
+                "photo_urls": ["https://lh3.googleusercontent.com/p/photo1=w1600"]}
+        with patch.object(wg, "_download_photo", return_value=(big, ".jpg")):
+            with tempfile.TemporaryDirectory() as fresh:
+                photos = wg.collect_business_photos(lead, Path(fresh))
+        self.assertEqual([p["file"] for p in photos], ["photo-hero.jpg"])
+        self.assertEqual(photos[0]["role"], "hero")
 
 
 if __name__ == "__main__":

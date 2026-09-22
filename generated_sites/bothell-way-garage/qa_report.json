@@ -1,0 +1,132 @@
+[
+  {
+    "lead_id": "lead_00002",
+    "passed": true,
+    "score": 100,
+    "issues": [],
+    "recommendations": [],
+    "checked_at": "2026-09-22T02:07:16.509638+00:00",
+    "site_dir": "generated_sites\\bothell-way-garage",
+    "details": {
+      "bytes": {
+        "html": 28148,
+        "css": 15077,
+        "js": 9384,
+        "total_kb": 51.4,
+        "images_kb": 511.1,
+        "n_images": 4
+      },
+      "words": 538,
+      "sections": 8
+    }
+  },
+  {
+    "lead_id": "lead_00002",
+    "passed": true,
+    "score": 100,
+    "issues": [],
+    "recommendations": [],
+    "checked_at": "2026-09-22T02:13:51.464536+00:00",
+    "site_dir": "generated_sites\\bothell-way-garage",
+    "details": {
+      "bytes": {
+        "html": 28410,
+        "css": 15077,
+        "js": 9384,
+        "total_kb": 51.6,
+        "images_kb": 511.1,
+        "n_images": 4
+      },
+      "words": 538,
+      "sections": 8
+    }
+  },
+  {
+    "lead_id": "lead_00002",
+    "passed": true,
+    "score": 90,
+    "issues": [
+      "[reviewer] styles.css .hero--split-panel .hero-photo (border-radius:50%; width:min(280px,80%)) — the 2133x1130 landscape photo-hero.jpg is force-cropped into a 280px circular medallion, reducing the garage photo to a decorative badge. Fix: use a rounded-rect crop (border-radius:18px, 16/10 ratio) at a larger visual footprint so the image sells the shop.",
+      "[reviewer] 4.9 · 345 Google reviews is asserted four times — hero badge (index.html:50), stats bar (:69), about-card (:92), reviews heading (:101). Fix: keep it in the hero badge and reviews section, and replace the stats bar with non-redundant proof (e.g. vehicles served, warranty years, ASE count).",
+      "[reviewer] index.html:54-56 hero cta-row stacks Call / Get a Free Quote / Explore Services plus a marquee (:66) that repeats 'Bothell Way Garage · Auto repair shop' 12 times. Fix: drop the ghost 'Explore Services' button so one primary call stands alone, and echo the name only twice in the marquee.",
+      "[reviewer] styles.css:112 body::after full-viewport noise overlay sits at z-index:60, above the sticky header (z-index:30) and grains every section including the dark panels. Fix: remove it or scope it to the hero and keep opacity below .04.",
+      "[reviewer] styles.css:24 .btn-primary combines a navy→orange gradient with box-shadow 0 8px 22px rgba(0,0,0,.25); the heavy floating shadow reads as stock template. Fix: flat brand fill with a subtle 0 2px 8px under-shadow."
+    ],
+    "recommendations": [],
+    "checked_at": "2026-09-22T02:14:55.906060+00:00",
+    "site_dir": "generated_sites\\bothell-way-garage",
+    "details": {
+      "bytes": {
+        "html": 28410,
+        "css": 15077,
+        "js": 9384,
+        "total_kb": 51.6,
+        "images_kb": 511.1,
+        "n_images": 4
+      },
+      "words": 538,
+      "sections": 8
+    },
+    "reviewer": {
+      "engine": "opencode",
+      "model": "opencode/big-pickle",
+      "verdict": "pass",
+      "issues": [
+        "styles.css .hero--split-panel .hero-photo (border-radius:50%; width:min(280px,80%)) — the 2133x1130 landscape photo-hero.jpg is force-cropped into a 280px circular medallion, reducing the garage photo to a decorative badge. Fix: use a rounded-rect crop (border-radius:18px, 16/10 ratio) at a larger visual footprint so the image sells the shop.",
+        "4.9 · 345 Google reviews is asserted four times — hero badge (index.html:50), stats bar (:69), about-card (:92), reviews heading (:101). Fix: keep it in the hero badge and reviews section, and replace the stats bar with non-redundant proof (e.g. vehicles served, warranty years, ASE count).",
+        "index.html:54-56 hero cta-row stacks Call / Get a Free Quote / Explore Services plus a marquee (:66) that repeats 'Bothell Way Garage · Auto repair shop' 12 times. Fix: drop the ghost 'Explore Services' button so one primary call stands alone, and echo the name only twice in the marquee.",
+        "styles.css:112 body::after full-viewport noise overlay sits at z-index:60, above the sticky header (z-index:30) and grains every section including the dark panels. Fix: remove it or scope it to the hero and keep opacity below .04.",
+        "styles.css:24 .btn-primary combines a navy→orange gradient with box-shadow 0 8px 22px rgba(0,0,0,.25); the heavy floating shadow reads as stock template. Fix: flat brand fill with a subtle 0 2px 8px under-shadow."
+      ],
+      "praise": [
+        "Copy is concrete and local — 17210 Bothell Way NE, hours, phone, 'diagnostics before dollars', 'approve before we wrench' — specific services with real pricing etiquette, zero lorem ipsum or 'welcome to our website'.",
+        "Palette is disciplined and clearly tuned to an auto-repair brand: deep navy + orange + gold, two warm accents used consistently; no generic gradient soup.",
+        "Hero hierarchy nails the one-visit test: name → clear offer ('honest repairs, clear pricing') → one primary phone CTA, with address and hours one line above it.",
+        "Motion (word-by-word h2 reveals, count-ups, magnetic CTAs, aurora) is fully gated behind prefers-reduced-motion and no-JS fallbacks, with sticky service-stack cards as a genuinely considered touch."
+      ]
+    }
+  },
+  {
+    "lead_id": "lead_00002",
+    "passed": true,
+    "score": 92,
+    "issues": [
+      "[reviewer] index.html h1 (styles.css .hero h1) — the offer line \"Honest repairs, clear pricing\" renders as full-weight Archivo Black at the same display size as the brand name, so brand and pitch compete instead of layering. Drop the accent line to body weight (Archivo ~600) and ~55% of the display size for a cleaner brand→offer→CTA read.",
+      "[reviewer] index.html:65-67 marquee — the decorative band literally repeats \"Bothell Way Garage\" directly beneath a hero that already names the business in the h1 and header; it reads as filler noise. Swap the track to rotating service keywords (Brakes • Diagnostics • Oil • Tires • Pre-Purchase Inspections) or drop the element.",
+      "[reviewer] index.html:53-57 hero cta-row — three stacked CTAs (Call / Get a Free Quote / Explore Services) split the eye; the ghost \"Explore Services\" is redundant when the strip and sticky nav already point the way. Keep one primary phone CTA plus a single secondary and let the page scroll do the rest.",
+      "[reviewer] index.html:118-119 (and topbar:28) — no opening hours anywhere; both the Visit section and topbar answer with \"call for today's hours\". Even a short range (e.g. \"Mon–Sat, 8am–6pm\") would make the one-visit test and the 'clear info' promise concrete instead of deferring every time."
+    ],
+    "recommendations": [],
+    "checked_at": "2026-09-22T02:51:36.819413+00:00",
+    "site_dir": "generated_sites\\bothell-way-garage",
+    "details": {
+      "bytes": {
+        "html": 27976,
+        "css": 15076,
+        "js": 9384,
+        "total_kb": 51.2,
+        "images_kb": 511.1,
+        "n_images": 4
+      },
+      "words": 493,
+      "sections": 8
+    },
+    "reviewer": {
+      "engine": "opencode",
+      "model": "opencode/big-pickle",
+      "verdict": "pass",
+      "issues": [
+        "index.html h1 (styles.css .hero h1) — the offer line \"Honest repairs, clear pricing\" renders as full-weight Archivo Black at the same display size as the brand name, so brand and pitch compete instead of layering. Drop the accent line to body weight (Archivo ~600) and ~55% of the display size for a cleaner brand→offer→CTA read.",
+        "index.html:65-67 marquee — the decorative band literally repeats \"Bothell Way Garage\" directly beneath a hero that already names the business in the h1 and header; it reads as filler noise. Swap the track to rotating service keywords (Brakes • Diagnostics • Oil • Tires • Pre-Purchase Inspections) or drop the element.",
+        "index.html:53-57 hero cta-row — three stacked CTAs (Call / Get a Free Quote / Explore Services) split the eye; the ghost \"Explore Services\" is redundant when the strip and sticky nav already point the way. Keep one primary phone CTA plus a single secondary and let the page scroll do the rest.",
+        "index.html:118-119 (and topbar:28) — no opening hours anywhere; both the Visit section and topbar answer with \"call for today's hours\". Even a short range (e.g. \"Mon–Sat, 8am–6pm\") would make the one-visit test and the 'clear info' promise concrete instead of deferring every time."
+      ],
+      "praise": [
+        "Color discipline: a navy/orange/gold family that reads unmistakably automotive and local — no gradient soup, and the brand→brand2 gradient is reused consistently across buttons, scrollbar, and loader rather than invented per-section.",
+        "Copy is specific and confident: \"Diagnostics before dollars\", \"100+ point check\", full-synthetic oil, the street address in the topbar, and real attributed review quotes. No lorem, no 'welcome to our website'.",
+        "Typography pairing (Archivo Black display + Archivo body) is coherent, with sensible clamp scales and ~640px line lengths; the reveal/count-up/parallax motion is gated behind reduced-motion and no-JS so the decoration never owns the page.",
+        "One-visit test passes instantly: business name, trade, address, and a phone number appear in the topbar, sticky header, hero, and footer."
+      ]
+    }
+  }
+]

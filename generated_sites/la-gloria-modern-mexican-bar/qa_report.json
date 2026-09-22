@@ -46,5 +46,218 @@
       "words": 1004,
       "sections": 7
     }
+  },
+  {
+    "lead_id": "lead_00001",
+    "passed": true,
+    "score": 100,
+    "issues": [],
+    "recommendations": [],
+    "checked_at": "2026-09-17T04:33:26.595320+00:00",
+    "site_dir": "generated_sites\\la-gloria-modern-mexican-bar",
+    "details": {
+      "bytes": {
+        "html": 34882,
+        "css": 26298,
+        "js": 7242,
+        "total_kb": 66.8
+      },
+      "words": 1053,
+      "sections": 7
+    }
+  },
+  {
+    "lead_id": "lead_00001",
+    "passed": true,
+    "score": 100,
+    "issues": [],
+    "recommendations": [],
+    "checked_at": "2026-09-18T00:32:08.742109+00:00",
+    "site_dir": "generated_sites\\la-gloria-modern-mexican-bar",
+    "details": {
+      "bytes": {
+        "html": 39636,
+        "css": 22738,
+        "js": 8032,
+        "total_kb": 68.8
+      },
+      "words": 978,
+      "sections": 7
+    }
+  },
+  {
+    "lead_id": "lead_00001",
+    "passed": true,
+    "score": 97,
+    "issues": [
+      "Body text contrast 1.1:1 (needs 4.5:1)"
+    ],
+    "recommendations": [
+      "Fix body text/background pairing until it passes WCAG AA"
+    ],
+    "checked_at": "2026-09-18T00:59:20.210192+00:00",
+    "site_dir": "generated_sites\\la-gloria-modern-mexican-bar",
+    "details": {
+      "bytes": {
+        "html": 30985,
+        "css": 29763,
+        "js": 11250,
+        "total_kb": 70.3
+      },
+      "words": 975,
+      "sections": 7
+    }
+  },
+  {
+    "lead_id": "lead_00001",
+    "passed": true,
+    "score": 100,
+    "issues": [],
+    "recommendations": [],
+    "checked_at": "2026-09-18T01:23:12.928298+00:00",
+    "site_dir": "generated_sites\\la-gloria-modern-mexican-bar",
+    "details": {
+      "bytes": {
+        "html": 38782,
+        "css": 31929,
+        "js": 8455,
+        "total_kb": 77.3,
+        "images_kb": 0.0,
+        "n_images": 0
+      },
+      "words": 1169,
+      "sections": 8
+    }
+  },
+  {
+    "lead_id": "lead_00001",
+    "passed": true,
+    "score": 100,
+    "issues": [],
+    "recommendations": [],
+    "checked_at": "2026-09-18T04:48:10.018453+00:00",
+    "site_dir": "generated_sites\\la-gloria-modern-mexican-bar",
+    "details": {
+      "bytes": {
+        "html": 28767,
+        "css": 15067,
+        "js": 9384,
+        "total_kb": 52.0,
+        "images_kb": 0.0,
+        "n_images": 0
+      },
+      "words": 567,
+      "sections": 8
+    }
+  },
+  {
+    "lead_id": "lead_00001",
+    "passed": true,
+    "score": 100,
+    "issues": [],
+    "recommendations": [],
+    "checked_at": "2026-09-22T01:52:53.346286+00:00",
+    "site_dir": "generated_sites\\la-gloria-modern-mexican-bar",
+    "details": {
+      "bytes": {
+        "html": 28767,
+        "css": 15067,
+        "js": 9384,
+        "total_kb": 52.0,
+        "images_kb": 0.0,
+        "n_images": 0
+      },
+      "words": 567,
+      "sections": 8
+    }
+  },
+  {
+    "lead_id": "lead_00001",
+    "passed": true,
+    "score": 100,
+    "issues": [],
+    "recommendations": [],
+    "checked_at": "2026-09-22T02:11:18.480901+00:00",
+    "site_dir": "generated_sites\\la-gloria-modern-mexican-bar",
+    "details": {
+      "bytes": {
+        "html": 28968,
+        "css": 15067,
+        "js": 9384,
+        "total_kb": 52.2,
+        "images_kb": 0.0,
+        "n_images": 0
+      },
+      "words": 591,
+      "sections": 9
+    }
+  },
+  {
+    "lead_id": "lead_00001",
+    "passed": true,
+    "score": 100,
+    "issues": [],
+    "recommendations": [],
+    "checked_at": "2026-09-22T02:13:50.744536+00:00",
+    "site_dir": "generated_sites\\la-gloria-modern-mexican-bar",
+    "details": {
+      "bytes": {
+        "html": 29029,
+        "css": 15067,
+        "js": 9384,
+        "total_kb": 52.2,
+        "images_kb": 0.0,
+        "n_images": 0
+      },
+      "words": 567,
+      "sections": 8
+    }
+  },
+  {
+    "lead_id": "lead_00001",
+    "passed": true,
+    "score": 90,
+    "issues": [
+      "[reviewer] index.html:10 + styles.css:1,16,23,29 — Inter and Fraunces are loaded without an 800 cut, but .brand, .btn, .topbar-phone, .stat-num declare font-weight:800, so buttons and the brand render as browser-faux-bold; load an 800/900 weight or clamp weights to loaded cuts.",
+      "[reviewer] index.html:28,122 — hours are never published, only 'Call for today's hours' in both topbar and Visit; for a restaurant whose single CTA is 'come eat now' a day-specific hours block is the highest-converting element on the page — publish real hours and keep the call note for holidays only.",
+      "[reviewer] index.html:83 — the why-us paragraph 'The neighborhood spot for Mexican restaurant at 22010 17th Ave SE…' is grammatically awkward, repeats the business name/section, and leans on filler; rewrite with a concrete hook (a signature dish, the scratch-cooking claim, or a neighborhood detail) and then stop.",
+      "[reviewer] index.html:63-66 — the hero visual is an abstract flame glyph in a spinning ring with no appetite imagery; a food-focused business sells what it makes, and the one-visit test would land far harder with a real dish or dining-room photo powering the hero instead of a lone icon.",
+      "[reviewer] styles.css:140-144 + script.js (loaded class / 2500ms timeout) — a full-screen pulsing loader blocks first view of the business name for up to 2.5s on every load, working directly against the 10-second test; trim it to a quick non-blocking brand flash or remove it.",
+      "[reviewer] index.html:102 — all three carousel reviews cite only '— Google review' with no names; after the second identical attribution the slider reads templated and cheapens otherwise-specific testimonial copy; use first-name attributions or drop the cite line."
+    ],
+    "recommendations": [],
+    "checked_at": "2026-09-22T02:50:16.056839+00:00",
+    "site_dir": "generated_sites\\la-gloria-modern-mexican-bar",
+    "details": {
+      "bytes": {
+        "html": 28318,
+        "css": 15066,
+        "js": 9384,
+        "total_kb": 51.5,
+        "images_kb": 0.0,
+        "n_images": 0
+      },
+      "words": 524,
+      "sections": 8
+    },
+    "reviewer": {
+      "engine": "opencode",
+      "model": "opencode/big-pickle",
+      "verdict": "pass",
+      "issues": [
+        "index.html:10 + styles.css:1,16,23,29 — Inter and Fraunces are loaded without an 800 cut, but .brand, .btn, .topbar-phone, .stat-num declare font-weight:800, so buttons and the brand render as browser-faux-bold; load an 800/900 weight or clamp weights to loaded cuts.",
+        "index.html:28,122 — hours are never published, only 'Call for today's hours' in both topbar and Visit; for a restaurant whose single CTA is 'come eat now' a day-specific hours block is the highest-converting element on the page — publish real hours and keep the call note for holidays only.",
+        "index.html:83 — the why-us paragraph 'The neighborhood spot for Mexican restaurant at 22010 17th Ave SE…' is grammatically awkward, repeats the business name/section, and leans on filler; rewrite with a concrete hook (a signature dish, the scratch-cooking claim, or a neighborhood detail) and then stop.",
+        "index.html:63-66 — the hero visual is an abstract flame glyph in a spinning ring with no appetite imagery; a food-focused business sells what it makes, and the one-visit test would land far harder with a real dish or dining-room photo powering the hero instead of a lone icon.",
+        "styles.css:140-144 + script.js (loaded class / 2500ms timeout) — a full-screen pulsing loader blocks first view of the business name for up to 2.5s on every load, working directly against the 10-second test; trim it to a quick non-blocking brand flash or remove it.",
+        "index.html:102 — all three carousel reviews cite only '— Google review' with no names; after the second identical attribution the slider reads templated and cheapens otherwise-specific testimonial copy; use first-name attributions or drop the cite line."
+      ],
+      "praise": [
+        "Palette is genuinely designed for THIS business: a disciplined warm ramp (deep brown → rojo → amber) that reads sunset/Chile-modern, with accent colors used as one consistent family across ratings, brand, and CTAs — no gradient soup.",
+        "Copy is unusually specific for a template: price bands ($14–24, $11–14, platters from $45), 'ready in ~15 minutes', 'feeds 3–8 with sides, bread, sauces', 'quotes within a day', plus street address and phone repeated everywhere a decision happens.",
+        "Hierarchy is near-textbook: name, then the 'Cooked fresh, served fast' offer line, then a single phone CTA — reinforced at header, hero, about card, banner, and footer without ever competing.",
+        "Strong section rhythm: the strip overlapping the marquee, the dark gold-figured stats band between cream sections, and a consistent card/icon system give the page a confident editorial cadence."
+      ]
+    }
   }
 ]

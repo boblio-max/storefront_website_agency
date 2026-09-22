@@ -76,6 +76,25 @@ py deployment_manager.py generated_sites/<slug>        # GitHub + Vercel deploy
 py response_feedback_manager.py --poll                 # list unseen inbox replies
 ```
 
+## Payments (Bot 11 wallet)
+
+Clients pay however they want — card, bank transfer, or crypto — and money
+settles into accounts only you can withdraw from. Card goes through Stripe
+(auto-payout to your bank), bank lands directly, crypto lands on your
+watch-only addresses. The wallet never stores card numbers or private keys.
+
+```bash
+py payment_manager.py --invoice --lead <id> --amount 49900   # $499 invoice + pay instructions
+py payment_manager.py --mark-paid --invoice-id <inv> --method bank --txref "..."  # confirm receipt
+py payment_manager.py --balance                             # what's been collected
+py payment_manager.py --payout-report                       # where it sits + how to withdraw
+```
+
+Paid invoices gate the unlock: only rebuild with `--final` (banner gone,
+indexable, live forms) after `payment_manager.py --is-paid <id>` says PAID.
+Env: `AGENCY_STRIPE_KEY`, `AGENCY_STRIPE_LINK_BASE`, `AGENCY_BANK_REF`,
+`AGENCY_CRYPTO_ADDRESSES` (JSON), `AGENCY_DEFAULT_PRICE_CENTS`.
+
 ## Rules the pipeline enforces
 
 - **Emails are never fabricated.** No verified address → lead is skipped

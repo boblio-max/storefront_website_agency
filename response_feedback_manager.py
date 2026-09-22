@@ -33,6 +33,7 @@ from __future__ import annotations
 import argparse
 import datetime
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -47,7 +48,9 @@ CHANGE_HINTS = re.compile(
     r"replac|color|colour|blue|red|green|font|logo|photo|image|hour|schedule|"
     r"button|bigger|smaller|darker|lighter|move|section| headline|title", re.I)
 INTERESTED_HINTS = re.compile(
-    r"\b(interested|love it|looks great|let'?s do it|sign me up|how much|pricing|"
+    r"\b(interested|love it|looks great|let'?s do it|let'?s (go|start|launch)|"
+    r"we'?ll take it|sign me up|sign us up|how much|pricing|"
+    r"how do (we|i) pay|how to pay|send (me |over )?(the |an )?invoice|"
     r"call me|meet|demo|next step|when can|ready to|go ahead|approve)\b", re.I)
 NOT_INTERESTED_HINTS = re.compile(
     r"\b(not interested|no thanks|no thank|pass|don'?t (call|email|contact)|"
@@ -150,24 +153,46 @@ def parse_args(argv=None):
     return p.parse_args(argv)
 
 
+def _load_env_file() -> None:
+    """Load a local .env file if python-dotenv is installed (optional dep)."""
+    try:
+        from dotenv import load_dotenv
+    except ImportError:
+        return
+    try:
+        load_dotenv(dotenv_path=Path(".env"), override=False)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+_load_env_file()
+
+
+def _env_port(name: str, default: int) -> int:
+    """Read an env port safely: bad values fall back to default (no crash)."""
+    try:
+        return int(os.environ.get(name, str(default)).strip() or default)
+    except (TypeError, ValueError, AttributeError):
+        return default
+
+
 def imap_config() -> dict | None:
     """IMAP inbox for the agency mailbox (Gmail defaults baked in).
 
     Only the app password must be supplied (AGENCY_IMAP_PASS). None when
     no password is set (polling skipped).
     """
-    import os as _os
-    password = _os.environ.get("AGENCY_IMAP_PASS", "")
+    password = os.environ.get("AGENCY_IMAP_PASS", "")
     if not password:
         return None
-    sender = (_os.environ.get("AGENCY_FROM", "storefront.webs@gmail.com").strip()
+    sender = (os.environ.get("AGENCY_FROM", "storefront.webs@gmail.com").strip()
               or "storefront.webs@gmail.com")
     return {
-        "host": _os.environ.get("AGENCY_IMAP_HOST", "").strip() or "imap.gmail.com",
-        "port": int(_os.environ.get("AGENCY_IMAP_PORT", "993")),
-        "user": _os.environ.get("AGENCY_IMAP_USER", "").strip() or sender,
+        "host": os.environ.get("AGENCY_IMAP_HOST", "").strip() or "imap.gmail.com",
+        "port": _env_port("AGENCY_IMAP_PORT", 993),
+        "user": os.environ.get("AGENCY_IMAP_USER", "").strip() or sender,
         "password": password,
-        "mailbox": _os.environ.get("AGENCY_IMAP_MAILBOX", "INBOX"),
+        "mailbox": os.environ.get("AGENCY_IMAP_MAILBOX", "INBOX"),
     }
 
 
@@ -214,7 +239,8 @@ def poll_inbox(current: str = "current_leads.json",
     cfg = imap_config()
     if cfg is None:
         raise RuntimeError("IMAP not configured "
-                           "(AGENCY_IMAP_HOST/PORT/USER/PASS)")
+                           "(set AGENCY_IMAP_PASS in env or .env; "
+                           "Gmail needs 2FA + an App Password)")
     known: dict[str, str] = {}
     for src in (load_list(Path(current)), load_list(Path(history))):
         for r in src:

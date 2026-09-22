@@ -1,0 +1,43 @@
+[
+  {
+    "lead_id": "lead_00007",
+    "passed": true,
+    "score": 94,
+    "issues": [
+      "[reviewer] index.html about section (line 83): 'The neighborhood spot for Coffee stand at 20702 Bothell Everett Hwy...' is a template artifact — 'for Coffee stand' reads broken. Rewrite to 'Bothell's neighborhood coffee stand at 20702 Bothell Everett Hwy — quick counter, cozy seats, everything made to order.'",
+      "[reviewer] index.html services grid (line 77): all six cards plus the about-card reuse the identical coffee-cup SVG icon, so the menu reads as a wall of duplicate glyphs. Give each card a distinct icon (seasonal = snowflake/flower, pastries = croissant, beans = bean bag, commuter = clock, catering = platter).",
+      "[reviewer] index.html strip (line 71) and services card (line 77) both claim the same commuter value prop ('Fast Commuter Stop / Call ahead, grab & go' vs 'Quick Commuter Stop / Order ahead by phone') within one viewport. Keep one; make the other carry new info (e.g., loyalty/punch card or WiFi/work spot)."
+    ],
+    "recommendations": [],
+    "checked_at": "2026-09-22T02:59:02.300918+00:00",
+    "site_dir": "generated_sites\\mama-bear-s-espresso",
+    "details": {
+      "bytes": {
+        "html": 28233,
+        "css": 14989,
+        "js": 9384,
+        "total_kb": 51.4,
+        "images_kb": 0.0,
+        "n_images": 0
+      },
+      "words": 477,
+      "sections": 8
+    },
+    "reviewer": {
+      "engine": "opencode",
+      "model": "opencode/big-pickle",
+      "verdict": "pass",
+      "issues": [
+        "index.html about section (line 83): 'The neighborhood spot for Coffee stand at 20702 Bothell Everett Hwy...' is a template artifact — 'for Coffee stand' reads broken. Rewrite to 'Bothell's neighborhood coffee stand at 20702 Bothell Everett Hwy — quick counter, cozy seats, everything made to order.'",
+        "index.html services grid (line 77): all six cards plus the about-card reuse the identical coffee-cup SVG icon, so the menu reads as a wall of duplicate glyphs. Give each card a distinct icon (seasonal = snowflake/flower, pastries = croissant, beans = bean bag, commuter = clock, catering = platter).",
+        "index.html strip (line 71) and services card (line 77) both claim the same commuter value prop ('Fast Commuter Stop / Call ahead, grab & go' vs 'Quick Commuter Stop / Order ahead by phone') within one viewport. Keep one; make the other carry new info (e.g., loyalty/punch card or WiFi/work spot)."
+      ],
+      "praise": [
+        "Fraunces + Inter pairing with a tight scale (hero clamp 2.6–4.6rem, h2 1.7–2.5rem) gives real display/body rhythm; no system-font fallback smell, tagline capped at 640px keeps lines comfortable",
+        "Color discipline is excellent: restrained coffee-brown + gold on cream is unmistakably crafted for a coffee stand, with gradients used only as tonal depth (hero, about-card, CTA banner) rather than rainbow soup",
+        "Hierarchy is correct — badge, name+offer, one sentence, one dominant CTA (tel) threaded through topbar, sticky header, hero, about-card, CTA banner and footer — a visitor can name the business, the offer, and how to reach it in seconds",
+        "Specific, real copy: full street address, phone, 'takeout ready in about 15 minutes', 'whole-bean bags ground to your brewer', 'coffee boxes and pastry trays' — concrete, not adjective filler"
+      ]
+    }
+  }
+]

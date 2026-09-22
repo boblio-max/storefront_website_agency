@@ -1,0 +1,22 @@
+{
+  "lead_id": "lead_00010",
+  "slug": "noli-coffee",
+  "photos": [],
+  "business": {
+    "name": "Noli Coffee",
+    "category": "Coffee shop",
+    "address": "10610 Woodinville Dr, Bothell, WA 98011",
+    "phone": "(509) 903-6015",
+    "website": "https://www.instagram.com/nolicoffee/",
+    "rating": 5.0,
+    "review_count": 63
+  },
+  "lead_type": "bad_website",
+  "opportunity_score": 75.8,
+  "engine": "template",
+  "created_at": "2026-09-22T03:03:51.293178+00:00",
+  "preview_mode": true,
+  "model": "opencode/big-pickle",
+  "prompt_sha": "cb2189c9ece1",
+  "feedback_applied": false
+}

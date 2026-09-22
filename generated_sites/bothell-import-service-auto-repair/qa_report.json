@@ -1,0 +1,96 @@
+[
+  {
+    "lead_id": "lead_00011",
+    "passed": false,
+    "score": 85,
+    "issues": [
+      "No tel: call link",
+      "[reviewer] No phone number is rendered anywhere and there are zero tel: links; topbar 'Call for today's hours' (index.html:28), hero-meta (index.html:59-61), and Visit 'call us for today's hours' (index.html:122) are dead text. A brake shop's #1 conversion tool is the phone. Fix: show the shop's actual number in the topbar and Visit/address and wrap each in href=\"tel:+1...\", and point the 'Request a Callback' banner (index.html:112) at it too. This also resolves the structural gate finding.",
+      "[reviewer] All five service cards (index.html:73-78) plus the strip, hero visual, and about card reuse the identical wrench glyph — the icon loads as one visual, not five services. Fix: give each card a distinct on-message SVG (brake disc/rotor, check-engine gauge, oil drop, gearbox, clipboard-check) so a scan reads the offering at a glance.",
+      "[reviewer] Hero h1 (styles.css:128, index.html:51) crams the full 35-char business name plus a second accent headline in clamp-up-to-4.6rem Archivo Black; at 360px it stacks into ~5 tall lines and buries the offer. Fix: shorten the display line (e.g., 'Bothell Import Service' with a small 'auto repair' kicker), keep 'Honest repairs, clear pricing' as a tight one-liner, and set a mobile-safe clamp floor around 2.3rem.",
+      "[reviewer] All three reviews (index.html:102) cite anonymous '— Google review' with no reviewer name or context, so the 4.1/56 social proof reads as template filler. Fix: use the real reviewer names (or initials + date) from the Google aggregate so the quotes carry concrete credibility.",
+      "[reviewer] Visit section (index.html:122) punts 'Hours vary by day — call us for today's hours' with no number behind it — evasive rather than specific. Fix: publish the seven-day hours table in the Visit card (it's the one concrete fact locals look for), or replace the placeholder with a real call prompt tied to issue #1."
+    ],
+    "recommendations": [
+      "Add a Call Now button with href='tel:+1...'",
+      "Fix the [reviewer] taste issues above in Bot 5, then re-run QA"
+    ],
+    "checked_at": "2026-09-22T03:06:28.693424+00:00",
+    "site_dir": "generated_sites\\bothell-import-service-auto-repair",
+    "details": {
+      "bytes": {
+        "html": 26619,
+        "css": 15076,
+        "js": 9384,
+        "total_kb": 49.9,
+        "images_kb": 0.0,
+        "n_images": 0
+      },
+      "words": 487,
+      "sections": 8
+    },
+    "reviewer": {
+      "engine": "opencode",
+      "model": "opencode/big-pickle",
+      "verdict": "fail",
+      "issues": [
+        "No phone number is rendered anywhere and there are zero tel: links; topbar 'Call for today's hours' (index.html:28), hero-meta (index.html:59-61), and Visit 'call us for today's hours' (index.html:122) are dead text. A brake shop's #1 conversion tool is the phone. Fix: show the shop's actual number in the topbar and Visit/address and wrap each in href=\"tel:+1...\", and point the 'Request a Callback' banner (index.html:112) at it too. This also resolves the structural gate finding.",
+        "All five service cards (index.html:73-78) plus the strip, hero visual, and about card reuse the identical wrench glyph — the icon loads as one visual, not five services. Fix: give each card a distinct on-message SVG (brake disc/rotor, check-engine gauge, oil drop, gearbox, clipboard-check) so a scan reads the offering at a glance.",
+        "Hero h1 (styles.css:128, index.html:51) crams the full 35-char business name plus a second accent headline in clamp-up-to-4.6rem Archivo Black; at 360px it stacks into ~5 tall lines and buries the offer. Fix: shorten the display line (e.g., 'Bothell Import Service' with a small 'auto repair' kicker), keep 'Honest repairs, clear pricing' as a tight one-liner, and set a mobile-safe clamp floor around 2.3rem.",
+        "All three reviews (index.html:102) cite anonymous '— Google review' with no reviewer name or context, so the 4.1/56 social proof reads as template filler. Fix: use the real reviewer names (or initials + date) from the Google aggregate so the quotes carry concrete credibility.",
+        "Visit section (index.html:122) punts 'Hours vary by day — call us for today's hours' with no number behind it — evasive rather than specific. Fix: publish the seven-day hours table in the Visit card (it's the one concrete fact locals look for), or replace the placeholder with a real call prompt tied to issue #1."
+      ],
+      "praise": [
+        "Copy is genuinely specific, not adjective-stuffed: real street address, 4.1/56 Google rating, named services (Brakes & Rotors, Check-Engine, Oil & Maintenance, Engine & Transmission), and the 'Diagnostics before dollars' promise — no lorem, no 'welcome to our website'.",
+        "The deep-navy / burnt-orange / gold palette is disciplined and carried through hero, cards, CTA banner, stats, and even the scrollbar — it reads as a brand for this shop, not generic gradient soup.",
+        "Hero hierarchy lands: badge → business name → single one-line offer → one clear CTA, with heavy motion safely gated behind prefers-reduced-motion and a no-JS fallback.",
+        "Mobile base holds together: nav collapses at 760px with a proper toggle, stats/visit/about grids stack, and clamp() type scale plus full-width .btn-call give reasonable 360px tap targets."
+      ]
+    }
+  },
+  {
+    "lead_id": "lead_00011",
+    "passed": true,
+    "score": 90,
+    "issues": [
+      "[reviewer] index.html hero cta-row (lines 53-57): three competing CTAs ('Call', 'Get a Free Quote', 'Explore Services') dilute the single-action message; keep the primary Call button plus one secondary and move 'Explore Services' into nav-only so the eye lands on exactly one action.",
+      "[reviewer] index.html:33 + styles.css:16: the full 33-char all-caps brand in the sticky header crowds the 360px row (badge + hamburger + call pill), forcing a wrap; shorten the header brand to 'BOTHELL IMPORT SERVICE' and keep the full name for the hero h1 and footer.",
+      "[reviewer] styles.css:78 / index.html:103: 12x12px slider dots are sub-44px tap targets on mobile; extend the hit area with padding or an ::after overlay.",
+      "[reviewer] index.html:28,122: the only hours signal is 'call for today's hours' — a brake customer judging trip timing wants a schedule; add at least a simple weekday window or a 'call for today's hours' persisted prominently.",
+      "[reviewer] index.html:68-70: the marquee immediately under the hero repeats the full uppercase brand, shouting right as hierarchy settles; drop it or replace the text with a scrolling service/keyword strip."
+    ],
+    "recommendations": [],
+    "checked_at": "2026-09-22T03:08:34.584087+00:00",
+    "site_dir": "generated_sites\\bothell-import-service-auto-repair",
+    "details": {
+      "bytes": {
+        "html": 28077,
+        "css": 15076,
+        "js": 9384,
+        "total_kb": 51.3,
+        "images_kb": 0.0,
+        "n_images": 0
+      },
+      "words": 508,
+      "sections": 8
+    },
+    "reviewer": {
+      "engine": "opencode",
+      "model": "opencode/big-pickle",
+      "verdict": "pass",
+      "issues": [
+        "index.html hero cta-row (lines 53-57): three competing CTAs ('Call', 'Get a Free Quote', 'Explore Services') dilute the single-action message; keep the primary Call button plus one secondary and move 'Explore Services' into nav-only so the eye lands on exactly one action.",
+        "index.html:33 + styles.css:16: the full 33-char all-caps brand in the sticky header crowds the 360px row (badge + hamburger + call pill), forcing a wrap; shorten the header brand to 'BOTHELL IMPORT SERVICE' and keep the full name for the hero h1 and footer.",
+        "styles.css:78 / index.html:103: 12x12px slider dots are sub-44px tap targets on mobile; extend the hit area with padding or an ::after overlay.",
+        "index.html:28,122: the only hours signal is 'call for today's hours' — a brake customer judging trip timing wants a schedule; add at least a simple weekday window or a 'call for today's hours' persisted prominently.",
+        "index.html:68-70: the marquee immediately under the hero repeats the full uppercase brand, shouting right as hierarchy settles; drop it or replace the text with a scrolling service/keyword strip."
+      ],
+      "praise": [
+        "Copy is genuinely specific and human — street address, 'Diagnostics before dollars' hook, same-day/no-upsell review quotes, dealer-level scans — zero lorem or welcome-filler, and the diag-first narrative threads badge, tagline, checklist, and services as one message.",
+        "Palette stays disciplined: deep navy frame with a single warm orange/gold accent family; gradients are used in a few high-signal places (hero accent, primary button) instead of gradient soup.",
+        "Typography pairing (Archivo Black display / Archivo body) is purposeful, with a confident clamp() scale, tight display letter-spacing, and ~60-70ch body columns.",
+        "Motion is tasteful and correctly gated: magnetic CTAs, reveal/word-mask entrances, aurora canvas, count-ups and parallax all respect prefers-reduced-motion and pointer:fine — the design would still hold up fully static."
+      ]
+    }
+  }
+]

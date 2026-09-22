@@ -1,0 +1,22 @@
+{
+  "lead_id": "lead_00006",
+  "slug": "milky-way-espresso",
+  "photos": [],
+  "business": {
+    "name": "Milky Way Espresso",
+    "category": "Coffee stand",
+    "address": "19005 Bothell Way NE, Bothell, WA 98011",
+    "phone": "(425) 419-9205",
+    "website": null,
+    "rating": 4.9,
+    "review_count": 34
+  },
+  "lead_type": "no_website",
+  "opportunity_score": 83.0,
+  "engine": "template",
+  "created_at": "2026-09-22T02:57:03.595553+00:00",
+  "preview_mode": true,
+  "model": "opencode/big-pickle",
+  "prompt_sha": "368211b54d6d",
+  "feedback_applied": false
+}

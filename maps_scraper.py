@@ -14,9 +14,22 @@ Each record in the output JSON looks like:
       "rating": 4.7,
       "review_count": 183,
       "maps_url": "https://www.google.com/maps/place/...",
+      "hours_table": [["Monday", "9:00 AM – 5:00 PM"], ...],
+      "hours": "Mon–Fri 9am–5pm",
+      "price_level": 2,
+      "photo_urls": ["https://lh3.googleusercontent.com/..."],
+      "reviews_list": [{"text": "...", "author": "..."}],
+      "menu_url": "https://example.com/menu",
+      "coords": {"lat": 47.6, "lng": -122.2},
+      "attributes": ["Dine-in", "Takeout"],
       "source": "google_maps",
       "discovered_at": "2026-09-07T..."
     }
+
+Deep fields (hours/price/photos/reviews/menu/coords/attributes) are
+best-effort: Google changes markup often, so each extractor fails soft to
+None/[] and never sinks the record. Email is never on Maps — Bot 9 skips
+phone-only leads instead of fabricating addresses.
 
 Usage:
     pip install playwright requests
@@ -42,6 +55,11 @@ import time
 import urllib.parse
 
 import requests
+
+try:  # Windows consoles default to cp1252; keep unicode output from crashing
+    sys.stdout.reconfigure(encoding="utf-8")
+except Exception:  # noqa: BLE001
+    pass
 
 DEFAULT_QUERIES = ["auto repair", "coffee shop", "restaurant"]
 
@@ -142,6 +160,105 @@ def dedupe(records: list[dict]) -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
+# Deep-field parsing helpers (pure functions — unit-tested, no browser)
+# ---------------------------------------------------------------------------
+
+_DAY_RE = re.compile(
+    r"^(Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|"
+    r"Sat(?:urday)?|Sun(?:day)?)\s*:?\s*(.+)$", re.I)
+_BARE_DAY_RE = re.compile(
+    r"^(Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|"
+    r"Sat(?:urday)?|Sun(?:day)?)$", re.I)
+_HOURS_REST_RE = re.compile(r"\d|closed|open", re.I)
+
+
+def _looks_like_hours(rest: str) -> bool:
+    """Guard against fragments ('Monday s') — real hours name a time/state."""
+    rest = (rest or "").strip()
+    return len(rest) >= 3 and bool(_HOURS_REST_RE.search(rest))
+
+
+def parse_hours_lines(lines: list[str]) -> list[list[str]]:
+    """Turn raw day-row strings into [[Day, hours], ...] (max 7).
+
+    Accepts 'Monday: 9 AM – 5 PM', 'Tue 9am-5pm', 'Sunday: Closed'.
+    """
+    table: list[list[str]] = []
+    for raw in lines or []:
+        t = (raw or "").strip()
+        if not t or len(t) > 80:
+            continue
+        m = _DAY_RE.match(t)
+        if m and _looks_like_hours(m.group(2)):
+            table.append([_canon_day(m.group(1)), m.group(2).strip()])
+        if len(table) >= 7:
+            break
+    return table
+
+
+def pair_hours_texts(texts: list[str]) -> list[list[str]]:
+    """Pair bare day nodes with the following time-like node.
+
+    Google often renders 'Monday' and '5:00 AM – 11:00 PM' as siblings, so
+    no single text contains the full row. Walks DOM-order texts and pairs
+    a bare day token with the next short hours-like text.
+    """
+    table: list[list[str]] = []
+    i = 0
+    texts = [(t or "").strip() for t in (texts or [])]
+    while i < len(texts) and len(table) < 7:
+        t = texts[i]
+        if _BARE_DAY_RE.match(t) and i + 1 < len(texts):
+            nxt = texts[i + 1].strip()
+            if len(nxt) <= 40 and _looks_like_hours(nxt):
+                table.append([_canon_day(t), nxt])
+                i += 2
+                continue
+        i += 1
+    return table
+
+
+def _canon_day(token: str) -> str:
+    short = token.strip()[:3].lower()
+    return {"mon": "Monday", "tue": "Tuesday", "wed": "Wednesday",
+            "thu": "Thursday", "fri": "Friday", "sat": "Saturday",
+            "sun": "Sunday"}.get(short, token.strip().title())
+
+
+def summarize_hours(table: list[list[str]]) -> str | None:
+    """One-line hours summary ('Mon–Fri 9am–5pm') or None."""
+    if not table:
+        return None
+    days = [d for d, _ in table]
+    hours = [h for _, h in table]
+    if len(set(hours)) == 1:
+        return f"{days[0][:3]}–{days[-1][:3]} {hours[0]}" if len(days) > 1 \
+            else f"{days[0]} {hours[0]}"
+    return "; ".join(f"{d[:3]} {h}" for d, h in table)[:120]
+
+
+def parse_price_level(text: str | None) -> int | None:
+    """Google '$'..'$$$$' indicator → 1..4."""
+    if not text:
+        return None
+    m = re.search(r"(\${1,4})", text)
+    return len(m.group(1)) if m else None
+
+
+def parse_coords_from_url(url: str | None) -> dict | None:
+    """Lat/lng from a Maps URL (@lat,lng, or !3dLAT!4dLNG)."""
+    if not url:
+        return None
+    m = re.search(r"@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)", url)
+    if m:
+        return {"lat": float(m.group(1)), "lng": float(m.group(2))}
+    m = re.search(r"!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)", url)
+    if m:
+        return {"lat": float(m.group(1)), "lng": float(m.group(2))}
+    return None
+
+
+# ---------------------------------------------------------------------------
 # Google Maps scraping (Playwright)
 # ---------------------------------------------------------------------------
 
@@ -233,6 +350,199 @@ def collect_listing_urls(page, max_results: int, scroll_delay: float = 1.2) -> l
     return urls
 
 
+# ---------------------------------------------------------------------------
+# Deep-field DOM extractors (best-effort — each fails soft, never raises)
+# ---------------------------------------------------------------------------
+
+def _panel_texts(page, selector: str, limit: int = 60) -> list[str]:
+    """All visible texts under selector (empty list on any failure)."""
+    try:
+        loc = page.locator(selector)
+        n = min(loc.count(), limit)
+        out = []
+        for i in range(n):
+            try:
+                t = loc.nth(i).inner_text(timeout=800)
+            except Exception:  # noqa: BLE001
+                continue
+            t = (t or "").strip()
+            if t:
+                out.append(t)
+        return out
+    except Exception:  # noqa: BLE001
+        return []
+
+
+def extract_hours(page) -> tuple[list[list[str]], str | None]:
+    """Opening-hours table + one-line summary (both empty when absent)."""
+    status: str | None = None
+    try:
+        aria = (_safe_attr(page.locator("button[data-item-id='oh']").first,
+                           "aria-label") or "")
+        # e.g. 'Open 24 hours · See more hours' -> today's live status.
+        if aria:
+            status = aria.split("·")[0].strip() or None
+    except Exception:  # noqa: BLE001
+        pass
+    # The weekly table hides behind the hours expander — open it first.
+    try:
+        btn = page.locator("button[data-item-id='oh']").first
+        if btn.count() > 0:
+            btn.click(timeout=3000)
+            page.wait_for_timeout(1200)
+    except Exception:  # noqa: BLE001
+        pass
+    texts: list[str] = []
+    for sel in ["div[data-item-id*='oh']", "div[aria-label*='Hours']",
+                "div.m6QErb", "div[role='main']"]:
+        texts = _panel_texts(page, sel, 120)
+        rows = parse_hours_lines(texts)
+        if len(rows) >= 3:
+            return rows, summarize_hours(rows)
+    rows = parse_hours_lines(texts)
+    if rows:
+        return rows, summarize_hours(rows)
+    # Sibling-node layout: bare 'Monday' + '5:00 AM – 11 PM' as neighbors.
+    rows = pair_hours_texts([t for t in texts if len(t) <= 40])
+    if len(rows) >= 3:
+        return rows, summarize_hours(rows)
+    # Last resort: page-wide scan for day-row text nodes (no clicks — hours
+    # sometimes render outside the info containers).
+    try:
+        found = page.evaluate("""() => {
+          const out = [];
+          const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+          let node;
+          while (node = walker.nextNode()) {
+            const t = (node.nodeValue || '').trim();
+            if (/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)(day)?(\\s*:?\\s*\\S.*)?$/i.test(t) && t.length < 60) {
+              out.push(t);
+              if (out.length >= 30) break;
+            }
+          }
+          return out;
+        }""")
+        rows = parse_hours_lines(found or []) or pair_hours_texts(found or [])
+        if rows:
+            return rows, summarize_hours(rows)
+    except Exception:  # noqa: BLE001
+        pass
+    # No weekly rows (headless Google often withholds them) — fall back to
+    # today's live status from the expander ('Open 24 hours', 'Closed · …').
+    if status and len(status) <= 60:
+        return [], status
+    return [], None
+
+
+def extract_price_level(page) -> int | None:
+    for sel in ["span[aria-label*='Price']", "button.DkEaL", "div.PYvSYb"]:
+        for t in _panel_texts(page, sel, 8):
+            v = parse_price_level(t)
+            if v:
+                return v
+    return None
+
+
+def extract_photo_urls(page, limit: int = 6) -> list[str]:
+    """Direct Google-hosted photo URLs (thumbnails usable for download)."""
+    out: list[str] = []
+    try:
+        imgs = page.locator("div[role='main'] img, div.m6QErb img")
+        n = min(imgs.count(), 40)
+        for i in range(n):
+            try:
+                src = imgs.nth(i).get_attribute("src", timeout=800)
+            except Exception:  # noqa: BLE001
+                continue
+            if not src or not src.startswith("http"):
+                continue
+            low = src.lower()
+            if ("googleusercontent" not in low and "ggpht" not in low
+                    and "gstatic" not in low):
+                continue
+            if any(bad in low for bad in ("favicon", "logo", "pin", "marker")):
+                continue
+            if src not in out:
+                out.append(src)
+            if len(out) >= limit:
+                break
+    except Exception:  # noqa: BLE001
+        pass
+    return out
+
+
+def extract_reviews(page, limit: int = 3) -> list[dict]:
+    """Top review snippets [{text, author}] (empty when absent)."""
+    out: list[dict] = []
+    for sel in ["div[data-review-id]", "div.jftiEf", "div.MyEned"]:
+        try:
+            cards = page.locator(sel)
+            n = min(cards.count(), 8)
+        except Exception:  # noqa: BLE001
+            continue
+        for i in range(n):
+            card = cards.nth(i)
+            text = None
+            for tsel in ["span.wiI7pd", "div.MyEned span"]:
+                text = _safe_text(card.locator(tsel))
+                if text and len(text) > 20:
+                    break
+            if not text or len(text) < 20:
+                continue
+            author = (_safe_text(card.locator("div.d4r55").first)
+                      or _safe_text(card.locator("button span").first) or "")
+            out.append({"text": text[:400], "author": (author or "")[:60]})
+            if len(out) >= limit:
+                return out
+        if out:
+            return out
+    return out
+
+
+def extract_menu_url(page) -> str | None:
+    try:
+        href = _safe_attr(page.locator("a[data-item-id*='menu']").first, "href")
+        if href and href.startswith("http"):
+            return href
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        links = page.locator("div[role='main'] a, div.m6QErb a")
+        n = min(links.count(), 60)
+        for i in range(n):
+            try:
+                t = (links.nth(i).inner_text(timeout=500) or "").strip().lower()
+                href = links.nth(i).get_attribute("href", timeout=500)
+            except Exception:  # noqa: BLE001
+                continue
+            if t == "menu" and href and href.startswith("http"):
+                return href
+    except Exception:  # noqa: BLE001
+        pass
+    return None
+
+
+_AMENITIES = ("dine-in", "dine in", "takeout", "takeaway", "delivery",
+              "drive-through", "outdoor seating", "wheelchair accessible",
+              "free wi-fi", "free wifi", "reservations", "curbside pickup")
+
+
+def extract_attributes(page, limit: int = 10) -> list[str]:
+    found: list[str] = []
+    for t in _panel_texts(page, "div[role='main'], div.m6QErb", 200):
+        if len(t) > 60:
+            continue  # amenity chips are short; long text is reviews (false +)
+        low = t.lower()
+        for a in _AMENITIES:
+            if a in low and len(found) < limit:
+                label = {"Dine In": "Dine-in"}.get(a.title(), a.title())
+                if label not in found:
+                    found.append(label)
+        if len(found) >= limit:
+            break
+    return found
+
+
 def scrape_detail(context, url: str, timeout_ms: int = 15000) -> dict:
     """Visit one business page and extract the target record fields."""
     page = context.new_page()
@@ -245,6 +555,14 @@ def scrape_detail(context, url: str, timeout_ms: int = 15000) -> dict:
         "rating": None,
         "review_count": None,
         "maps_url": url.split("?")[0] if "?" in url else url,
+        "hours_table": [],
+        "hours": None,
+        "price_level": None,
+        "photo_urls": [],
+        "reviews_list": [],
+        "menu_url": None,
+        "coords": None,
+        "attributes": [],
         "source": "google_maps",
         "discovered_at": utc_now_iso(),
     }
@@ -322,6 +640,38 @@ def scrape_detail(context, url: str, timeout_ms: int = 15000) -> dict:
                 pass
         if site:
             rec["website"] = site
+
+        # Deep fields — each fails soft to None/[] (never sinks the record).
+        try:
+            hours_table, hours = extract_hours(page)
+            rec["hours_table"] = hours_table
+            rec["hours"] = hours
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            rec["price_level"] = extract_price_level(page)
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            rec["photo_urls"] = extract_photo_urls(page)
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            rec["reviews_list"] = extract_reviews(page)
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            rec["menu_url"] = extract_menu_url(page)
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            rec["coords"] = parse_coords_from_url(rec.get("maps_url"))
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            rec["attributes"] = extract_attributes(page)
+        except Exception:  # noqa: BLE001
+            pass
     finally:
         try:
             page.close()

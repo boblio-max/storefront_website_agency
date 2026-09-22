@@ -1,1 +1,47 @@
-[]
+[
+  {
+    "site": "la-gloria-modern-mexican-bar",
+    "lead_id": "lead_00001",
+    "status": "deployed",
+    "github_url": "https://github.com/storefrontweb/la-gloria-modern-mexican-bar",
+    "preview_url": "https://la-gloria-modern-mexican-bar.vercel.app",
+    "provider": "vercel",
+    "deployed_at": "2026-09-17T04:33:43.168701+00:00"
+  },
+  {
+    "site": "90-bangkok-cafe-and-bar",
+    "lead_id": "lead_00001",
+    "status": "deployed",
+    "github_url": "https://github.com/storefrontweb/90-bangkok-cafe-and-bar",
+    "preview_url": "https://90-bangkok-cafe-and-bar.vercel.app",
+    "provider": "vercel",
+    "deployed_at": "2026-09-18T00:12:10.760617+00:00"
+  },
+  {
+    "site": "la-gloria-modern-mexican-bar",
+    "lead_id": "lead_00001",
+    "status": "deployed",
+    "github_url": "https://github.com/storefrontweb/la-gloria-modern-mexican-bar",
+    "preview_url": "https://la-gloria-modern-mexican-bar.vercel.app",
+    "provider": "vercel",
+    "deployed_at": "2026-09-18T00:32:28.579771+00:00"
+  },
+  {
+    "site": "la-gloria-modern-mexican-bar",
+    "lead_id": "lead_00001",
+    "status": "deployed",
+    "github_url": "https://github.com/storefrontweb/la-gloria-modern-mexican-bar",
+    "preview_url": "https://la-gloria-modern-mexican-bar.vercel.app",
+    "provider": "vercel",
+    "deployed_at": "2026-09-18T00:59:30.842945+00:00"
+  },
+  {
+    "site": "la-gloria-modern-mexican-bar",
+    "lead_id": "lead_00001",
+    "status": "deployed",
+    "github_url": "https://github.com/storefrontweb/la-gloria-modern-mexican-bar",
+    "preview_url": "https://la-gloria-modern-mexican-bar.vercel.app",
+    "provider": "vercel",
+    "deployed_at": "2026-09-18T01:23:32.303289+00:00"
+  }
+]

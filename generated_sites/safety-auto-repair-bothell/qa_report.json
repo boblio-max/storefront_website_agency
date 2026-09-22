@@ -1,0 +1,45 @@
+[
+  {
+    "lead_id": "lead_00003",
+    "passed": true,
+    "score": 92,
+    "issues": [
+      "[reviewer] index.html:51 — the h1 merges brand + offer into one heading (\"Safety Auto Repair - Bothell\" then gradient span \"Honest repairs, clear pricing\"); in Archivo Black at 35px+ it will wrap mid-thought at 360px and the two-tier message gets flattened. Fix: put the brand on line 1 and the gradient accent on a visually separated line below (display:block, smaller size) so hierarchy reads name → offer.",
+      "[reviewer] index.html:54-56 — hero CTA row ships three competing actions (Call / Get a Free Quote / Explore Services); no single clear CTA survives. Fix: keep the phone as the lone primary, keep the secondary quote view, and demote \"Explore Services\" to a plain text link or drop it since it duplicates the nav.",
+      "[reviewer] styles.css:24 — .btn-primary uses a brand→brand2 gradient, but the hero background itself ends in brand2 and the badge/accent text also carry gradients; the CTA gets swallowed by the wash behind it. Fix: make the primary button solid (deep navy on orange, or brand2 on navy) so it stands out against the hero.",
+      "[reviewer] styles.css:78 — 12px review slider dots are undersized tap targets on mobile (well under 44px). Fix: bump .dot to ~16px with a larger hit area (padding or min-width) at the 760px breakpoint."
+    ],
+    "recommendations": [],
+    "checked_at": "2026-09-22T02:52:46.574415+00:00",
+    "site_dir": "generated_sites\\safety-auto-repair-bothell",
+    "details": {
+      "bytes": {
+        "html": 28151,
+        "css": 15153,
+        "js": 9384,
+        "total_kb": 51.5,
+        "images_kb": 0.0,
+        "n_images": 0
+      },
+      "words": 499,
+      "sections": 8
+    },
+    "reviewer": {
+      "engine": "opencode",
+      "model": "opencode/big-pickle",
+      "verdict": "pass",
+      "issues": [
+        "index.html:51 — the h1 merges brand + offer into one heading (\"Safety Auto Repair - Bothell\" then gradient span \"Honest repairs, clear pricing\"); in Archivo Black at 35px+ it will wrap mid-thought at 360px and the two-tier message gets flattened. Fix: put the brand on line 1 and the gradient accent on a visually separated line below (display:block, smaller size) so hierarchy reads name → offer.",
+        "index.html:54-56 — hero CTA row ships three competing actions (Call / Get a Free Quote / Explore Services); no single clear CTA survives. Fix: keep the phone as the lone primary, keep the secondary quote view, and demote \"Explore Services\" to a plain text link or drop it since it duplicates the nav.",
+        "styles.css:24 — .btn-primary uses a brand→brand2 gradient, but the hero background itself ends in brand2 and the badge/accent text also carry gradients; the CTA gets swallowed by the wash behind it. Fix: make the primary button solid (deep navy on orange, or brand2 on navy) so it stands out against the hero.",
+        "styles.css:78 — 12px review slider dots are undersized tap targets on mobile (well under 44px). Fix: bump .dot to ~16px with a larger hit area (padding or min-width) at the 760px breakpoint."
+      ],
+      "praise": [
+        "Copy is genuinely specific — real street address, phone, 4.8/188 rating, named services, \"Diagnostics before dollars\" — no filler or welcome-speak; passes the 10-second test easily.",
+        "Palette is disciplined and on-brand for a safety/repair shop: deep navy (trust) + one warm orange/gold family, not generic gradient soup.",
+        "Motion layer is thoughtful and tasteful — loader, aurora, count-ups, parallax — all properly gated behind prefers-reduced-motion and no-JS fallbacks.",
+        "Mobile collapse is tight: hamburger nav, full-width call button, single-column grids, and a mobile-first hero type scale hold up at 360px."
+      ]
+    }
+  }
+]

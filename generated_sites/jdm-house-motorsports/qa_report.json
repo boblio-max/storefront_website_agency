@@ -1,0 +1,47 @@
+[
+  {
+    "lead_id": "lead_00005",
+    "passed": true,
+    "score": 90,
+    "issues": [
+      "[reviewer] index.html line 77: every service card uses the identical wrench SVG as .card-icon, so the six services read as a repeated template knot rather than distinct offers — give each card a service-specific glyph (brake disc for Brakes & Rotors, gauge for Diagnostics, droplet for Oil & Maintenance, gearbox for Engine & Transmission, tire/steering icon for Tires & Alignment, clipboard for Pre-Purchase Inspections) and reserve the wrench for the brand badge and hero ghost only.",
+      "[reviewer] index.html lines 54-56: the hero ships three co-equal CTAs ('Call', 'Get a Free Quote', 'Explore Services'); three pills of different colors each demand attention, so no action is primary. Keep one primary (Call) plus one secondary (Free Quote) and drop the ghost 'Explore Services' link — the services nav above already covers discovery.",
+      "[reviewer] index.html lines 28 & 122: hours are everywhere only 'x Call for today's hours' — a new visitor genuinely cannot tell if the shop is open now. Publish concrete day-by-day hours in #visit (or a real scheduler link) so the one-visit test holds without a phone call.",
+      "[reviewer] styles.css line 78: the review-slider .dot hit targets are 12x12px — well under comfortable touch size; bump to ~20px (or add padding/margin hit-area) so tabs at 360px aren't a fat-finger trap.",
+      "[reviewer] index.html lines 68-70: the marquee loops the brand name twice in a 22s cycle and sits between hero and value strip; it's inert decoration. Either animate real service keywords ('diagnostics · brakes · check engine') or remove it so the strip opens the page cleanly."
+    ],
+    "recommendations": [],
+    "checked_at": "2026-09-22T02:56:05.271356+00:00",
+    "site_dir": "generated_sites\\jdm-house-motorsports",
+    "details": {
+      "bytes": {
+        "html": 27830,
+        "css": 15076,
+        "js": 9384,
+        "total_kb": 51.1,
+        "images_kb": 0.0,
+        "n_images": 0
+      },
+      "words": 481,
+      "sections": 8
+    },
+    "reviewer": {
+      "engine": "opencode",
+      "model": "opencode/big-pickle",
+      "verdict": "pass",
+      "issues": [
+        "index.html line 77: every service card uses the identical wrench SVG as .card-icon, so the six services read as a repeated template knot rather than distinct offers — give each card a service-specific glyph (brake disc for Brakes & Rotors, gauge for Diagnostics, droplet for Oil & Maintenance, gearbox for Engine & Transmission, tire/steering icon for Tires & Alignment, clipboard for Pre-Purchase Inspections) and reserve the wrench for the brand badge and hero ghost only.",
+        "index.html lines 54-56: the hero ships three co-equal CTAs ('Call', 'Get a Free Quote', 'Explore Services'); three pills of different colors each demand attention, so no action is primary. Keep one primary (Call) plus one secondary (Free Quote) and drop the ghost 'Explore Services' link — the services nav above already covers discovery.",
+        "index.html lines 28 & 122: hours are everywhere only 'x Call for today's hours' — a new visitor genuinely cannot tell if the shop is open now. Publish concrete day-by-day hours in #visit (or a real scheduler link) so the one-visit test holds without a phone call.",
+        "styles.css line 78: the review-slider .dot hit targets are 12x12px — well under comfortable touch size; bump to ~20px (or add padding/margin hit-area) so tabs at 360px aren't a fat-finger trap.",
+        "index.html lines 68-70: the marquee loops the brand name twice in a 22s cycle and sits between hero and value strip; it's inert decoration. Either animate real service keywords ('diagnostics · brakes · check engine') or remove it so the strip opens the page cleanly."
+      ],
+      "praise": [
+        "Specific, credible copy end to end — real address (Hwy 99, Lynnwood), 4.9/141 reviews, concrete services, quotes-before-work framing; zero filler language.",
+        "Tight two-accent palette (navy + orange/gold) that actually suits a motorsports shop, used with discipline instead of gradient soup.",
+        "Type pairing is right: Archivo Black display vs Archivo body, clamped hero scale holds up at 360px, tagline line-length is comfortable.",
+        "One-visit test passes easily: name, offer, phone, and address are above the scroll and repeated consistently."
+      ]
+    }
+  }
+]

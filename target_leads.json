@@ -22,11 +22,11 @@
       "details": {
         "fetch_error": "HTTP 400",
         "final_url": "https://www.facebook.com/lagloriabothell/?_rdr",
-        "load_ms": 4299,
+        "load_ms": 4126,
         "size_kb": 1.5,
         "http_status": 400
       },
-      "checked_at": "2026-09-17T01:30:56.062254+00:00",
+      "checked_at": "2026-09-18T04:37:49.087028+00:00",
       "final_url": "https://www.facebook.com/lagloriabothell/?_rdr"
     },
     "lead_type": "bad_website",
@@ -40,7 +40,50 @@
     ],
     "stable_key": "e1d61677ae",
     "lead_id": "lead_00001",
-    "prioritized_at": "2026-09-17T01:31:17.172630+00:00"
+    "prioritized_at": "2026-09-18T04:38:05.937656+00:00"
+  },
+  {
+    "name": "Bothell Way Garage",
+    "category": "Auto repair shop",
+    "address": "17210 Bothell Way NE, Bothell, WA 98011",
+    "phone": "(425) 949-7627",
+    "website": "https://bothellwaygarage.com/",
+    "rating": 4.9,
+    "review_count": 345,
+    "maps_url": "https://www.google.com/maps/place/Bothell+Way+Garage/data=!4m7!3m6!1s0x54900e12341ff23b:0x808b7cc22e1d1dd2!8m2!3d47.7530573!4d-122.2117249!16s%2Fg%2F1td60f7_!19sChIJO_IfNBIOkFQR0h0dLsJ8i4A?authuser=0&hl=en&g_ep=EgoyMDI2MDkwMi4wIJJjKgBIAVAD&rclk=1",
+    "source": "google_maps",
+    "discovered_at": "2026-09-09T01:46:17.596467+00:00",
+    "website_analysis": {
+      "score": 0,
+      "verdict": "bad",
+      "problems": [
+        "Website unreachable: SSLError: HTTPSConnectionPool(host='bothellwaygarage.com', port=443): Max retries exceeded with url: / (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)')))",
+        "No clear contact / booking path",
+        "Weak call-to-action"
+      ],
+      "strengths": [],
+      "details": {
+        "fetch_error": "SSLError: HTTPSConnectionPool(host='bothellwaygarage.com', port=443): Max retries exceeded with url: / (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)')))",
+        "final_url": "https://bothellwaygarage.com/",
+        "load_ms": 5458,
+        "size_kb": 0.0,
+        "http_status": null
+      },
+      "checked_at": "2026-09-18T04:36:49.058367+00:00",
+      "final_url": "https://bothellwaygarage.com/"
+    },
+    "lead_type": "bad_website",
+    "opportunity_score": 91.0,
+    "opportunity_reasons": [
+      "High rating (4.9)",
+      "Established (345 reviews)",
+      "Bad website (site score 0, 3 problems) — strong replacement case",
+      "Phone available for outreach",
+      "High-value local-service category"
+    ],
+    "stable_key": "4c23b26ac3",
+    "lead_id": "lead_00002",
+    "prioritized_at": "2026-09-18T04:38:05.937656+00:00"
   },
   {
     "name": "Safety Auto Repair - Bothell",
@@ -65,11 +108,11 @@
       "details": {
         "fetch_error": "ConnectionError: HTTPSConnectionPool(host='www.safetyautorepairs.com', port=443): Max retries exceeded with url: / (Caused by NewConnectionError(\"HTTPSConnection(host='www.safetyautorepairs.com', port=443): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it\"))",
         "final_url": "https://www.safetyautorepairs.com/",
-        "load_ms": 2102,
+        "load_ms": 2170,
         "size_kb": 0.0,
         "http_status": null
       },
-      "checked_at": "2026-09-17T01:29:58.836336+00:00",
+      "checked_at": "2026-09-18T04:36:51.229388+00:00",
       "final_url": "https://www.safetyautorepairs.com/"
     },
     "lead_type": "bad_website",
@@ -82,8 +125,8 @@
       "High-value local-service category"
     ],
     "stable_key": "6678e2f92c",
-    "lead_id": "lead_00002",
-    "prioritized_at": "2026-09-17T01:31:17.172630+00:00"
+    "lead_id": "lead_00003",
+    "prioritized_at": "2026-09-18T04:38:05.937656+00:00"
   },
   {
     "name": "One Repair",
@@ -106,8 +149,8 @@
       "High-value local-service category"
     ],
     "stable_key": "d377d779c6",
-    "lead_id": "lead_00003",
-    "prioritized_at": "2026-09-17T01:31:17.172630+00:00"
+    "lead_id": "lead_00004",
+    "prioritized_at": "2026-09-18T04:38:05.937656+00:00"
   },
   {
     "name": "JDM House Motorsports",
@@ -123,10 +166,11 @@
     "email": "service@jdmhousemotorsports.com",
     "email_source": "website_harvest",
     "website_analysis": {
-      "score": 54,
+      "score": 51,
       "verdict": "bad",
       "problems": [
         "Difficult navigation",
+        "Slow / heavy page load",
         "Thin or poorly structured content",
         "Missing basic business info (phone / address / hours)",
         "Weak call-to-action",
@@ -145,7 +189,7 @@
         "media_queries": 9,
         "has_nav": false,
         "link_count": 0,
-        "load_ms": 5712,
+        "load_ms": 8976,
         "size_kb": 368.4,
         "images": 0,
         "scripts": 3,
@@ -170,7 +214,7 @@
           "modernity": 10,
           "mobile_responsiveness": 10,
           "navigation_ux": 0,
-          "performance": 7,
+          "performance": 4,
           "readability": 2,
           "business_info": 1,
           "cta": 2,
@@ -178,22 +222,68 @@
           "professionalism": 10
         }
       },
-      "checked_at": "2026-09-17T01:30:01.443671+00:00",
+      "checked_at": "2026-09-18T04:36:52.589230+00:00",
       "final_url": "https://jdmhousemotorsports.com/"
     },
     "lead_type": "bad_website",
-    "opportunity_score": 86.5,
+    "opportunity_score": 86.9,
     "opportunity_reasons": [
       "High rating (4.9)",
       "Active (141 reviews)",
-      "Bad website (site score 54, 5 problems) — strong replacement case",
+      "Bad website (site score 51, 6 problems) — strong replacement case",
       "Phone available for outreach",
       "Email available for outreach",
       "High-value local-service category"
     ],
     "stable_key": "a4a6c30d47",
-    "lead_id": "lead_00004",
-    "prioritized_at": "2026-09-17T01:31:17.172630+00:00"
+    "lead_id": "lead_00005",
+    "prioritized_at": "2026-09-18T04:38:05.937656+00:00"
+  },
+  {
+    "name": "Milky Way Espresso",
+    "category": "Coffee stand",
+    "address": "19005 Bothell Way NE, Bothell, WA 98011",
+    "phone": "(425) 419-9205",
+    "website": null,
+    "rating": 4.9,
+    "review_count": 34,
+    "maps_url": "https://www.google.com/maps/place/Milky+Way+Espresso/data=!4m7!3m6!1s0x54900fc3d04bcb41:0x6a4cd2765ed04bbe!8m2!3d47.7658469!4d-122.210186!16s%2Fg%2F11wmn7z1cc!19sChIJQctL0MMPkFQRvkvQXnbSTGo?authuser=0&hl=en&g_ep=EgoyMDI2MDkwMi4wIJJjKgBIAVAD&rclk=1",
+    "source": "google_maps",
+    "discovered_at": "2026-09-09T04:29:48.237091+00:00",
+    "lead_type": "no_website",
+    "opportunity_score": 83.0,
+    "opportunity_reasons": [
+      "High rating (4.9)",
+      "No website at all — highest need",
+      "Phone available for outreach",
+      "Consumer-facing category benefits from a site"
+    ],
+    "stable_key": "176a3009fc",
+    "lead_id": "lead_00006",
+    "prioritized_at": "2026-09-18T04:38:05.937656+00:00"
+  },
+  {
+    "name": "Mama Bear's Espresso",
+    "category": "Coffee stand",
+    "address": "20702 Bothell Everett Hwy, Bothell, WA 98012",
+    "phone": "(425) 398-3774",
+    "website": null,
+    "rating": 4.6,
+    "review_count": 31,
+    "maps_url": "https://www.google.com/maps/place/Mama+Bear%27s+Espresso/data=!4m7!3m6!1s0x54900f6bbe35246d:0xc64ddf6c27db776b!8m2!3d47.81046!4d-122.208105!16s%2Fg%2F11c6pqsz76!19sChIJbSQ1vmsPkFQRa3fbJ2zfTcY?authuser=0&hl=en&g_ep=EgoyMDI2MDkwMi4wIJJjKgBIAVAD&rclk=1",
+    "source": "google_maps",
+    "discovered_at": "2026-09-09T04:29:15.747014+00:00",
+    "lead_type": "no_website",
+    "opportunity_score": 83.0,
+    "opportunity_reasons": [
+      "High rating (4.6)",
+      "No website at all — highest need",
+      "Phone available for outreach",
+      "Consumer-facing category benefits from a site"
+    ],
+    "stable_key": "ebd888a190",
+    "lead_id": "lead_00007",
+    "prioritized_at": "2026-09-18T04:38:05.937656+00:00"
   },
   {
     "name": "Sidekick Coffee",
@@ -207,7 +297,7 @@
     "source": "google_maps",
     "discovered_at": "2026-09-09T04:29:32.281674+00:00",
     "website_analysis": {
-      "score": 50,
+      "score": 52,
       "verdict": "bad",
       "problems": [
         "Difficult navigation",
@@ -231,7 +321,7 @@
         "media_queries": 1,
         "has_nav": false,
         "link_count": 0,
-        "load_ms": 5145,
+        "load_ms": 3892,
         "size_kb": 54.1,
         "images": 0,
         "scripts": 7,
@@ -256,7 +346,7 @@
           "modernity": 6,
           "mobile_responsiveness": 10,
           "navigation_ux": 0,
-          "performance": 7,
+          "performance": 9,
           "readability": 2,
           "business_info": 1,
           "cta": 2,
@@ -264,67 +354,21 @@
           "professionalism": 10
         }
       },
-      "checked_at": "2026-09-17T01:30:31.731438+00:00",
+      "checked_at": "2026-09-18T04:37:26.933680+00:00",
       "final_url": "https://www.sidekick.coffee"
     },
     "lead_type": "bad_website",
-    "opportunity_score": 83.0,
+    "opportunity_score": 82.8,
     "opportunity_reasons": [
       "High rating (4.7)",
       "Very visible (696 reviews)",
-      "Bad website (site score 50, 5 problems) — strong replacement case",
+      "Bad website (site score 52, 5 problems) — strong replacement case",
       "Phone available for outreach",
       "Consumer-facing category benefits from a site"
     ],
     "stable_key": "369127b7f4",
-    "lead_id": "lead_00005",
-    "prioritized_at": "2026-09-17T01:31:17.172630+00:00"
-  },
-  {
-    "name": "Milky Way Espresso",
-    "category": "Coffee stand",
-    "address": "19005 Bothell Way NE, Bothell, WA 98011",
-    "phone": "(425) 419-9205",
-    "website": null,
-    "rating": 4.9,
-    "review_count": 34,
-    "maps_url": "https://www.google.com/maps/place/Milky+Way+Espresso/data=!4m7!3m6!1s0x54900fc3d04bcb41:0x6a4cd2765ed04bbe!8m2!3d47.7658469!4d-122.210186!16s%2Fg%2F11wmn7z1cc!19sChIJQctL0MMPkFQRvkvQXnbSTGo?authuser=0&hl=en&g_ep=EgoyMDI2MDkwMi4wIJJjKgBIAVAD&rclk=1",
-    "source": "google_maps",
-    "discovered_at": "2026-09-09T04:29:48.237091+00:00",
-    "lead_type": "no_website",
-    "opportunity_score": 83.0,
-    "opportunity_reasons": [
-      "High rating (4.9)",
-      "No website at all — highest need",
-      "Phone available for outreach",
-      "Consumer-facing category benefits from a site"
-    ],
-    "stable_key": "176a3009fc",
-    "lead_id": "lead_00006",
-    "prioritized_at": "2026-09-17T01:31:17.172630+00:00"
-  },
-  {
-    "name": "Mama Bear's Espresso",
-    "category": "Coffee stand",
-    "address": "20702 Bothell Everett Hwy, Bothell, WA 98012",
-    "phone": "(425) 398-3774",
-    "website": null,
-    "rating": 4.6,
-    "review_count": 31,
-    "maps_url": "https://www.google.com/maps/place/Mama+Bear%27s+Espresso/data=!4m7!3m6!1s0x54900f6bbe35246d:0xc64ddf6c27db776b!8m2!3d47.81046!4d-122.208105!16s%2Fg%2F11c6pqsz76!19sChIJbSQ1vmsPkFQRa3fbJ2zfTcY?authuser=0&hl=en&g_ep=EgoyMDI2MDkwMi4wIJJjKgBIAVAD&rclk=1",
-    "source": "google_maps",
-    "discovered_at": "2026-09-09T04:29:15.747014+00:00",
-    "lead_type": "no_website",
-    "opportunity_score": 83.0,
-    "opportunity_reasons": [
-      "High rating (4.6)",
-      "No website at all — highest need",
-      "Phone available for outreach",
-      "Consumer-facing category benefits from a site"
-    ],
-    "stable_key": "ebd888a190",
-    "lead_id": "lead_00007",
-    "prioritized_at": "2026-09-17T01:31:17.172630+00:00"
+    "lead_id": "lead_00008",
+    "prioritized_at": "2026-09-18T04:38:05.937656+00:00"
   },
   {
     "name": "Ridge Coffee",
@@ -349,11 +393,11 @@
       "details": {
         "fetch_error": "HTTP 400",
         "final_url": "https://www.facebook.com/ridgecoffeebothell",
-        "load_ms": 1838,
+        "load_ms": 2754,
         "size_kb": 1.5,
         "http_status": 400
       },
-      "checked_at": "2026-09-17T01:30:14.154042+00:00",
+      "checked_at": "2026-09-18T04:37:13.434043+00:00",
       "final_url": "https://www.facebook.com/ridgecoffeebothell"
     },
     "lead_type": "bad_website",
@@ -366,8 +410,8 @@
       "Consumer-facing category benefits from a site"
     ],
     "stable_key": "79d0616198",
-    "lead_id": "lead_00008",
-    "prioritized_at": "2026-09-17T01:31:17.172630+00:00"
+    "lead_id": "lead_00009",
+    "prioritized_at": "2026-09-18T04:38:05.937656+00:00"
   },
   {
     "name": "Noli Coffee",
@@ -381,7 +425,7 @@
     "source": "google_maps",
     "discovered_at": "2026-09-09T04:29:09.019207+00:00",
     "website_analysis": {
-      "score": 53,
+      "score": 52,
       "verdict": "bad",
       "problems": [
         "Difficult navigation",
@@ -403,7 +447,7 @@
         "media_queries": 2,
         "has_nav": false,
         "link_count": 0,
-        "load_ms": 2279,
+        "load_ms": 2620,
         "size_kb": 611.8,
         "images": 2,
         "scripts": 44,
@@ -428,7 +472,7 @@
           "modernity": 10,
           "mobile_responsiveness": 10,
           "navigation_ux": 0,
-          "performance": 8,
+          "performance": 7,
           "readability": 2,
           "business_info": 1,
           "cta": 2,
@@ -436,21 +480,21 @@
           "professionalism": 8
         }
       },
-      "checked_at": "2026-09-17T01:30:16.437492+00:00",
+      "checked_at": "2026-09-18T04:37:15.508043+00:00",
       "final_url": "https://www.instagram.com/nolicoffee/"
     },
     "lead_type": "bad_website",
-    "opportunity_score": 75.6,
+    "opportunity_score": 75.8,
     "opportunity_reasons": [
       "High rating (5.0)",
       "Growing (63 reviews)",
-      "Bad website (site score 53, 5 problems) — strong replacement case",
+      "Bad website (site score 52, 5 problems) — strong replacement case",
       "Phone available for outreach",
       "Consumer-facing category benefits from a site"
     ],
     "stable_key": "d78306ff6c",
-    "lead_id": "lead_00009",
-    "prioritized_at": "2026-09-17T01:31:17.172630+00:00"
+    "lead_id": "lead_00010",
+    "prioritized_at": "2026-09-18T04:38:05.937656+00:00"
   },
   {
     "name": "BOTHELL IMPORT SERVICE auto repair",
@@ -473,7 +517,7 @@
       "High-value local-service category"
     ],
     "stable_key": "df85dc4b60",
-    "lead_id": "lead_00010",
-    "prioritized_at": "2026-09-17T01:31:17.172630+00:00"
+    "lead_id": "lead_00011",
+    "prioritized_at": "2026-09-18T04:38:05.937656+00:00"
   }
 ]

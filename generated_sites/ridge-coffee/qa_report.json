@@ -1,0 +1,43 @@
+[
+  {
+    "lead_id": "lead_00009",
+    "passed": true,
+    "score": 94,
+    "issues": [
+      "[reviewer] index.html — 'Crowd favorites' cards: every card reuses the exact same coffee-cup SVG (Espresso & Pour-Overs, Seasonal Specials, Fresh Pastries, Beans to Take Home all share one glyph). Divergent services get zero visual distinction and the menu reads templated. Fix: give each a distinct glyph (croissant, bean bag, pour-over dripper, catering tray) or drop icons and let the Fraunces headings carry it.",
+      "[reviewer] index.html — about section paragraph: 'The neighborhood spot for Cafe at 3805 Maltby Rd, Bothell, WA 98012' has a category-template artifact ('for Cafe') that reads as filler mid-sentence. Fix: rewrite to 'The neighborhood cafe at 3805 Maltby Rd…' or drop 'for Cafe' entirely.",
+      "[reviewer] styles.css — hero h1 (.hero--editorial-asymmetric h1 clamp up to 4.2rem): the name and the offer share one inline line, so at ~360px the gradient span 'Freshly brewed in the neighborhood' wraps unpredictably mid-phrase and renders as a second full-voltage heading line competing with the name. Fix: make .accent display:block (or give it a smaller, muted size) so the offer is clearly subordinate to 'Ridge Coffee'."
+    ],
+    "recommendations": [],
+    "checked_at": "2026-09-22T03:02:09.473220+00:00",
+    "site_dir": "generated_sites\\ridge-coffee",
+    "details": {
+      "bytes": {
+        "html": 27716,
+        "css": 15066,
+        "js": 9384,
+        "total_kb": 50.9,
+        "images_kb": 26.4,
+        "n_images": 1
+      },
+      "words": 456,
+      "sections": 8
+    },
+    "reviewer": {
+      "engine": "opencode",
+      "model": "opencode/big-pickle",
+      "verdict": "pass",
+      "issues": [
+        "index.html — 'Crowd favorites' cards: every card reuses the exact same coffee-cup SVG (Espresso & Pour-Overs, Seasonal Specials, Fresh Pastries, Beans to Take Home all share one glyph). Divergent services get zero visual distinction and the menu reads templated. Fix: give each a distinct glyph (croissant, bean bag, pour-over dripper, catering tray) or drop icons and let the Fraunces headings carry it.",
+        "index.html — about section paragraph: 'The neighborhood spot for Cafe at 3805 Maltby Rd, Bothell, WA 98012' has a category-template artifact ('for Cafe') that reads as filler mid-sentence. Fix: rewrite to 'The neighborhood cafe at 3805 Maltby Rd…' or drop 'for Cafe' entirely.",
+        "styles.css — hero h1 (.hero--editorial-asymmetric h1 clamp up to 4.2rem): the name and the offer share one inline line, so at ~360px the gradient span 'Freshly brewed in the neighborhood' wraps unpredictably mid-phrase and renders as a second full-voltage heading line competing with the name. Fix: make .accent display:block (or give it a smaller, muted size) so the offer is clearly subordinate to 'Ridge Coffee'."
+      ],
+      "praise": [
+        "Palette is disciplined and business-specific: one warm coffee-brown family plus a single gold accent carried through hero, cards, stats, banner, footer — coordinated, not gradient soup.",
+        "Type pairing is confident: Fraunces display vs Inter body with clamp() scale and tight tracking; no system-font fallback aroma.",
+        "Hierarchy and one-visit test pass: name → offer → single primary 'Call (425) 481-8801' CTA, reinforced in topbar, header, hero, about card, banner, and footer; a visitor can name the business, what it does, and how to reach it in seconds.",
+        "Copy is specific and believable — real street address, '4.6 · 93 Google reviews', 'Takeout ready in about 15 minutes' — with no lorem or 'welcome to our website' filler."
+      ]
+    }
+  }
+]

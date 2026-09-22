@@ -1,5 +1,36 @@
 [
   {
+    "name": "Bothell Way Garage",
+    "category": "Auto repair shop",
+    "address": "17210 Bothell Way NE, Bothell, WA 98011",
+    "phone": "(425) 949-7627",
+    "website": "https://bothellwaygarage.com/",
+    "rating": 4.9,
+    "review_count": 345,
+    "maps_url": "https://www.google.com/maps/place/Bothell+Way+Garage/data=!4m7!3m6!1s0x54900e12341ff23b:0x808b7cc22e1d1dd2!8m2!3d47.7530573!4d-122.2117249!16s%2Fg%2F1td60f7_!19sChIJO_IfNBIOkFQR0h0dLsJ8i4A?authuser=0&hl=en&g_ep=EgoyMDI2MDkwMi4wIJJjKgBIAVAD&rclk=1",
+    "source": "google_maps",
+    "discovered_at": "2026-09-09T01:46:17.596467+00:00",
+    "website_analysis": {
+      "score": 0,
+      "verdict": "bad",
+      "problems": [
+        "Website unreachable: SSLError: HTTPSConnectionPool(host='bothellwaygarage.com', port=443): Max retries exceeded with url: / (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)')))",
+        "No clear contact / booking path",
+        "Weak call-to-action"
+      ],
+      "strengths": [],
+      "details": {
+        "fetch_error": "SSLError: HTTPSConnectionPool(host='bothellwaygarage.com', port=443): Max retries exceeded with url: / (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)')))",
+        "final_url": "https://bothellwaygarage.com/",
+        "load_ms": 5458,
+        "size_kb": 0.0,
+        "http_status": null
+      },
+      "checked_at": "2026-09-18T04:36:49.058367+00:00",
+      "final_url": "https://bothellwaygarage.com/"
+    }
+  },
+  {
     "name": "Safety Auto Repair - Bothell",
     "category": "Auto repair shop",
     "address": "19521 Bothell Everett Hwy, Bothell, WA 98012",
@@ -22,11 +53,11 @@
       "details": {
         "fetch_error": "ConnectionError: HTTPSConnectionPool(host='www.safetyautorepairs.com', port=443): Max retries exceeded with url: / (Caused by NewConnectionError(\"HTTPSConnection(host='www.safetyautorepairs.com', port=443): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it\"))",
         "final_url": "https://www.safetyautorepairs.com/",
-        "load_ms": 2102,
+        "load_ms": 2170,
         "size_kb": 0.0,
         "http_status": null
       },
-      "checked_at": "2026-09-17T01:29:58.836336+00:00",
+      "checked_at": "2026-09-18T04:36:51.229388+00:00",
       "final_url": "https://www.safetyautorepairs.com/"
     }
   },
@@ -53,11 +84,11 @@
       "details": {
         "fetch_error": "HTTP 400",
         "final_url": "https://www.facebook.com/ridgecoffeebothell",
-        "load_ms": 1838,
+        "load_ms": 2754,
         "size_kb": 1.5,
         "http_status": 400
       },
-      "checked_at": "2026-09-17T01:30:14.154042+00:00",
+      "checked_at": "2026-09-18T04:37:13.434043+00:00",
       "final_url": "https://www.facebook.com/ridgecoffeebothell"
     }
   },
@@ -84,156 +115,12 @@
       "details": {
         "fetch_error": "HTTP 400",
         "final_url": "https://www.facebook.com/lagloriabothell/?_rdr",
-        "load_ms": 4299,
+        "load_ms": 4126,
         "size_kb": 1.5,
         "http_status": 400
       },
-      "checked_at": "2026-09-17T01:30:56.062254+00:00",
+      "checked_at": "2026-09-18T04:37:49.087028+00:00",
       "final_url": "https://www.facebook.com/lagloriabothell/?_rdr"
-    }
-  },
-  {
-    "name": "Sidekick Coffee",
-    "category": "Coffee shop",
-    "address": "17255 135th Ave NE Ste 1020, Woodinville, WA 98072",
-    "phone": "(425) 949-7422",
-    "website": "http://sidekick.coffee/",
-    "rating": 4.7,
-    "review_count": 696,
-    "maps_url": "https://www.google.com/maps/place/Sidekick+Coffee/data=!4m7!3m6!1s0x54900d3bd48180df:0xbda9ce901d76e4a1!8m2!3d47.752347!4d-122.1592848!16s%2Fg%2F11mxkghcwm!19sChIJ34CB1DsNkFQRoeR2HZDOqb0?authuser=0&hl=en&g_ep=EgoyMDI2MDkwMi4wIJJjKgBIAVAD&rclk=1",
-    "source": "google_maps",
-    "discovered_at": "2026-09-09T04:29:32.281674+00:00",
-    "website_analysis": {
-      "score": 50,
-      "verdict": "bad",
-      "problems": [
-        "Difficult navigation",
-        "Thin or poorly structured content",
-        "Missing basic business info (phone / address / hours)",
-        "Weak call-to-action",
-        "No clear contact / booking path"
-      ],
-      "strengths": [
-        "Clean, modern visual presentation"
-      ],
-      "details": {
-        "outdated_signals": 0,
-        "inline_styles": 0,
-        "css_links": 2,
-        "copyright_years": [
-          2022
-        ],
-        "stale_copyright": true,
-        "has_viewport": true,
-        "media_queries": 1,
-        "has_nav": false,
-        "link_count": 0,
-        "load_ms": 5145,
-        "size_kb": 54.1,
-        "images": 0,
-        "scripts": 7,
-        "words": 4,
-        "has_h1": false,
-        "title": "Home | Sidekick Coffee",
-        "has_phone": false,
-        "has_address": false,
-        "has_hours": false,
-        "cta_hits": 0,
-        "tel_links": 0,
-        "forms": 0,
-        "has_contact_link": false,
-        "map_embed": false,
-        "https": true,
-        "has_meta_description": true,
-        "has_favicon": true,
-        "social_links": false,
-        "http_status": 200,
-        "dimension_scores": {
-          "visual_design": 10,
-          "modernity": 6,
-          "mobile_responsiveness": 10,
-          "navigation_ux": 0,
-          "performance": 7,
-          "readability": 2,
-          "business_info": 1,
-          "cta": 2,
-          "contact_booking": 2,
-          "professionalism": 10
-        }
-      },
-      "checked_at": "2026-09-17T01:30:31.731438+00:00",
-      "final_url": "https://www.sidekick.coffee"
-    }
-  },
-  {
-    "name": "Noli Coffee",
-    "category": "Coffee shop",
-    "address": "10610 Woodinville Dr, Bothell, WA 98011",
-    "phone": "(509) 903-6015",
-    "website": "https://www.instagram.com/nolicoffee/",
-    "rating": 5.0,
-    "review_count": 63,
-    "maps_url": "https://www.google.com/maps/place/Noli+Coffee/data=!4m7!3m6!1s0x54900f578a93c085:0x2d5aab4657bf96bf!8m2!3d47.7584693!4d-122.1979792!16s%2Fg%2F11n55jm1_p!19sChIJhcCTilcPkFQRv5a_V0arWi0?authuser=0&hl=en&g_ep=EgoyMDI2MDkwMi4wIJJjKgBIAVAD&rclk=1",
-    "source": "google_maps",
-    "discovered_at": "2026-09-09T04:29:09.019207+00:00",
-    "website_analysis": {
-      "score": 53,
-      "verdict": "bad",
-      "problems": [
-        "Difficult navigation",
-        "Thin or poorly structured content",
-        "Missing basic business info (phone / address / hours)",
-        "Weak call-to-action",
-        "No clear contact / booking path"
-      ],
-      "strengths": [
-        "Clean, modern visual presentation"
-      ],
-      "details": {
-        "outdated_signals": 0,
-        "inline_styles": 4,
-        "css_links": 1,
-        "copyright_years": [],
-        "stale_copyright": false,
-        "has_viewport": true,
-        "media_queries": 2,
-        "has_nav": false,
-        "link_count": 0,
-        "load_ms": 2279,
-        "size_kb": 611.8,
-        "images": 2,
-        "scripts": 44,
-        "words": 1,
-        "has_h1": false,
-        "title": "Instagram",
-        "has_phone": false,
-        "has_address": false,
-        "has_hours": false,
-        "cta_hits": 0,
-        "tel_links": 0,
-        "forms": 0,
-        "has_contact_link": false,
-        "map_embed": false,
-        "https": true,
-        "has_meta_description": false,
-        "has_favicon": true,
-        "social_links": true,
-        "http_status": 200,
-        "dimension_scores": {
-          "visual_design": 10,
-          "modernity": 10,
-          "mobile_responsiveness": 10,
-          "navigation_ux": 0,
-          "performance": 8,
-          "readability": 2,
-          "business_info": 1,
-          "cta": 2,
-          "contact_booking": 2,
-          "professionalism": 8
-        }
-      },
-      "checked_at": "2026-09-17T01:30:16.437492+00:00",
-      "final_url": "https://www.instagram.com/nolicoffee/"
     }
   },
   {
@@ -250,10 +137,11 @@
     "email": "service@jdmhousemotorsports.com",
     "email_source": "website_harvest",
     "website_analysis": {
-      "score": 54,
+      "score": 51,
       "verdict": "bad",
       "problems": [
         "Difficult navigation",
+        "Slow / heavy page load",
         "Thin or poorly structured content",
         "Missing basic business info (phone / address / hours)",
         "Weak call-to-action",
@@ -272,7 +160,7 @@
         "media_queries": 9,
         "has_nav": false,
         "link_count": 0,
-        "load_ms": 5712,
+        "load_ms": 8976,
         "size_kb": 368.4,
         "images": 0,
         "scripts": 3,
@@ -297,7 +185,7 @@
           "modernity": 10,
           "mobile_responsiveness": 10,
           "navigation_ux": 0,
-          "performance": 7,
+          "performance": 4,
           "readability": 2,
           "business_info": 1,
           "cta": 2,
@@ -305,8 +193,152 @@
           "professionalism": 10
         }
       },
-      "checked_at": "2026-09-17T01:30:01.443671+00:00",
+      "checked_at": "2026-09-18T04:36:52.589230+00:00",
       "final_url": "https://jdmhousemotorsports.com/"
+    }
+  },
+  {
+    "name": "Noli Coffee",
+    "category": "Coffee shop",
+    "address": "10610 Woodinville Dr, Bothell, WA 98011",
+    "phone": "(509) 903-6015",
+    "website": "https://www.instagram.com/nolicoffee/",
+    "rating": 5.0,
+    "review_count": 63,
+    "maps_url": "https://www.google.com/maps/place/Noli+Coffee/data=!4m7!3m6!1s0x54900f578a93c085:0x2d5aab4657bf96bf!8m2!3d47.7584693!4d-122.1979792!16s%2Fg%2F11n55jm1_p!19sChIJhcCTilcPkFQRv5a_V0arWi0?authuser=0&hl=en&g_ep=EgoyMDI2MDkwMi4wIJJjKgBIAVAD&rclk=1",
+    "source": "google_maps",
+    "discovered_at": "2026-09-09T04:29:09.019207+00:00",
+    "website_analysis": {
+      "score": 52,
+      "verdict": "bad",
+      "problems": [
+        "Difficult navigation",
+        "Thin or poorly structured content",
+        "Missing basic business info (phone / address / hours)",
+        "Weak call-to-action",
+        "No clear contact / booking path"
+      ],
+      "strengths": [
+        "Clean, modern visual presentation"
+      ],
+      "details": {
+        "outdated_signals": 0,
+        "inline_styles": 4,
+        "css_links": 1,
+        "copyright_years": [],
+        "stale_copyright": false,
+        "has_viewport": true,
+        "media_queries": 2,
+        "has_nav": false,
+        "link_count": 0,
+        "load_ms": 2620,
+        "size_kb": 611.8,
+        "images": 2,
+        "scripts": 44,
+        "words": 1,
+        "has_h1": false,
+        "title": "Instagram",
+        "has_phone": false,
+        "has_address": false,
+        "has_hours": false,
+        "cta_hits": 0,
+        "tel_links": 0,
+        "forms": 0,
+        "has_contact_link": false,
+        "map_embed": false,
+        "https": true,
+        "has_meta_description": false,
+        "has_favicon": true,
+        "social_links": true,
+        "http_status": 200,
+        "dimension_scores": {
+          "visual_design": 10,
+          "modernity": 10,
+          "mobile_responsiveness": 10,
+          "navigation_ux": 0,
+          "performance": 7,
+          "readability": 2,
+          "business_info": 1,
+          "cta": 2,
+          "contact_booking": 2,
+          "professionalism": 8
+        }
+      },
+      "checked_at": "2026-09-18T04:37:15.508043+00:00",
+      "final_url": "https://www.instagram.com/nolicoffee/"
+    }
+  },
+  {
+    "name": "Sidekick Coffee",
+    "category": "Coffee shop",
+    "address": "17255 135th Ave NE Ste 1020, Woodinville, WA 98072",
+    "phone": "(425) 949-7422",
+    "website": "http://sidekick.coffee/",
+    "rating": 4.7,
+    "review_count": 696,
+    "maps_url": "https://www.google.com/maps/place/Sidekick+Coffee/data=!4m7!3m6!1s0x54900d3bd48180df:0xbda9ce901d76e4a1!8m2!3d47.752347!4d-122.1592848!16s%2Fg%2F11mxkghcwm!19sChIJ34CB1DsNkFQRoeR2HZDOqb0?authuser=0&hl=en&g_ep=EgoyMDI2MDkwMi4wIJJjKgBIAVAD&rclk=1",
+    "source": "google_maps",
+    "discovered_at": "2026-09-09T04:29:32.281674+00:00",
+    "website_analysis": {
+      "score": 52,
+      "verdict": "bad",
+      "problems": [
+        "Difficult navigation",
+        "Thin or poorly structured content",
+        "Missing basic business info (phone / address / hours)",
+        "Weak call-to-action",
+        "No clear contact / booking path"
+      ],
+      "strengths": [
+        "Clean, modern visual presentation"
+      ],
+      "details": {
+        "outdated_signals": 0,
+        "inline_styles": 0,
+        "css_links": 2,
+        "copyright_years": [
+          2022
+        ],
+        "stale_copyright": true,
+        "has_viewport": true,
+        "media_queries": 1,
+        "has_nav": false,
+        "link_count": 0,
+        "load_ms": 3892,
+        "size_kb": 54.1,
+        "images": 0,
+        "scripts": 7,
+        "words": 4,
+        "has_h1": false,
+        "title": "Home | Sidekick Coffee",
+        "has_phone": false,
+        "has_address": false,
+        "has_hours": false,
+        "cta_hits": 0,
+        "tel_links": 0,
+        "forms": 0,
+        "has_contact_link": false,
+        "map_embed": false,
+        "https": true,
+        "has_meta_description": true,
+        "has_favicon": true,
+        "social_links": false,
+        "http_status": 200,
+        "dimension_scores": {
+          "visual_design": 10,
+          "modernity": 6,
+          "mobile_responsiveness": 10,
+          "navigation_ux": 0,
+          "performance": 9,
+          "readability": 2,
+          "business_info": 1,
+          "cta": 2,
+          "contact_booking": 2,
+          "professionalism": 10
+        }
+      },
+      "checked_at": "2026-09-18T04:37:26.933680+00:00",
+      "final_url": "https://www.sidekick.coffee"
     }
   }
 ]

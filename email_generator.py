@@ -47,6 +47,34 @@ AGENCY_EMAIL = os.environ.get("AGENCY_FROM", "storefront.webs@gmail.com").strip(
     or "storefront.webs@gmail.com"
 
 
+def _load_env_file() -> None:
+    """Load a local .env file if python-dotenv is installed (optional dep).
+
+    The pipeline reads credentials from process env; a `.env` file is never
+    required, but local runs commonly keep the Gmail app password there.
+    Missing dotenv is silently ignored (env-only mode).
+    """
+    try:
+        from dotenv import load_dotenv
+    except ImportError:
+        return
+    try:
+        load_dotenv(dotenv_path=Path(".env"), override=False)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+_load_env_file()
+
+
+def _env_port(name: str, default: int) -> int:
+    """Read an env port safely: bad values fall back to default (no crash)."""
+    try:
+        return int(os.environ.get(name, str(default)).strip() or default)
+    except (TypeError, ValueError, AttributeError):
+        return default
+
+
 def utc_now_iso() -> str:
     return datetime.datetime.now(datetime.timezone.utc).isoformat()
 
@@ -155,10 +183,14 @@ def template_email(biz: dict, history: list[dict], purpose: str) -> tuple[str, s
     category = biz.get("category") or "your business"
     preview = biz.get("preview_url") or ""
     n = len(history)
+    food = any(k in (biz.get("category") or "").lower() for k in
+               ("coffee", "cafe", "bakery", "restaurant", "taco", "pizza", "sushi",
+                "burger", "deli", "bar", "grill", "bistro", "food", "thai", "italian"))
+    contact_bit = ("with click-to-call and an easy contact form"
+                   if not food else "with click-to-call, your menu favorites, and an easy contact form")
     purpose_line = {
         "initial_outreach": (f"I built a free preview website for {name} "
-                             f"({category}) — modern, mobile-friendly, with click-to-call "
-                             f"and a quote form."),
+                             f"({category}) — modern, mobile-friendly, {contact_bit}."),
         "follow_up": ("Following up on the free preview website I prepared — "
                       "wanted to make sure you saw it."),
         "revision_delivery": ("I've updated your preview website based on your feedback — "
@@ -230,7 +262,7 @@ def smtp_config() -> dict | None:
     sender = AGENCY_EMAIL
     return {
         "host": os.environ.get("AGENCY_SMTP_HOST", "").strip() or "smtp.gmail.com",
-        "port": int(os.environ.get("AGENCY_SMTP_PORT", "587")),
+        "port": _env_port("AGENCY_SMTP_PORT", 587),
         "user": os.environ.get("AGENCY_SMTP_USER", "").strip() or sender,
         "password": password,
         "from": sender,
@@ -312,7 +344,7 @@ def main(argv=None, **kwargs) -> str | dict | int:
     subject, body = "", ""
     if not args.no_opencode:
         try:
-            out = run_opencode_command(Path(args.workdir), prompt)
+            out = run_opencode_command(Path(args.workdir), prompt, timeout=120)
             subject, body = parse_opencode_output(out)
         except RuntimeError as e:
             print(f"[email_generator] OpenCode unavailable ({e}) — using template", flush=True)
@@ -337,7 +369,9 @@ def main(argv=None, **kwargs) -> str | dict | int:
         cfg = smtp_config()
         if cfg is None:
             print("[email_generator] ERROR: --send needs the Gmail app password "
-                  "(set AGENCY_SMTP_PASS); not recorded as sent", file=sys.stderr)
+                  "(set AGENCY_SMTP_PASS in env or .env; Gmail needs 2FA + an "
+                  "App Password for storefront.webs@gmail.com); not recorded as sent",
+                  file=sys.stderr)
             return 2
         try:
             smtp_send(cfg, to_addr, subject, body, reply_to=cfg["from"])

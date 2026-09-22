@@ -1,0 +1,24 @@
+{
+  "lead_id": "lead_00009",
+  "slug": "ridge-coffee",
+  "photos": [
+    "photo-hero.jpg"
+  ],
+  "business": {
+    "name": "Ridge Coffee",
+    "category": "Cafe",
+    "address": "3805 Maltby Rd, Bothell, WA 98012",
+    "phone": "(425) 481-8801",
+    "website": "https://www.facebook.com/ridgecoffeebothell",
+    "rating": 4.6,
+    "review_count": 93
+  },
+  "lead_type": "bad_website",
+  "opportunity_score": 82.0,
+  "engine": "template",
+  "created_at": "2026-09-22T03:02:09.009685+00:00",
+  "preview_mode": true,
+  "model": "opencode/big-pickle",
+  "prompt_sha": "1709b316fa7c",
+  "feedback_applied": false
+}

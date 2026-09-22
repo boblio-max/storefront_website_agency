@@ -370,6 +370,15 @@ def main(argv=None, path_to_file: str | None = None, prod: bool = True,
             "provider": "vercel",
             "deployed_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         })
+        # Staging served its purpose (git push source); the live content is on
+        # GitHub and the full site (plus secrets/qa) stays in generated_sites.
+        # Remove it so the workspace never litters — redeploys re-stage cleanly.
+        try:
+            if Path(github_path).resolve() != Path(path_to_file).resolve():
+                shutil.rmtree(github_path)
+                print(f"[deployment_manager] staging cleaned: {github_path}", flush=True)
+        except OSError as e:
+            print(f"[deployment_manager] staging cleanup skipped ({e})", flush=True)
     except RuntimeError as e:
         print(f"[deployment_manager] ERROR: {e}", flush=True)
         return 1
