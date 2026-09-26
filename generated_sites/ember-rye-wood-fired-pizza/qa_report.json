@@ -1,0 +1,389 @@
+[
+  {
+    "lead_id": "lead_90001",
+    "passed": false,
+    "score": 90,
+    "issues": [
+      "[reviewer] index.html whole-page copy is contractor-template text pasted onto a pizzeria: 'Every job quoted up front — you approve before we start' (#services .section-sub, line 76), 'approve before we start' / 'Work backed in writing' / 'You talk to the people doing the work' (#about .checklist, lines 87-89), and a 'Get a Free Quote'/'Request a callback' framework (lines 55, 128). Rewrite the offer copy around ordering, dining, and wood-fired food, and swap 'free quote' for 'order' language in the meta description (line 6).",
+      "[reviewer] index.html:52 tagline says 'check the menu below' but the page ships no menu, no dishes, and no prices anywhere — a broken promise at the top of the fold. Ship a real menu section (or a 'View Menu' CTA), or cut the phrase.",
+      "[reviewer] index.html:98 and index.html:123 — 'Get Directions' and 'Find us on Google Maps →' are dead href=\"#\" links (with no script override). Point them at a real URL, e.g. https://maps.google.com/?q=214+Alder+St,+Portland,+OR+97204.",
+      "[reviewer] index.html:54-56 hero renders three competing CTAs (Call / Get a Free Quote / Explore Services), all phone- or lead-gen-oriented, with no order/menu action — for a restaurant the eye needs one primary action. Collapse to a single primary 'Order / Call' CTA plus one quiet secondary (e.g. 'View Menu').",
+      "[reviewer] index.html:51-52 vs 83 — the about paragraph repeats the hero tagline almost verbatim ('House recipes, generous portions, and food made to order. Dine in, take out, or feed the whole crew — check the menu below'). Cut the duplication and replace with distinct specifics.",
+      "[reviewer] index.html:77 service cards all reuse the identical flame SVG and generic blurbs ('made to order', 'fast midday plates') — two of the six even say 'pizza' nowhere. Differentiate each card with a real dish/special (name + price) or distinct iconography."
+    ],
+    "recommendations": [
+      "Fix the [reviewer] taste issues above in Bot 5, then re-run QA"
+    ],
+    "checked_at": "2026-09-22T02:17:47.255168+00:00",
+    "site_dir": "generated_sites\\ember-rye-wood-fired-pizza",
+    "details": {
+      "bytes": {
+        "html": 28526,
+        "css": 15067,
+        "js": 9384,
+        "total_kb": 51.7,
+        "images_kb": 0.0,
+        "n_images": 0
+      },
+      "words": 561,
+      "sections": 8
+    },
+    "reviewer": {
+      "engine": "opencode",
+      "model": "opencode/big-pickle",
+      "verdict": "fail",
+      "issues": [
+        "index.html whole-page copy is contractor-template text pasted onto a pizzeria: 'Every job quoted up front — you approve before we start' (#services .section-sub, line 76), 'approve before we start' / 'Work backed in writing' / 'You talk to the people doing the work' (#about .checklist, lines 87-89), and a 'Get a Free Quote'/'Request a callback' framework (lines 55, 128). Rewrite the offer copy around ordering, dining, and wood-fired food, and swap 'free quote' for 'order' language in the meta description (line 6).",
+        "index.html:52 tagline says 'check the menu below' but the page ships no menu, no dishes, and no prices anywhere — a broken promise at the top of the fold. Ship a real menu section (or a 'View Menu' CTA), or cut the phrase.",
+        "index.html:98 and index.html:123 — 'Get Directions' and 'Find us on Google Maps →' are dead href=\"#\" links (with no script override). Point them at a real URL, e.g. https://maps.google.com/?q=214+Alder+St,+Portland,+OR+97204.",
+        "index.html:54-56 hero renders three competing CTAs (Call / Get a Free Quote / Explore Services), all phone- or lead-gen-oriented, with no order/menu action — for a restaurant the eye needs one primary action. Collapse to a single primary 'Order / Call' CTA plus one quiet secondary (e.g. 'View Menu').",
+        "index.html:51-52 vs 83 — the about paragraph repeats the hero tagline almost verbatim ('House recipes, generous portions, and food made to order. Dine in, take out, or feed the whole crew — check the menu below'). Cut the duplication and replace with distinct specifics.",
+        "index.html:77 service cards all reuse the identical flame SVG and generic blurbs ('made to order', 'fast midday plates') — two of the six even say 'pizza' nowhere. Differentiate each card with a real dish/special (name + price) or distinct iconography."
+      ],
+      "praise": [
+        "The palette is genuinely tailored to the business — ember red, burnt orange, gold, cream crust, smoke dark — used with discipline across hero, stats, and buttons; no gradient soup.",
+        "Typography pairing is strong: Fraunces display against Inter body with a thoughtfully clamped hero scale and tight tracking; no system-font smell.",
+        "Craft level is high — aurora canvas, count-up stats, magnetic CTAs, and word-mask heading reveals are all gated on prefers-reduced-motion, signaling serious attention to quality motion.",
+        "One-visit fundamentals land: business name, address, phone, hours, and rating are present, consistent, and contactable within 10 seconds."
+      ]
+    }
+  },
+  {
+    "lead_id": "lead_90001",
+    "passed": false,
+    "score": 90,
+    "issues": [
+      "[reviewer] index.html:77 — 'Crowd favorites' menu contains zero actual dishes and zero prices (just 'Signature Mains', 'Lunch Specials', etc.). The menu IS the product for a pizza shop; replace the category cards with named items + prices (e.g. 'Margherita — $16', '212 Alder Special — $22') so it can't be a generic any-business template.",
+      "[reviewer] index.html:77 — all 6 service cards reuse the identical flame SVG path (only 4 unique icons across the whole page: verified 13 icon paths, 4 unique). Give each card a distinct glyph (pizza slice, takeout box, clock, tray) so the grid reads designed rather than stamped.",
+      "[reviewer] index.html:53-57 — hero ships three CTAs (Call / View Menu / Plan Your Visit) plus a fourth 'Call Now' button in the nav, drowning the single primary action. Keep one primary (Call) and one secondary (View Menu), drop the ghost button.",
+      "[reviewer] index.html:28 — hours read like a phone-company default (Mon–Fri 8am–6pm, Sat 9am–3pm, Sun closed), wrong for a dinner-service pizza place; pair them with the site's own claim of 'tonight'. Re-write to realistic lunch+dinner hours or say 'Sun 4pm–9pm'.",
+      "[reviewer] index.html:126-130 — the contact form topic list includes 'Book an appointment' and the about card says 'Call to Book': reservation-free pizza takeout shouldn't take appointments. Replace with 'Reserve a table', 'Catering inquiry', 'Takeout order'.",
+      "[reviewer] Copy repetition — the sentence 'dine in, take out, or feed the whole crew — see crowd favorites below' is repeated verbatim 4× (meta description, hero tagline line 52, services sub line 76, about paragraph line 83). Each section should say something new."
+    ],
+    "recommendations": [
+      "Fix the [reviewer] taste issues above in Bot 5, then re-run QA"
+    ],
+    "checked_at": "2026-09-22T02:20:41.461662+00:00",
+    "site_dir": "generated_sites\\ember-rye-wood-fired-pizza",
+    "details": {
+      "bytes": {
+        "html": 28704,
+        "css": 15067,
+        "js": 9384,
+        "total_kb": 51.9,
+        "images_kb": 0.0,
+        "n_images": 0
+      },
+      "words": 564,
+      "sections": 8
+    },
+    "reviewer": {
+      "engine": "opencode",
+      "model": "opencode/big-pickle",
+      "verdict": "fail",
+      "issues": [
+        "index.html:77 — 'Crowd favorites' menu contains zero actual dishes and zero prices (just 'Signature Mains', 'Lunch Specials', etc.). The menu IS the product for a pizza shop; replace the category cards with named items + prices (e.g. 'Margherita — $16', '212 Alder Special — $22') so it can't be a generic any-business template.",
+        "index.html:77 — all 6 service cards reuse the identical flame SVG path (only 4 unique icons across the whole page: verified 13 icon paths, 4 unique). Give each card a distinct glyph (pizza slice, takeout box, clock, tray) so the grid reads designed rather than stamped.",
+        "index.html:53-57 — hero ships three CTAs (Call / View Menu / Plan Your Visit) plus a fourth 'Call Now' button in the nav, drowning the single primary action. Keep one primary (Call) and one secondary (View Menu), drop the ghost button.",
+        "index.html:28 — hours read like a phone-company default (Mon–Fri 8am–6pm, Sat 9am–3pm, Sun closed), wrong for a dinner-service pizza place; pair them with the site's own claim of 'tonight'. Re-write to realistic lunch+dinner hours or say 'Sun 4pm–9pm'.",
+        "index.html:126-130 — the contact form topic list includes 'Book an appointment' and the about card says 'Call to Book': reservation-free pizza takeout shouldn't take appointments. Replace with 'Reserve a table', 'Catering inquiry', 'Takeout order'.",
+        "Copy repetition — the sentence 'dine in, take out, or feed the whole crew — see crowd favorites below' is repeated verbatim 4× (meta description, hero tagline line 52, services sub line 76, about paragraph line 83). Each section should say something new."
+      ],
+      "praise": [
+        "The ember palette (#b3271e / #e07b39) plus gold on warm cream is genuinely designed for THIS business — a real fire/heat identity, not gradient soup, and used with restraint.",
+        "Typography is a confident call: Fraunces display against Inter body with tight leading, sensible clamp() scales and max-width 640px tagline.",
+        "The one-visit test passes: business name, product, address, phone, and hours all land in the first viewport and are repeated with perfect consistency (4.8 · 132 reviews everywhere).",
+        "Mobile collapse is thoughtful — full-width nav, stacked hero columns, centered CTA row at ≤820px, and touch-friendly full-width call button at ≤760px."
+      ]
+    }
+  },
+  {
+    "lead_id": "lead_90001",
+    "passed": true,
+    "score": 100,
+    "issues": [],
+    "recommendations": [],
+    "checked_at": "2026-09-22T02:21:25.440709+00:00",
+    "site_dir": "generated_sites\\ember-rye-wood-fired-pizza",
+    "details": {
+      "bytes": {
+        "html": 28909,
+        "css": 15067,
+        "js": 9384,
+        "total_kb": 52.1,
+        "images_kb": 0.0,
+        "n_images": 0
+      },
+      "words": 588,
+      "sections": 9
+    },
+    "reviewer": {
+      "engine": "abstained",
+      "model": "opencode/big-pickle",
+      "issues": [],
+      "praise": [],
+      "verdict": "abstain"
+    }
+  },
+  {
+    "lead_id": "lead_90001",
+    "passed": true,
+    "score": 100,
+    "issues": [],
+    "recommendations": [],
+    "checked_at": "2026-09-22T02:22:48.847743+00:00",
+    "site_dir": "generated_sites\\ember-rye-wood-fired-pizza",
+    "details": {
+      "bytes": {
+        "html": 28885,
+        "css": 15067,
+        "js": 9384,
+        "total_kb": 52.1,
+        "images_kb": 0.0,
+        "n_images": 0
+      },
+      "words": 585,
+      "sections": 9
+    },
+    "reviewer": {
+      "engine": "abstained",
+      "model": "opencode/big-pickle",
+      "issues": [],
+      "praise": [],
+      "verdict": "abstain"
+    }
+  },
+  {
+    "lead_id": "lead_90001",
+    "passed": false,
+    "score": 90,
+    "issues": [
+      "[reviewer] index.html sections #services (lines 74-77): 'Crowd favorites'/'Menu' is the centerpiece but contains zero actual dishes — only category names + price ranges ('Signature Mains had entrees $14-24'). A pizza restaurant must name its pies; add 4-6 signature pizzas (name, briefly evocative description, price) or the core product is invisible.",
+      "[reviewer] index.html hero (lines 63-66 + styles.css:41,124-127,131-160): 'hero-visual' is an abstract flame SVG in a spinning ring plus a procedural aurora canvas — no food anywhere on the page. For a pizzeria the first thing the eye wants is appetite; replace with real art-directed photography (pie with char/leoparding, wood-fired oven, peel) in the asymmetric slot.",
+      "[reviewer] index.html:83: broken copy reads as category injection, not human writing: 'The neighborhood spot for Pizza restaurant at 214 Alder St, Portland' — grammatically wrong and filler-like. Rewrite, e.g. 'The neighborhood wood-fired pizza spot at 214 Alder St, Portland...'.",
+      "[reviewer] index.html:50,68-70,139: the literal category keyword 'Pizza restaurant' is stuffed into visible copy (hero badge pill, marquee repeated 12x, footer). The 12-pass brand marquee directly under the hero reads as SEO repetition, not design; keep one pass or delete the marquee, and drop '· Pizza restaurant' from the hero pill — the brand name already says it.",
+      "[reviewer] styles.css:78 (slider-dots): review carousel dots are 12px round buttons — well below the ~44px tap minimum and fiddly at 360px. Add padding/hit-area expansion (e.g. ~20px visual on a 36px+ click target).",
+      "[reviewer] responsiveness of hero H1 at 360px: 'Ember & Rye Wood-Fired Pizza' at clamp-min 2.2rem wraps over 3 lines plus the gradient 'Cooked fresh, served fast' line, making the hero top-heavy; consider a slightly smaller mobile cap (e.g. clamp min ~1.9rem) or a shorter mobile lockup so name + offer + CTA fit above the fold."
+    ],
+    "recommendations": [
+      "Fix the [reviewer] taste issues above in Bot 5, then re-run QA"
+    ],
+    "checked_at": "2026-09-22T02:27:07.295979+00:00",
+    "site_dir": "generated_sites\\ember-rye-wood-fired-pizza",
+    "details": {
+      "bytes": {
+        "html": 28400,
+        "css": 15067,
+        "js": 9384,
+        "total_kb": 51.6,
+        "images_kb": 0.0,
+        "n_images": 0
+      },
+      "words": 555,
+      "sections": 8
+    },
+    "reviewer": {
+      "engine": "opencode",
+      "model": "opencode/big-pickle",
+      "verdict": "fail",
+      "issues": [
+        "index.html sections #services (lines 74-77): 'Crowd favorites'/'Menu' is the centerpiece but contains zero actual dishes — only category names + price ranges ('Signature Mains had entrees $14-24'). A pizza restaurant must name its pies; add 4-6 signature pizzas (name, briefly evocative description, price) or the core product is invisible.",
+        "index.html hero (lines 63-66 + styles.css:41,124-127,131-160): 'hero-visual' is an abstract flame SVG in a spinning ring plus a procedural aurora canvas — no food anywhere on the page. For a pizzeria the first thing the eye wants is appetite; replace with real art-directed photography (pie with char/leoparding, wood-fired oven, peel) in the asymmetric slot.",
+        "index.html:83: broken copy reads as category injection, not human writing: 'The neighborhood spot for Pizza restaurant at 214 Alder St, Portland' — grammatically wrong and filler-like. Rewrite, e.g. 'The neighborhood wood-fired pizza spot at 214 Alder St, Portland...'.",
+        "index.html:50,68-70,139: the literal category keyword 'Pizza restaurant' is stuffed into visible copy (hero badge pill, marquee repeated 12x, footer). The 12-pass brand marquee directly under the hero reads as SEO repetition, not design; keep one pass or delete the marquee, and drop '· Pizza restaurant' from the hero pill — the brand name already says it.",
+        "styles.css:78 (slider-dots): review carousel dots are 12px round buttons — well below the ~44px tap minimum and fiddly at 360px. Add padding/hit-area expansion (e.g. ~20px visual on a 36px+ click target).",
+        "responsiveness of hero H1 at 360px: 'Ember & Rye Wood-Fired Pizza' at clamp-min 2.2rem wraps over 3 lines plus the gradient 'Cooked fresh, served fast' line, making the hero top-heavy; consider a slightly smaller mobile cap (e.g. clamp min ~1.9rem) or a shorter mobile lockup so name + offer + CTA fit above the fold."
+      ],
+      "praise": [
+        "Color palette is genuinely on-brand, not soup: ember red #b3271e, roasted-orange #e07b39, and a single gold #f2b33d on a warm cream (#fff8f0) with dark charcoal — a disciplined 2-accent warm range that says 'wood-fired' instantly and is used consistently across badge, buttons, stats and about-card.",
+        "Display/body pairing (Fraunces for headings, Inter for UI/body) is excellent and the type scale is confident — big clamp-driven H1, letter-spaced uppercase eyebrows with rule lines, decent line lengths (tagline capped at 640px). No system-font fallback smell.",
+        "Copy is otherwise concrete and credible: real street (214 Alder St, Portland OR 97204), real phone, price ranges ($14-24 mains, $45+ platters, $11-14 lunch), 'ready in ~15 minutes', 'family platter fed all five of us' — the one-visit test passes: name, what it is, and a phone CTA are reachable in seconds (tel: links in topbar, header, hero, CTA banner, and footer).",
+        "Restraint in motion: staggered hero reveals, count-up stats, magnetic primary CTA, and the aurora canvas are all gated on prefers-reduced-motion, and the Stock-level accessibility wiring (tablists, aria-hidden decorative marquees) shows craft even before taste."
+      ]
+    }
+  },
+  {
+    "lead_id": "lead_90001",
+    "passed": false,
+    "score": 90,
+    "issues": [
+      "[reviewer] index.html:106 — remove the `.revisions` block; it leaks raw client feedback verbatim (including the `â€`` mojibake) onto the page and advertises that its own requested changes were never applied, which visibly undermines the brief.",
+      "[reviewer] index.html:122 (Visit > Hours) — implement real weekly hours; the feedback requested Saturday 12pm–11pm but the page still says 'Hours vary by day — call for today's hours'. A `.hours` table style already exists (styles.css:85) but is unused; add day-by-day hours, especially Saturday.",
+      "[reviewer] index.html:77 (.cards) — 'What we serve' lists only service categories ('Signature Mains', 'Daily Specials'); for a pizza restaurant the menu is hollow with zero actual dishes. Add named pies with prices (e.g. 'Ember Margherita — $17').",
+      "[reviewer] styles.css:101 + :root lines 1/4 — `--brand2:#e07b39` orange still drives the hero and `.btn-primary` red→orange gradients and the conic overlay, contradicting the 'deep reds instead of orange' feedback; pull the palette back to ember red + gold.",
+      "[reviewer] styles.css:101-123 — hero texture overload: conic overlay + animated aurora canvas + dotted scrim + ghost watermark + marquee all fight the type; cut at least two layers so the display type is the hero.",
+      "[reviewer] index.html:76,82,109 — the section head/sub and the CTA recite the full business name repeatedly; tighten 'Why neighbors pick Ember & Rye Wood-Fired Pizza' and 'Made fresh at Ember & Rye Wood-Fired Pizza' to lean on the pronoun/short form so the name is iconic, not shouted."
+    ],
+    "recommendations": [
+      "Fix the [reviewer] taste issues above in Bot 5, then re-run QA"
+    ],
+    "checked_at": "2026-09-22T02:28:31.376160+00:00",
+    "site_dir": "generated_sites\\ember-rye-wood-fired-pizza",
+    "details": {
+      "bytes": {
+        "html": 28605,
+        "css": 15067,
+        "js": 9384,
+        "total_kb": 51.8,
+        "images_kb": 0.0,
+        "n_images": 0
+      },
+      "words": 579,
+      "sections": 9
+    },
+    "reviewer": {
+      "engine": "opencode",
+      "model": "opencode/big-pickle",
+      "verdict": "fail",
+      "issues": [
+        "index.html:106 — remove the `.revisions` block; it leaks raw client feedback verbatim (including the `â€`` mojibake) onto the page and advertises that its own requested changes were never applied, which visibly undermines the brief.",
+        "index.html:122 (Visit > Hours) — implement real weekly hours; the feedback requested Saturday 12pm–11pm but the page still says 'Hours vary by day — call for today's hours'. A `.hours` table style already exists (styles.css:85) but is unused; add day-by-day hours, especially Saturday.",
+        "index.html:77 (.cards) — 'What we serve' lists only service categories ('Signature Mains', 'Daily Specials'); for a pizza restaurant the menu is hollow with zero actual dishes. Add named pies with prices (e.g. 'Ember Margherita — $17').",
+        "styles.css:101 + :root lines 1/4 — `--brand2:#e07b39` orange still drives the hero and `.btn-primary` red→orange gradients and the conic overlay, contradicting the 'deep reds instead of orange' feedback; pull the palette back to ember red + gold.",
+        "styles.css:101-123 — hero texture overload: conic overlay + animated aurora canvas + dotted scrim + ghost watermark + marquee all fight the type; cut at least two layers so the display type is the hero.",
+        "index.html:76,82,109 — the section head/sub and the CTA recite the full business name repeatedly; tighten 'Why neighbors pick Ember & Rye Wood-Fired Pizza' and 'Made fresh at Ember & Rye Wood-Fired Pizza' to lean on the pronoun/short form so the name is iconic, not shouted."
+      ],
+      "praise": [
+        "Genuinely specific copy: real street address, phone, review count (4.8 · 132) and prices ($14–$24, platters from $45) everywhere — no filler or lorem.",
+        "Palette is confined to a warm fire family (clickable red/orange/gold on cream) that suits a wood-fired shop, set off cleanly by `#260f0b`; Fraunces + Inter is a confident pairing with a healthy display scale.",
+        "Hierarchy works: name → 'Cooked fresh, served fast' → one true primary CTA (Call), and the mobile nav (collapsible at 760px, full-width call button) will hold together at 360px."
+      ]
+    }
+  },
+  {
+    "lead_id": "lead_90001",
+    "passed": false,
+    "score": 90,
+    "issues": [
+      "[reviewer] index.html:106 — the `<section class='revisions'>` block leaks internal dev notes to visitors ('Latest updates per your feedback — add a private-events section and make the phone number bigger in the header'). Delete it and actually deliver the requested private-events section rather than publishing the task list.",
+      "[reviewer] index.html:28,122 — the restaurant never shows hours; 'Call for today's hours' is repeated in the topbar and Visit section. Hours are the #1 conversion driver for a pizza place — add a real hours block (at minimum Open/Close ranges) once the business supplies them.",
+      "[reviewer] index.html:38 — the 'Menu' nav link points at #services, which is a grid of marketing cards ('Signature Mains', 'Daily Specials') with zero named dishes. A restaurant menu should list actual food; rename the link to 'Favorites' or add itemized dishes.",
+      "[reviewer] script.js:20 + index.html:143 — in this preview the only feedback a form submit visitor receives is a developer-mode message ('Design preview — this form goes live when the site launches'); visitors don't know these are draft-only. Ship a real order/contact path or hide the form entirely until launch.",
+      "[reviewer] index.html:44 — the requested 'make the phone number bigger in the header' was not honored; `.btn-call` at .92rem (styles.css:29) is the smallest element in the header and below the brand text size.",
+      "[reviewer] index.html:64-65 — the hero visual is a generic flame line-icon inside an abstract rotating ring; it communicates nothing about wood-fired pizza. Replace with product photography if assets are ever available (the icon reads as a generic template, not this business)."
+    ],
+    "recommendations": [
+      "Fix the [reviewer] taste issues above in Bot 5, then re-run QA"
+    ],
+    "checked_at": "2026-09-22T02:30:02.296881+00:00",
+    "site_dir": "generated_sites\\ember-rye-wood-fired-pizza",
+    "details": {
+      "bytes": {
+        "html": 28581,
+        "css": 15067,
+        "js": 9384,
+        "total_kb": 51.8,
+        "images_kb": 0.0,
+        "n_images": 0
+      },
+      "words": 576,
+      "sections": 9
+    },
+    "reviewer": {
+      "engine": "opencode",
+      "model": "opencode/big-pickle",
+      "verdict": "fail",
+      "issues": [
+        "index.html:106 — the `<section class='revisions'>` block leaks internal dev notes to visitors ('Latest updates per your feedback — add a private-events section and make the phone number bigger in the header'). Delete it and actually deliver the requested private-events section rather than publishing the task list.",
+        "index.html:28,122 — the restaurant never shows hours; 'Call for today's hours' is repeated in the topbar and Visit section. Hours are the #1 conversion driver for a pizza place — add a real hours block (at minimum Open/Close ranges) once the business supplies them.",
+        "index.html:38 — the 'Menu' nav link points at #services, which is a grid of marketing cards ('Signature Mains', 'Daily Specials') with zero named dishes. A restaurant menu should list actual food; rename the link to 'Favorites' or add itemized dishes.",
+        "script.js:20 + index.html:143 — in this preview the only feedback a form submit visitor receives is a developer-mode message ('Design preview — this form goes live when the site launches'); visitors don't know these are draft-only. Ship a real order/contact path or hide the form entirely until launch.",
+        "index.html:44 — the requested 'make the phone number bigger in the header' was not honored; `.btn-call` at .92rem (styles.css:29) is the smallest element in the header and below the brand text size.",
+        "index.html:64-65 — the hero visual is a generic flame line-icon inside an abstract rotating ring; it communicates nothing about wood-fired pizza. Replace with product photography if assets are ever available (the icon reads as a generic template, not this business)."
+      ],
+      "praise": [
+        "Color restraint is genuinely on-brief: cream, ember red, burnt orange, and gold read as 'wood-fired' rather than generic gradient soup, with the accent gradient used only on the hero H1 line and CTAs.",
+        "Typography pairing (Fraunces display + Inter body) is well chosen, the hero scale is confident (clamp 2.2–4.2rem), and line lengths stay under ~70ch.",
+        "Copy is refreshingly specific and un-filler: street address, phone, $14–$24 entree ranges, $11–$14 lunch, ~15-min takeout, ratings/verified-review counts.",
+        "Motion is disciplined and correctly gated behind prefers-reduced-motion and no-JS, including split-word H2 reveals, scroll progress, and the aurora canvas."
+      ]
+    }
+  },
+  {
+    "lead_id": "lead_90001",
+    "passed": true,
+    "score": 90,
+    "issues": [
+      "[reviewer] index.html #services cards — 'Crowd favorites' are service categories with price ranges (Signature Mains $14–$24, Family Platters from $45), not a single named dish. A pizza joint called Ember & Rye never sells one specific pie, so the copy reads as any generic restaurant template. Fix: name 2–3 real signature items each (e.g., a wood-fired pie list, a house bread like the rye that named the place) so the menu belongs to THIS business.",
+      "[reviewer] index.html #visit / topbar — zero hours are ever stated; 'Call for today's hours' appears in the topbar and Visit section, and the hero meta description repeats it. styles.css:85-86 defines a .hours table that no markup uses. Fix: publish a real weekly-hours block in #visit (the CSS already anticipates it) instead of punting to a phone call twice.",
+      "[reviewer] index.html:72 stats — '6 Signature services' counts six, but #services renders exactly 5 cards (Signature Mains, Family Platters, Takeout ~15 Min, Lunch Specials, Daily Specials). Fix: change the stat to 5 or add a sixth card so the copy-to-layout count agrees.",
+      "[reviewer] index.html social proof — '4.8 · 132 Google reviews' is repeated in the hero badge (line 50), stats bar (line 72), the about-card (line 92), and again as the #reviews rating (line 101). Drumming the same number four times dilutes it. Fix: keep it in the reviews section + reachable badge, and vary the about-card stat to something new.",
+      "[reviewer] styles.css:113 body::after — a fixed full-viewport film-grain overlay at z-index:60 sits above the sticky header (z-index 30) and topbar, visually graining navigation and buttons across the whole site, not just the hero. Fix: scope the grain (and the hero's dot-grid ::before) to the hero section, or drop the overlay."
+    ],
+    "recommendations": [],
+    "checked_at": "2026-09-22T02:32:05.328145+00:00",
+    "site_dir": "generated_sites\\ember-rye-wood-fired-pizza",
+    "details": {
+      "bytes": {
+        "html": 28007,
+        "css": 15067,
+        "js": 9384,
+        "total_kb": 51.2,
+        "images_kb": 0.0,
+        "n_images": 0
+      },
+      "words": 521,
+      "sections": 8
+    },
+    "reviewer": {
+      "engine": "opencode",
+      "model": "opencode/big-pickle",
+      "verdict": "pass",
+      "issues": [
+        "index.html #services cards — 'Crowd favorites' are service categories with price ranges (Signature Mains $14–$24, Family Platters from $45), not a single named dish. A pizza joint called Ember & Rye never sells one specific pie, so the copy reads as any generic restaurant template. Fix: name 2–3 real signature items each (e.g., a wood-fired pie list, a house bread like the rye that named the place) so the menu belongs to THIS business.",
+        "index.html #visit / topbar — zero hours are ever stated; 'Call for today's hours' appears in the topbar and Visit section, and the hero meta description repeats it. styles.css:85-86 defines a .hours table that no markup uses. Fix: publish a real weekly-hours block in #visit (the CSS already anticipates it) instead of punting to a phone call twice.",
+        "index.html:72 stats — '6 Signature services' counts six, but #services renders exactly 5 cards (Signature Mains, Family Platters, Takeout ~15 Min, Lunch Specials, Daily Specials). Fix: change the stat to 5 or add a sixth card so the copy-to-layout count agrees.",
+        "index.html social proof — '4.8 · 132 Google reviews' is repeated in the hero badge (line 50), stats bar (line 72), the about-card (line 92), and again as the #reviews rating (line 101). Drumming the same number four times dilutes it. Fix: keep it in the reviews section + reachable badge, and vary the about-card stat to something new.",
+        "styles.css:113 body::after — a fixed full-viewport film-grain overlay at z-index:60 sits above the sticky header (z-index 30) and topbar, visually graining navigation and buttons across the whole site, not just the hero. Fix: scope the grain (and the hero's dot-grid ::before) to the hero section, or drop the overlay."
+      ],
+      "praise": [
+        "Fraunces + Inter pairing with a 7.2vw editorial h1 up to 4.6rem gives the hero real presence, and the line-length-capped tagline keeps it readable.",
+        "Palette is genuinely built for a wood-fired kitchen: a single warm family (burnt ember red → caramel → gold on a char-brown base) used with discipline across buttons, accents, and the dark sections — no gradient soup.",
+        "Copy is specific and fabricated-proof: a real street address, $14–$24/$45/$11–$14 price ranges, '~15 min' takeout, 'sells out most days', plus believable Google-review quotes — no lorem, no welcome-to-our-website.",
+        "Hero hierarchy nails the one-visit test: name lands first, then 'Cooked fresh, served fast', then a single primary Call CTA with View Menu secondary — and the phone number stays reachable in topbar, header, hero, about, cta-banner, visit, and footer."
+      ]
+    }
+  },
+  {
+    "lead_id": "lead_90001",
+    "passed": true,
+    "score": 92,
+    "issues": [
+      "[reviewer] index.html line 77 (.cards): no card names a single actual dish — 'Signature Mains $14–$24' and 'Crowd favorites' stay abstract for a pizza shop. Add one or two named, describable menu items (e.g., a signature wood-fired pie with blistered crust and a real price) so the section sells food a visitor can picture.",
+      "[reviewer] index.html line 51 + styles.css line 104 (.hero--editorial-asymmetric h1): the 5-word business name plus the forced <br> accent wraps to 3–4 lines at 360px (clamp min 2.2rem/35px on a ~315px column). Fix: at ≤480px lower the clamp minimum (≈2.1rem) or drop the forced break so the lockup stays a clean 2 lines.",
+      "[reviewer] index.html lines 121–122 (#visit): hours appear only as 'call for today's hours' twice — a restaurant utility block without a single actual time is thin. Add a simple hours table (e.g., Mon–Sat 11am–10pm) with a 'call to confirm' fallback.",
+      "[reviewer] Three different call-button labels across the page — 'Call Now' (header line 44), 'Call to Order' (line 94), 'Call (503) 555-0147' (lines 54, 111) — dilute one clear primary action. Unify the primary label (e.g., 'Call (503) 555-0147') everywhere."
+    ],
+    "recommendations": [],
+    "checked_at": "2026-09-22T02:35:00.503116+00:00",
+    "site_dir": "generated_sites\\ember-rye-wood-fired-pizza",
+    "details": {
+      "bytes": {
+        "html": 27979,
+        "css": 15066,
+        "js": 9384,
+        "total_kb": 51.2,
+        "images_kb": 0.0,
+        "n_images": 0
+      },
+      "words": 516,
+      "sections": 8
+    },
+    "reviewer": {
+      "engine": "opencode",
+      "model": "opencode/big-pickle",
+      "verdict": "pass",
+      "issues": [
+        "index.html line 77 (.cards): no card names a single actual dish — 'Signature Mains $14–$24' and 'Crowd favorites' stay abstract for a pizza shop. Add one or two named, describable menu items (e.g., a signature wood-fired pie with blistered crust and a real price) so the section sells food a visitor can picture.",
+        "index.html line 51 + styles.css line 104 (.hero--editorial-asymmetric h1): the 5-word business name plus the forced <br> accent wraps to 3–4 lines at 360px (clamp min 2.2rem/35px on a ~315px column). Fix: at ≤480px lower the clamp minimum (≈2.1rem) or drop the forced break so the lockup stays a clean 2 lines.",
+        "index.html lines 121–122 (#visit): hours appear only as 'call for today's hours' twice — a restaurant utility block without a single actual time is thin. Add a simple hours table (e.g., Mon–Sat 11am–10pm) with a 'call to confirm' fallback.",
+        "Three different call-button labels across the page — 'Call Now' (header line 44), 'Call to Order' (line 94), 'Call (503) 555-0147' (lines 54, 111) — dilute one clear primary action. Unify the primary label (e.g., 'Call (503) 555-0147') everywhere."
+      ],
+      "praise": [
+        "Cohesive ember palette (dark #260f0b → brand red → gold) that derives from the business's name and subject, not generic gradient soup — and it's used with discipline.",
+        "Genuine editorial craft: asymmetric hero with scaled aurora canvas, ghost mark, staggered entrances, and word-mask h2s — all properly gated on reduced-motion and no-JS.",
+        "Fraunces + Inter pairing, additive grain, and progressive-scroll device feel considered; the one-visit test passes cleanly (name, offering, phone, address all land in the first fold)."
+      ]
+    }
+  }
+]

@@ -1,0 +1,27 @@
+[
+  {
+    "lead_id": "lead_00001",
+    "passed": true,
+    "score": 94,
+    "issues": [
+      "Button text contrast 3.5:1 on brand (needs 4.5:1)",
+      "Scroll reveals hide content when JS is off"
+    ],
+    "recommendations": [
+      "Darken --brand/--brand2 until white button text passes WCAG AA",
+      "Scope hidden initial states behind a JS-added class (e.g. body.js)"
+    ],
+    "checked_at": "2026-09-18T00:11:18.655684+00:00",
+    "site_dir": "generated_sites\\90-bangkok-cafe-and-bar",
+    "details": {
+      "bytes": {
+        "html": 40054,
+        "css": 30270,
+        "js": 14263,
+        "total_kb": 82.6
+      },
+      "words": 1218,
+      "sections": 7
+    }
+  }
+]

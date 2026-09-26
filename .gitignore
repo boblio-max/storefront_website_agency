@@ -1,5 +1,5 @@
-.vercel
-.env*
+websites_folder/
+90-bangkok-cafe-and-bar/
+la-gloria-modern-mexican-bar/
 __pycache__/
 *.pyc
-*.pyo
