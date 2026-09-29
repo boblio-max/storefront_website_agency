@@ -398,6 +398,61 @@ class WebsiteGeneratorTests(unittest.TestCase):
                     wg.run_opencode_command(self.root, "Build")
 
 
+class OpenCodeAutofixTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+
+    def write(self, html="x", css="x", js="x"):
+        (self.root / "index.html").write_text(html, encoding="utf-8")
+        (self.root / "styles.css").write_text(css, encoding="utf-8")
+        (self.root / "script.js").write_text(js, encoding="utf-8")
+
+    def test_prompt_names_qa_gates_verbatim(self):
+        lead = {"lead_id": "lead_x", "name": "Cafe X", "category": "Cafe"}
+        prompt = wg.build_prompt(lead, None, preview=True)
+        for marker in ("WHITE text on your --brand and --brand2",
+                        "prefers-reduced-motion:reduce",
+                        "body.js .reveal",
+                        "classList.add('js')",
+                        'id="heroAurora"',
+                        "data-count",
+                        "hero-ghost",
+                        "feTurbulence",
+                        "::selection",
+                        "names the signature moment"):
+            self.assertIn(marker, prompt)
+
+    def test_reduced_motion_injected_when_missing(self):
+        self.write(css="body{color:#111}", js="console.log(1)")
+        self.assertEqual(wg._opencode_autofix(self.root), ["reduced-motion", "texture"])
+        css = (self.root / "styles.css").read_text(encoding="utf-8")
+        self.assertIn("prefers-reduced-motion", css)
+
+    def test_reveal_rescoped_and_js_bootstrapped(self):
+        self.write(html='<div class="reveal">hi</div>',
+                   css=".reveal{opacity:0;transform:none}",
+                   js="console.log(1)")
+        fixed = wg._opencode_autofix(self.root)
+        self.assertIn("reveal-scope", fixed)
+        css = (self.root / "styles.css").read_text(encoding="utf-8")
+        self.assertIn("body.js .reveal", css)
+        self.assertNotIn(".reveal{opacity:0", css.replace("body.js .reveal", ""))
+        js = (self.root / "script.js").read_text(encoding="utf-8")
+        self.assertIn("classList.add('js')", js)
+
+    def test_clean_output_is_untouched(self):
+        self.write(html='<div class="stack" data-count="5">hi</div>',
+                   css=("body.js .reveal{opacity:0}::selection{background:#000}"
+                        "@media (prefers-reduced-motion:reduce){*{animation:none}}"),
+                   js="document.body.classList.add('js')")
+        before = {(p.name): p.read_bytes() for p in self.root.iterdir()}
+        self.assertEqual(wg._opencode_autofix(self.root), [])
+        after = {(p.name): p.read_bytes() for p in self.root.iterdir()}
+        self.assertEqual(before, after)
+
+
 class EmailConfigTests(unittest.TestCase):
     def test_smtp_config_none_without_password(self):
         import email_generator as eg

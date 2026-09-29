@@ -308,5 +308,33 @@
       "words": 495,
       "sections": 6
     }
+  },
+  {
+    "lead_id": "lead_00001",
+    "passed": true,
+    "score": 100,
+    "issues": [],
+    "recommendations": [],
+    "checked_at": "2026-09-29T04:02:19.790541+00:00",
+    "site_dir": "generated_sites\\the-port-of-peri-peri-bothell",
+    "details": {
+      "bytes": {
+        "html": 28128,
+        "css": 14449,
+        "js": 9384,
+        "total_kb": 50.7,
+        "images_kb": 469.0,
+        "n_images": 4
+      },
+      "words": 548,
+      "sections": 8
+    },
+    "reviewer": {
+      "engine": "skipped",
+      "model": "opencode/big-pickle",
+      "issues": [],
+      "praise": [],
+      "verdict": "abstain"
+    }
   }
 ]

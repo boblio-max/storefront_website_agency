@@ -23,5 +23,97 @@
       "words": 1218,
       "sections": 7
     }
+  },
+  {
+    "lead_id": "lead_00001",
+    "passed": true,
+    "score": 97,
+    "issues": [
+      "No layout overflow guard — page may scroll horizontally"
+    ],
+    "recommendations": [
+      "Add overflow-x:clip on html/body AND keep the marquee in an overflow:hidden wrapper"
+    ],
+    "checked_at": "2026-09-29T04:26:53.548072+00:00",
+    "site_dir": "generated_sites\\90-bangkok-cafe-and-bar",
+    "details": {
+      "bytes": {
+        "html": 33254,
+        "css": 33370,
+        "js": 17131,
+        "total_kb": 81.8,
+        "images_kb": 202.9,
+        "n_images": 2
+      },
+      "words": 1223,
+      "sections": 7
+    },
+    "reviewer": {
+      "engine": "skipped",
+      "model": "opencode/big-pickle",
+      "issues": [],
+      "praise": [],
+      "verdict": "abstain"
+    }
+  },
+  {
+    "lead_id": "lead_00001",
+    "passed": true,
+    "score": 97,
+    "issues": [
+      "No layout overflow guard — page may scroll horizontally"
+    ],
+    "recommendations": [
+      "Add overflow-x:clip on html/body AND keep the marquee in an overflow:hidden wrapper"
+    ],
+    "checked_at": "2026-09-29T04:33:35.834953+00:00",
+    "site_dir": "generated_sites\\90-bangkok-cafe-and-bar",
+    "details": {
+      "bytes": {
+        "html": 33254,
+        "css": 33370,
+        "js": 17131,
+        "total_kb": 81.8,
+        "images_kb": 202.9,
+        "n_images": 2
+      },
+      "words": 1223,
+      "sections": 7
+    },
+    "reviewer": {
+      "engine": "skipped",
+      "model": "opencode/big-pickle",
+      "issues": [],
+      "praise": [],
+      "verdict": "abstain"
+    }
+  },
+  {
+    "lead_id": "lead_00001",
+    "passed": true,
+    "score": 100,
+    "issues": [],
+    "recommendations": [],
+    "checked_at": "2026-09-29T04:33:50.040058+00:00",
+    "site_dir": "generated_sites\\90-bangkok-cafe-and-bar",
+    "details": {
+      "bytes": {
+        "html": 37899,
+        "css": 33370,
+        "js": 17131,
+        "total_kb": 86.3,
+        "images_kb": 202.9,
+        "n_images": 2
+      },
+      "words": 1246,
+      "sections": 7
+    },
+    "reviewer": {
+      "engine": "skipped",
+      "model": "opencode/big-pickle",
+      "issues": [],
+      "praise": [],
+      "verdict": "abstain"
+    }
   }
 ]

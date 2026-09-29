@@ -3,3 +3,5 @@ websites_folder/
 la-gloria-modern-mexican-bar/
 __pycache__/
 *.pyc
+.env
+.env.*

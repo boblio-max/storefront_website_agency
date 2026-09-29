@@ -1,429 +1,444 @@
-/* ==========================================================================
-   90° Bangkok cafe and bar — interactions
-   Vanilla JS only. Progressive enhancement — every feature degrades safely.
-   ========================================================================== */
+document.body.classList.add('js');
+/* ============================================================
+   90° Bangkok cafe and bar — interaction layer
+   Vanilla, no dependencies. Transform/opacity animation only,
+   driven by requestAnimationFrame with passive listeners and
+   paused when off-screen. Everything stops under
+   prefers-reduced-motion.
+   ============================================================ */
 (function () {
-  "use strict";
+  'use strict';
 
-  /* Swap the no-js marker so entrance/reveal states only apply when JS runs */
-  document.documentElement.classList.remove("no-js");
-  document.documentElement.classList.add("js");
-
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const smoothBehavior = reduceMotion ? "auto" : "smooth";
-
-  /* ------------------------------------------------------------
-     Mobile nav toggle
-  ------------------------------------------------------------ */
-  var navToggle = document.getElementById("nav-toggle");
-  var header = document.getElementById("site-header");
-  var navLinks = document.getElementById("nav-links");
-
-  function setNav(open) {
-    if (!header || !navToggle) return;
-    header.classList.toggle("is-open", open);
-    navToggle.setAttribute("aria-expanded", open ? "true" : "false");
+  /* ---------- flags ---------- */
+  var REDUCED = false;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    REDUCED = true; /* skip auto-rotate, marquee drift, magnetic pull, aurora loop */
   }
+  var FINE_POINTER = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
-  if (navToggle) {
-    navToggle.addEventListener("click", function () {
-      setNav(!header.classList.contains("is-open"));
+  /* ---------- tiny helpers ---------- */
+  function qa(sel, ctx) { return Array.prototype.slice.call((ctx || document).querySelectorAll(sel)); }
+  function q(sel) { return document.querySelector(sel); }
+  function on(el, type, fn, opts) { if (el) { el.addEventListener(type, fn, opts || false); } }
+
+  /* ============================================================
+     1 · footer year
+     ============================================================ */
+  var year = q('#year');
+  if (year) { year.textContent = String(new Date().getFullYear()); }
+
+  /* ============================================================
+     2 · sticky header shadow
+     ============================================================ */
+  var header = q('#site-header');
+  var lastY = -1;
+  var scrollQueued = false;
+  function onScroll() {
+    if (scrollQueued) { return; }
+    scrollQueued = true;
+    requestAnimationFrame(function () {
+      scrollQueued = false;
+      var y = window.pageYOffset || document.documentElement.scrollTop || 0;
+      if (y !== lastY) {
+        lastY = y;
+        if (header) { header.classList.toggle('is-stuck', y > 12); }
+      }
     });
   }
-
-  /* ------------------------------------------------------------
-     Sticky header shadow
-  ------------------------------------------------------------ */
-  function onScroll() {
-    if (header) header.classList.toggle("is-scrolled", window.scrollY > 8);
-  }
-  window.addEventListener("scroll", onScroll, { passive: true });
+  on(window, 'scroll', onScroll, { passive: true });
   onScroll();
 
-  /* ------------------------------------------------------------
-     Smooth scroll into view for in-page anchors
-  ------------------------------------------------------------ */
-  document.querySelectorAll('a[href^="#"]').forEach(function (link) {
-    link.addEventListener("click", function (e) {
-      var id = link.getAttribute("href");
-      if (!id || id.length < 2 || id === "#") return;
-      var target = document.getElementById(id.slice(1));
-      if (!target) return;
+  /* ============================================================
+     3 · in-page anchors (offset for the sticky header)
+     ============================================================ */
+  var navToggle = q('.nav-toggle');
+  var siteHeader = q('.site-header');
+  function closeNav() {
+    if (!siteHeader || !navToggle) { return; }
+    siteHeader.classList.remove('nav-open');
+    navToggle.setAttribute('aria-expanded', 'false');
+  }
+  qa('a[href^="#"]').forEach(function (link) {
+    on(link, 'click', function (e) {
+      var hash = link.getAttribute('href');
+      if (!hash || hash === '#') { return; }
+      var target = document.getElementById(hash.slice(1));
+      if (!target) { return; }
       e.preventDefault();
-      setNav(false);
-      target.scrollIntoView({ behavior: smoothBehavior, block: "start" });
+      closeNav();
+      var offset = (header ? header.offsetHeight : 0) + 14;
+      var top = target.getBoundingClientRect().top + (window.pageYOffset || 0) - offset;
+      window.scrollTo({ top: Math.max(top, 0), behavior: REDUCED ? 'auto' : 'smooth' });
+      if (window.history && window.history.replaceState) { window.history.replaceState(null, '', hash); }
+      if (e.detail === 0) { /* keyboard activation — move focus to the destination */
+        target.setAttribute('tabindex', '-1');
+        target.focus({ preventScroll: true });
+      }
     });
   });
 
-  /* ------------------------------------------------------------
-     Current year in footer
-  ------------------------------------------------------------ */
-  var yearEl = document.getElementById("year");
-  if (yearEl) yearEl.textContent = new Date().getFullYear();
-
-  /* ------------------------------------------------------------
-     Scroll reveals (IntersectionObserver)
-  ------------------------------------------------------------ */
-  var revealEls = Array.prototype.slice.call(document.querySelectorAll(".reveal"));
-  if (reduceMotion) {
-    revealEls.forEach(function (el) { el.classList.add("is-visible"); });
-  } else if ("IntersectionObserver" in window) {
-    var revealObserver = new IntersectionObserver(
-      function (entries) {
-        entries.forEach(function (entry) {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("is-visible");
-            revealObserver.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.15, rootMargin: "0px 0px -40px 0px" }
-    );
-    revealEls.forEach(function (el) { revealObserver.observe(el); });
-  } else {
-    revealEls.forEach(function (el) { el.classList.add("is-visible"); });
+  /* ============================================================
+     4 · mobile nav toggle
+     ============================================================ */
+  if (navToggle && siteHeader) {
+    on(navToggle, 'click', function () {
+      var open = siteHeader.classList.toggle('nav-open');
+      navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    on(document, 'keydown', function (e) {
+      if (e.key === 'Escape' && siteHeader.classList.contains('nav-open')) {
+        closeNav();
+        navToggle.focus();
+      }
+    });
+    on(window, 'resize', function () {
+      if (window.innerWidth > 760) { closeNav(); }
+    });
   }
 
-  /* ------------------------------------------------------------
-     Count-up stats
-  ------------------------------------------------------------ */
-  function animateCount(el) {
-    var target = parseFloat(el.getAttribute("data-count-to"));
-    var decimals = parseInt(el.getAttribute("data-decimals") || "0", 10);
-    var duration = 1300;
+  /* ============================================================
+     5 · scroll reveals
+     ============================================================ */
+  var revealables = qa('.reveal');
+  if (revealables.length) {
+    if (!REDUCED && 'IntersectionObserver' in window) {
+      var revealIO = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-in');
+            revealIO.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+      revealables.forEach(function (el) { revealIO.observe(el); });
+    } else {
+      revealables.forEach(function (el) { el.classList.add('is-in'); });
+    }
+  }
+
+  /* ============================================================
+     6 · count-up stats
+     ============================================================ */
+  var counters = qa('[data-count]');
+  function runCount(el) {
+    var target = parseFloat(el.getAttribute('data-count'));
+    var decimals = parseInt(el.getAttribute('data-decimals') || '0', 10);
+    if (isNaN(target)) { return; }
+    if (REDUCED) { el.textContent = target.toFixed(decimals); return; }
+    var duration = 1600;
     var start = null;
-    var wantsReduced = reduceMotion;
-
-    function tick(now) {
-      if (start === null) start = now;
-      var progress = Math.min((now - start) / duration, 1);
-      var eased = 1 - Math.pow(1 - progress, 3);
-      var value = target * eased;
-      el.textContent = value.toFixed(decimals);
-      if (progress < 1) requestAnimationFrame(tick);
-      else el.textContent = target.toFixed(decimals);
+    function frame(ts) {
+      if (start === null) { start = ts; }
+      var p = Math.min((ts - start) / duration, 1);
+      var eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = (target * eased).toFixed(decimals);
+      if (p < 1) { requestAnimationFrame(frame); }
     }
-
-    if (wantsReduced) {
-      el.textContent = target.toFixed(decimals);
-      return;
-    }
-    requestAnimationFrame(tick);
+    requestAnimationFrame(frame);
   }
-
-  var countEls = Array.prototype.slice.call(document.querySelectorAll("[data-count-to]"));
-  if ("IntersectionObserver" in window) {
-    var countObserver = new IntersectionObserver(
-      function (entries) {
+  if (counters.length) {
+    if ('IntersectionObserver' in window) {
+      var countIO = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
-            animateCount(entry.target);
-            countObserver.unobserve(entry.target);
+            runCount(entry.target);
+            countIO.unobserve(entry.target);
           }
         });
-      },
-      { threshold: 0.4 }
-    );
-    countEls.forEach(function (el) { countObserver.observe(el); });
-  } else {
-    countEls.forEach(function (el) {
-      el.textContent = parseFloat(el.getAttribute("data-count-to")).toFixed(
-        parseInt(el.getAttribute("data-decimals") || "0", 10)
-      );
-    });
+      }, { threshold: 0.6 });
+      counters.forEach(function (el) { countIO.observe(el); });
+    } else {
+      counters.forEach(runCount);
+    }
   }
 
-  /* ------------------------------------------------------------
-     Hero particle canvas (gold dust)
-  ------------------------------------------------------------ */
-  var canvas = document.getElementById("hero-canvas");
-  var hero = document.getElementById("hero");
+  /* ============================================================
+     7 · hero aurora canvas — warm incense bloom, rendered at
+         half resolution and upscaled (cheaper, and gradients
+         hide the resample)
+     ============================================================ */
+  var auroraPlay = function () {};
+  var auroraHalt = function () {};
+  var canvas = q('#heroAurora');
+  if (canvas && canvas.getContext) {
+    var ctx = canvas.getContext('2d');
+    var blobs = [
+      { ox: 0.22, oy: 0.30, r: 0.52, sx: 0.00019, sy: 0.00023, ph: 0.00, c: '217,164,65', a: 0.30 },
+      { ox: 0.72, oy: 0.20, r: 0.46, sx: 0.00026, sy: 0.00015, ph: 1.70, c: '255,196,120', a: 0.22 },
+      { ox: 0.52, oy: 0.76, r: 0.58, sx: 0.00014, sy: 0.00021, ph: 3.10, c: '201,74,48', a: 0.26 },
+      { ox: 0.88, oy: 0.62, r: 0.40, sx: 0.00031, sy: 0.00018, ph: 4.60, c: '217,164,65', a: 0.18 },
+      { ox: 0.10, oy: 0.86, r: 0.44, sx: 0.00017, sy: 0.00027, ph: 5.90, c: '139,26,16', a: 0.30 }
+    ];
+    var W = 0, H = 0, T = 0, rafId = null, lastTs = null, onScreen = true, visible = true;
 
-  if (canvas && hero && !reduceMotion) {
-    var ctx = canvas.getContext("2d");
-    if (ctx) {
-      var particles = [];
-      var raf = null;
-      var running = false;
-      var w = 0;
-      var h = 0;
-      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    function sizeCanvas() {
+      var rect = canvas.getBoundingClientRect();
+      W = Math.max(1, Math.round(rect.width * 0.5));
+      H = Math.max(1, Math.round(rect.height * 0.5));
+      canvas.width = W;
+      canvas.height = H;
+    }
 
-      function resize() {
-        var rect = hero.getBoundingClientRect();
-        w = rect.width;
-        h = rect.height;
-        canvas.width = w * dpr;
-        canvas.height = h * dpr;
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    function paint() {
+      ctx.clearRect(0, 0, W, H);
+      ctx.globalCompositeOperation = 'lighter';
+      for (var i = 0; i < blobs.length; i++) {
+        var b = blobs[i];
+        var bx = (b.ox + 0.13 * Math.sin(T * b.sx + b.ph)) * W;
+        var by = (b.oy + 0.11 * Math.cos(T * b.sy + b.ph)) * H;
+        var br = b.r * Math.min(W, H) * (1 + 0.08 * Math.sin(T * b.sx * 0.6 + b.ph));
+        var g = ctx.createRadialGradient(bx, by, 0, bx, by, br);
+        g.addColorStop(0, 'rgba(' + b.c + ',' + b.a + ')');
+        g.addColorStop(0.42, 'rgba(' + b.c + ',' + (b.a * 0.26).toFixed(3) + ')');
+        g.addColorStop(1, 'rgba(' + b.c + ',0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(bx - br, by - br, br * 2, br * 2);
       }
+      ctx.globalCompositeOperation = 'source-over';
+    }
 
-      function makeParticle(randomY) {
-        var base = Math.random() * Math.PI * 2;
-        return {
-          x: Math.random() * w,
-          y: randomY ? Math.random() * h : h + 10,
-          r: 0.7 + Math.random() * 1.8,
-          vy: 0.08 + Math.random() * 0.28,
-          sway: 0.4 + Math.random() * 0.9,
-          phase: base,
-          twinkle: 0.5 + Math.random() * 0.8,
-          pink: Math.random() < 0.18,
-          alpha: 0.15 + Math.random() * 0.5
-        };
-      }
+    function tick(ts) {
+      rafId = null;
+      if (lastTs === null) { lastTs = ts; }
+      var dt = Math.min(ts - lastTs, 48);
+      lastTs = ts;
+      T += dt;
+      paint();
+      if (onScreen && visible && !REDUCED) { rafId = requestAnimationFrame(tick); }
+    }
 
-      function init() {
-        var count = Math.max(24, Math.min(70, Math.floor(w / 22)));
-        particles = [];
-        for (var i = 0; i < count; i++) particles.push(makeParticle(true));
-      }
+    function play() {
+      if (rafId === null && onScreen && visible && !REDUCED) { rafId = requestAnimationFrame(tick); }
+    }
+    function halt() {
+      if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
+    }
+    auroraPlay = play;
+    auroraHalt = halt;
 
-      function tick(now) {
-        if (!running) return;
-        ctx.clearRect(0, 0, w, h);
-        var t = now / 1000;
-        for (var i = 0; i < particles.length; i++) {
-          var p = particles[i];
-          p.y -= p.vy;
-          p.x += Math.sin(t * 0.9 + p.phase) * p.sway * 0.25;
-          if (p.y < -12) {
-            particles[i] = makeParticle(false);
-            continue;
-          }
-          var glow = p.alpha * (0.75 + 0.25 * Math.sin(t * p.twinkle + p.phase));
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-          ctx.fillStyle = p.pink
-            ? "rgba(255,47,143," + glow + ")"
-            : "rgba(255,209,102," + glow + ")";
-          ctx.globalCompositeOperation = "lighter";
-          ctx.fill();
-          ctx.globalCompositeOperation = "source-over";
-        }
-        raf = requestAnimationFrame(tick);
-      }
+    sizeCanvas();
+    T = REDUCED ? 1800 : 0;
+    paint();
+    play();
 
-      function stop() {
-        running = false;
-        if (raf) cancelAnimationFrame(raf);
-        raf = null;
-      }
-
-      function start() {
-        if (running) return;
-        running = true;
-        raf = requestAnimationFrame(tick);
-      }
-
-      resize();
-      init();
-
-      var heroObserver = new IntersectionObserver(
-        function (entries) {
-          entries.forEach(function (entry) {
-            if (entry.isIntersecting) start();
-            else stop();
-          });
-        },
-        { threshold: 0 }
-      );
-      heroObserver.observe(hero);
-
+    if (!REDUCED) {
       var resizeTimer = null;
-      window.addEventListener("resize", function () {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(function () {
-          resize();
-          init();
-        }, 180);
+      on(window, 'resize', function () {
+        if (resizeTimer) { clearTimeout(resizeTimer); }
+        resizeTimer = setTimeout(function () { sizeCanvas(); paint(); }, 180);
       });
+      on(document, 'visibilitychange', function () {
+        visible = !document.hidden;
+        if (visible) { play(); } else { halt(); }
+      });
+      if ('IntersectionObserver' in window) {
+        var heroIO = new IntersectionObserver(function (entries) {
+          onScreen = entries[0].isIntersecting;
+          if (onScreen) { play(); } else { halt(); }
+        }, { threshold: 0 });
+        heroIO.observe(canvas);
+      }
     }
   }
 
-  /* ------------------------------------------------------------
-     Reviews slider — auto-rotate, tabs (dots), arrows, keyboard
-  ------------------------------------------------------------ */
-  var slider = document.getElementById("reviews-slider");
-  if (slider) {
-    var panels = Array.prototype.slice.call(slider.querySelectorAll(".review"));
-    var dots = Array.prototype.slice.call(slider.querySelectorAll('[role="tab"]'));
-    var tablist = slider.querySelector('[role="tablist"]');
-    var prevBtn = document.getElementById("reviews-prev");
-    var nextBtn = document.getElementById("reviews-next");
-    var current = 0;
+  /* ============================================================
+     8 · magnetic primary buttons (fine pointers only)
+     ============================================================ */
+  if (!REDUCED && FINE_POINTER) {
+    qa('[data-magnetic]').forEach(function (btn) {
+      var pending = null, tx = 0, ty = 0;
+      function apply() {
+        pending = null;
+        btn.style.transform = 'translate3d(' + tx.toFixed(2) + 'px,' + ty.toFixed(2) + 'px,0)';
+      }
+      on(btn, 'pointermove', function (e) {
+        var r = btn.getBoundingClientRect();
+        tx = ((e.clientX - r.left) / r.width - 0.5) * 10;
+        ty = ((e.clientY - r.top) / r.height - 0.5) * 8;
+        if (pending === null) { pending = requestAnimationFrame(apply); }
+      });
+      on(btn, 'pointerleave', function () {
+        tx = 0; ty = 0;
+        if (pending === null) { pending = requestAnimationFrame(apply); }
+      });
+      on(btn, 'blur', function () { tx = 0; ty = 0; btn.style.transform = ''; });
+    });
+  }
+
+  /* ============================================================
+     9 · review slider — tabs, auto-rotate, swipe
+     ============================================================ */
+  var dots = qa('.review-dot');
+  var panels = qa('.review-panel');
+  var slideWindow = q('#review-window');
+  var slidePlay = function () {};
+  var slideHalt = function () {};
+
+  if (dots.length && panels.length && slideWindow) {
+    var idx = 0;
     var timer = null;
-    var INTERVAL = 6000;
+    var engaged = false;
+    var DELAY = 6500;
 
-    function show(index, moveFocus) {
-      current = (index + panels.length) % panels.length;
-      var activeId = "review-panel-" + (current + 1);
-      panels.forEach(function (panel) {
-        var isActive = panel.id === activeId;
-        panel.classList.toggle("is-active", isActive);
-        panel.hidden = !isActive;
+    function show(next, moveFocus) {
+      idx = (next + panels.length) % panels.length;
+      panels.forEach(function (panel, i) {
+        var active = i === idx;
+        panel.hidden = !active;
+        panel.classList.toggle('is-active', active);
       });
       dots.forEach(function (dot, i) {
-        var isActive = i === current;
-        dot.classList.toggle("is-active", isActive);
-        dot.setAttribute("aria-selected", isActive ? "true" : "false");
-        dot.tabIndex = isActive ? 0 : -1;
-        if (moveFocus && isActive) dot.focus();
+        dot.setAttribute('aria-selected', i === idx ? 'true' : 'false');
+        dot.tabIndex = i === idx ? 0 : -1;
       });
+      if (moveFocus) { dots[idx].focus(); }
     }
 
-    function stopAuto() {
-      if (timer) {
-        clearInterval(timer);
-        timer = null;
-      }
+    function play() {
+      if (REDUCED || engaged || timer !== null) { return; }
+      timer = setInterval(function () { show(idx + 1, false); }, DELAY);
     }
-
-    function startAuto() {
-      if (!timer) {
-        timer = setInterval(function () { show(current + 1, false); }, INTERVAL);
-      }
+    function halt() {
+      if (timer !== null) { clearInterval(timer); timer = null; }
     }
+    slidePlay = play;
+    slideHalt = halt;
 
-    function resetAuto() {
-      stopAuto();
-      startAuto();
-    }
-
-    if (dots.length && panels.length) {
-      slider.addEventListener("mouseenter", stopAuto);
-      slider.addEventListener("mouseleave", startAuto);
-      slider.addEventListener("focusin", stopAuto);
-      slider.addEventListener("focusout", startAuto);
-
-      dots.forEach(function (dot, i) {
-        dot.addEventListener("click", function () {
-          show(i, false);
-          resetAuto();
-        });
+    dots.forEach(function (dot, i) {
+      on(dot, 'click', function () { engaged = true; halt(); show(i, false); });
+      on(dot, 'keydown', function (e) {
+        var target = null;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { target = idx + 1; }
+        else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { target = idx - 1; }
+        else if (e.key === 'Home') { target = 0; }
+        else if (e.key === 'End') { target = panels.length - 1; }
+        if (target === null) { return; }
+        e.preventDefault();
+        show(target, true);
       });
+    });
 
-      if (prevBtn) {
-        prevBtn.addEventListener("click", function () {
-          show(current - 1, false);
-          resetAuto();
-        });
-      }
-      if (nextBtn) {
-        nextBtn.addEventListener("click", function () {
-          show(current + 1, false);
-          resetAuto();
-        });
-      }
+    on(slideWindow, 'mouseenter', halt);
+    on(slideWindow, 'mouseleave', function () { if (!engaged) { play(); } });
+    on(slideWindow, 'focusin', halt);
+    on(slideWindow, 'focusout', function () { if (!engaged) { play(); } });
 
-      if (tablist) {
-        tablist.addEventListener("keydown", function (e) {
-          var key = e.key;
-          if (["ArrowRight", "ArrowLeft", "Home", "End"].indexOf(key) === -1) return;
-          e.preventDefault();
-          if (key === "ArrowRight") show(current + 1, true);
-          else if (key === "ArrowLeft") show(current - 1, true);
-          else if (key === "Home") show(0, true);
-          else if (key === "End") show(panels.length - 1, true);
-          resetAuto();
-        });
-      }
+    /* touch swipe */
+    var startX = 0, startY = 0, tracking = false;
+    on(slideWindow, 'touchstart', function (e) {
+      if (e.touches.length !== 1) { tracking = false; return; }
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      tracking = true;
+      halt();
+    }, { passive: true });
+    on(slideWindow, 'touchend', function (e) {
+      if (!tracking) { return; }
+      tracking = false;
+      var t = e.changedTouches[0];
+      var dx = t.clientX - startX;
+      var dy = t.clientY - startY;
+      if (Math.abs(dx) > 44 && Math.abs(dx) > Math.abs(dy)) {
+        show(idx + (dx < 0 ? 1 : -1), false);
+      } else if (!engaged) { play(); }
+    }, { passive: true });
 
-      startAuto();
+    if ('IntersectionObserver' in window) {
+      var slideIO = new IntersectionObserver(function (entries) {
+        if (entries[0].isIntersecting) { play(); } else { halt(); }
+      }, { threshold: 0.25 });
+      slideIO.observe(slideWindow);
+    } else {
+      play();
     }
   }
 
-  /* ------------------------------------------------------------
-     Quote / reservation form — validation + inline success
-  ------------------------------------------------------------ */
-  var form = document.getElementById("quote-form");
+  /* ============================================================
+     10 · reservation request form
+     ============================================================ */
+  var form = q('#quote-form');
   if (form) {
-    form.addEventListener("submit", function (e) {
+    var status = q('#form-status');
+    var rules = [
+      { id: 'q-name', msg: 'Add the name the table is under.', test: function (v) { return v.trim().length >= 2; } },
+      { id: 'q-phone', msg: 'Enter a 10-digit phone number, e.g. (425) 481-6800.', test: function (v) { return v.replace(/\D/g, '').length >= 10; } },
+      { id: 'q-email', msg: 'Add a valid email so the room can confirm.', test: function (v) { return /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(v.trim()); } },
+      { id: 'q-date', msg: 'Pick a date for the request.', test: function (v) { return v.length > 0; } }
+    ];
+    var submitted = false;
+
+    function fieldOf(input) { return input.closest('.field'); }
+    function mark(input, message) {
+      var wrap = fieldOf(input);
+      if (wrap) { wrap.classList.toggle('is-bad', message.length > 0); }
+      input.setAttribute('aria-invalid', message.length > 0 ? 'true' : 'false');
+      var slot = document.getElementById(input.id + '-err');
+      if (slot) { slot.textContent = message; }
+      return message.length === 0;
+    }
+    function check(input) {
+      var rule = null;
+      for (var i = 0; i < rules.length; i++) { if (rules[i].id === input.id) { rule = rules[i]; } }
+      if (!rule) { return true; }
+      return mark(input, rule.test(input.value) ? '' : rule.msg);
+    }
+
+    rules.forEach(function (rule) {
+      var input = document.getElementById(rule.id);
+      if (!input) { return; }
+      on(input, 'blur', function () { if (submitted || input.value.length) { check(input); } });
+      on(input, 'input', function () { if (fieldOf(input) && fieldOf(input).classList.contains('is-bad')) { check(input); } });
+    });
+
+    on(form, 'submit', function (e) {
       e.preventDefault();
-
-      var name = document.getElementById("f-name");
-      var phone = document.getElementById("f-phone");
-      var date = document.getElementById("f-date");
-      var guests = document.getElementById("f-guests");
-      var email = document.getElementById("f-email");
-
-      var valid = true;
-
-      function fail(field, msg) {
-        var err = document.getElementById(field.id + "-error");
-        field.setAttribute("aria-invalid", "true");
-        if (err) err.textContent = msg;
-        field.focus();
-        valid = false;
-      }
-
-      function pass(field) {
-        field.removeAttribute("aria-invalid");
-        var err = document.getElementById(field.id + "-error");
-        if (err) err.textContent = "";
-      }
-
-      // name — required
-      if (!name.value.trim() || name.value.trim().length < 2) {
-        fail(name, "Please enter your name.");
-      } else {
-        pass(name);
-      }
-
-      // phone — required, 10–15 digits after scrubbing formatting
-      var digits = (phone.value || "").replace(/\D/g, "");
-      if (!digits) {
-        fail(phone, "Please enter your phone number.");
-      } else if (digits.length < 10 || digits.length > 15) {
-        fail(phone, "That phone number looks too " + (digits.length < 10 ? "short" : "long") + ". Use 10 or more digits.");
-      } else {
-        pass(phone);
-      }
-
-      // date — required
-      if (!date.value) {
-        fail(date, "Please choose a date.");
-      } else {
-        pass(date);
-      }
-
-      // guests — required
-      if (!guests.value) {
-        fail(guests, "Please pick a party size.");
-      } else {
-        pass(guests);
-      }
-
-      // email — optional but validated when present
-      if (email && email.value.trim()) {
-        var emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim());
-        if (!emailValid) {
-          fail(email, "That email address doesn't look right.");
-        } else {
-          pass(email);
-        }
-      }
-
-      if (!valid) return;
-
-      // Success — demo preview does not actually contact the business
-      form.hidden = true;
-      var success = document.getElementById("form-success");
-      if (success) {
-        success.hidden = false;
-        success.scrollIntoView({ behavior: smoothBehavior, block: "center" });
-      }
-    });
-
-    // clear inline errors as the visitor corrects each field
-    ["f-name", "f-phone", "f-date", "f-guests", "f-email"].forEach(function (id) {
-      var el = document.getElementById(id);
-      if (!el) return;
-      el.addEventListener("input", function () { el.removeAttribute("aria-invalid"); });
-      el.addEventListener("change", function () {
-        var err = document.getElementById(el.id + "-error");
-        if (err) err.textContent = "";
+      submitted = true;
+      var firstBad = null;
+      rules.forEach(function (rule) {
+        var input = document.getElementById(rule.id);
+        if (!input) { return; }
+        if (!check(input) && !firstBad) { firstBad = input; }
       });
+      if (firstBad) {
+        if (status) {
+          status.classList.remove('is-ok');
+          status.textContent = 'Almost — check the highlighted fields and send it again.';
+        }
+        firstBad.focus();
+        return;
+      }
+      if (status) {
+        status.classList.add('is-ok');
+        status.textContent = 'Thanks! (Demo preview — this form goes live when the site launches.)';
+      }
     });
+  }
+
+  /* ============================================================
+     11 · honour a mid-session change of motion preference
+     ============================================================ */
+  if (window.matchMedia) {
+    var motionMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
+    var onMotionChange = function (e) {
+      if (e.matches) {
+        REDUCED = true;
+        auroraHalt();
+        slideHalt();
+        qa('.marquee__track').forEach(function (track) { track.style.animation = 'none'; });
+        counters.forEach(function (el) {
+          if (!el.getAttribute('data-done')) {
+            el.setAttribute('data-done', '1');
+            runCount(el);
+          }
+        });
+      } else {
+        REDUCED = false;
+      }
+    };
+    if (typeof motionMQ.addEventListener === 'function') {
+      motionMQ.addEventListener('change', onMotionChange);
+    } else if (typeof motionMQ.addListener === 'function') {
+      motionMQ.addListener(onMotionChange);
+    }
   }
 })();

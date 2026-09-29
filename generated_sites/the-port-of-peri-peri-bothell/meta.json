@@ -1,6 +1,12 @@
 {
   "lead_id": "lead_00001",
   "slug": "the-port-of-peri-peri-bothell",
+  "photos": [
+    "photo-hero.jpg",
+    "photo-1.jpg",
+    "photo-2.jpg",
+    "photo-3.jpg"
+  ],
   "business": {
     "name": "The Port Of Peri Peri - Bothell",
     "category": "Chicken restaurant",
@@ -13,7 +19,9 @@
   "lead_type": "bad_website",
   "opportunity_score": 93.0,
   "engine": "template",
-  "created_at": "2026-09-16T23:07:35.454237+00:00",
+  "created_at": "2026-09-29T04:02:11.950542+00:00",
   "preview_mode": true,
+  "model": "opencode/big-pickle",
+  "prompt_sha": "b973301de2b1",
   "feedback_applied": false
 }

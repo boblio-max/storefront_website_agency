@@ -1209,7 +1209,11 @@ def build_prompt(b: dict, feedback: dict | None, preview: bool = True,
         "scrollIntoView smooth anchors, card hover lifts, magnetic primary buttons, count-up stats (real "
         "numbers only). Animation is transform/opacity ONLY (GPU-composited, 60fps), driven by "
         "requestAnimationFrame with passive listeners, paused when offscreen. Respect prefers-reduced-motion "
-        "everywhere — it must stop ALL motion.",
+        "everywhere — it must stop ALL motion. Paste this exact block into styles.css (it is "
+        "machine-checked): @media (prefers-reduced-motion:reduce){*,*::before,*::after"
+        "{animation-duration:.01ms!important;animation-iteration-count:1!important;"
+        "transition-duration:.01ms!important;scroll-behavior:auto!important}} plus JS: "
+        "if(matchMedia('(prefers-reduced-motion: reduce)').matches){/* skip auto-rotate/marquee */}.",
         "- ICONS: inline SVG only. NO emoji anywhere on the page (not in cards, not in buttons, not in the topbar).",
         *photo_lines,
         "- Sections in order, with these EXACT hooks (automated checks require them): div.topbar (address, hours, "
@@ -1227,13 +1231,17 @@ def build_prompt(b: dict, feedback: dict | None, preview: bool = True,
         "body-text variable like --ink/--cream); sticky blurred header; "
         "cards with shadow+radius+hover; .btn-primary with background AND color; @media breakpoints at ~760px "
         "with working mobile nav toggle (.nav-toggle wired to .nav-links); focus-visible styles; scroll-behavior. "
-        "Hidden reveal states ONLY behind a JS-added scope: 'body.js .reveal{opacity:0;...}' with "
+        "Hidden reveal states ONLY behind a JS-added scope — copy this exactly: CSS "
+        "'body.js .reveal{opacity:0;...}' (never a bare '.reveal{opacity:0}'), with "
         "document.body.classList.add('js') as the first JS line — content hidden with JS off is a FAIL.",
-        "- CONTRAST IS NON-NEGOTIABLE (measured with a calculator, never eyeballed): body text ≥4.5:1, "
-        "secondary/muted text ≥4.5:1, button text ≥4.5:1 against the button background, gold/decorative "
-        "accents ≥3:1 on dark. Bright gradient buttons (ANY endpoint lighter than #999999) MUST use "
-        "near-black text like #1c1917 — white text on bright orange/pink is a FAIL. Verify every pair "
-        "before you finish.",
+        "- CONTRAST IS NON-NEGOTIABLE (measured with a calculator, never eyeballed — "
+        "the checker tests WHITE text on your --brand and --brand2 variables, so BOTH must be "
+        "dark enough that white passes ≥4.5:1 on each: safe choices are deep shades like #7c2d12, "
+        "#9a3412, #1c1917, never bright orange/pink/blue. Bright gradient buttons (ANY endpoint "
+        "lighter than #999999) MUST use near-black text like #1c1917 — white text on bright "
+        "orange/pink (#fff on #f97316, #fb9233, or similar) is an instant FAIL. Body text and "
+        "secondary/muted text ≥4.5:1 on the page background; gold/decorative accents ≥3:1 on dark. "
+        "Verify every pair with real contrast math before you finish.",
         "- JS SYSTEM: mobile nav toggle, scrollIntoView smooth anchors, review slider with setInterval auto-rotate + dots, "
         "quote-form validation (required fields, phone-length check) with inline success message, "
         "sticky-header shadow, current year in footer. Zero console errors or warnings. No unused CSS/JS.",
@@ -1250,6 +1258,10 @@ def build_prompt(b: dict, feedback: dict | None, preview: bool = True,
         "- HONEST CTA LABELS: the reservation/quote form button must say what it really does — \"Request a "
         "reservation\" or \"Get a Quote\". Use \"Book Appointment\" only if the form truly confirms a booking; "
         "a preview/demo form must never imply a reservation was made.",
+        "- CATEGORY-AWARE CTAS: food businesses (restaurant, cafe, bar, bakery, pizza, sushi, coffee, "
+        "tacos, grill, deli, food of any kind) NEVER say \"Get a Quote\" or \"Free Quote\" — their CTAs are "
+        "\"View Menu\", \"Call to Order\", \"See Tonight's Specials\". Quote language is for trades and "
+        "home services only.",
         "- EXTERNAL LINKS: links that open in a new tab (Google Maps) get aria-label like \"Get directions in "
         "Google Maps (opens in a new tab)\" and rel=\"noopener\".",
         "- FOOTER HOURS: keep each day paired with its hours on a single line (e.g. \"Fri: 11 AM – 2 AM\"), no "
@@ -1259,8 +1271,14 @@ def build_prompt(b: dict, feedback: dict | None, preview: bool = True,
         "never invent hours, prices, or review quotes.",
         "- SIGNATURE MOMENT (required — bland-but-complete fails): execute ONE unforgettable, butter-smooth "
         "interaction — choreographed hero entrance, canvas particle/aurora hero, scroll-driven horizontal "
-        "gallery, sticky stacking cards, count-up stats, or equivalent. Smooth beats showy: transform/opacity "
-        "only, 60fps, with reduced-motion and no-JS fallbacks.",
+        "gallery, sticky stacking cards, count-up stats, or equivalent. It MUST ship with at least one of "
+        "these literal hooks the checker looks for: id=\"heroAurora\" (canvas aurora), class=\"stack\" / "
+        "sticky-stack (stacking cards), data-count (count-up stats), class with hero-ghost (layered ghost "
+        "art), or horizontal-scroll (scroll-driven gallery). Smooth beats showy: transform/opacity "
+        "only, 60fps, with reduced-motion and no-JS fallbacks. Name the moment you built in your reply.",
+        "- TEXTURE CRAFT (required): the page MUST contain at least one of these literal markers — an "
+        "SVG feTurbulence grain overlay, a styled ::selection rule, or a hero-ghost element. Bare flat "
+        "surfaces with none of the three are a FAIL.",
         "- MOBILE EXCELLENCE: the design is judged on phones — thumb-zone CTAs, readable type at 360px, "
         "touch-swipe carousels, 44px+ tap targets, fast first paint, no layout shift.",
         "- DEVELOPER-GRADE CODE: clean semantic HTML with section comments, zero console errors, no unused "
@@ -1296,11 +1314,16 @@ def build_prompt(b: dict, feedback: dict | None, preview: bool = True,
         "- SELF-REVIEW BEFORE YOU REPLY — verify each item, fix everything, then reply: (1) zero horizontal "
         "scroll at 320/375/768/1024/1280px; (2) zero console errors or warnings; (3) keyboard-only run — nav, "
         "slider arrows, form all reachable with visible focus; (4) with JavaScript disabled, ALL content is "
-        "readable; (5) prefers-reduced-motion stops ALL animation; (6) every link and button works (no dead "
-        "'#' links except same-page anchors); (7) every text/background pair passes the contrast numbers above; "
-        "(8) exactly one <h1>, exactly 6 service cards, one signature moment executed flawlessly.",
+        "readable; (5) the literal string prefers-reduced-motion is in styles.css or script.js and stops ALL "
+        "animation; (6) every link and button works (no dead "
+        "'#' links except same-page anchors); (7) every text/background pair passes the contrast numbers above, "
+        "including white text on --brand and on --brand2 (both ≥4.5:1, calculated not eyeballed); "
+        "(8) exactly one <h1>, exactly 6 service cards, one signature moment executed flawlessly; "
+        "(9) at least one signature hook (heroAurora, class=\"stack\", data-count, hero-ghost, "
+        "horizontal-scroll) AND at least one texture marker (feTurbulence, ::selection, hero-ghost) "
+        "is literally present in the files.",
         "IF YOU DO NOT SUCCEED IN MAKING IT PERFECT, tHE WORLD WILL END",
-        "Reply with a one-line summary when done.",
+        "Reply with a one-line summary that names the signature moment you built.",
     ]
     if problems:
         lines.append("The old site had these problems — every one must be fixed: " + "; ".join(problems))
@@ -1636,7 +1659,7 @@ a{{color:var(--brand)}}
 .topbar{{background:var(--dark);color:#f3ece2;font-size:.85rem}}
 .topbar-inner{{display:flex;gap:1rem;align-items:center;justify-content:space-between;padding-top:.4rem;padding-bottom:.4rem}}
 .topbar-inner span,.topbar-phone{{display:inline-flex;align-items:center;gap:.4rem}}
-.topbar-phone{{color:var(--gold);font-weight:800;text-decoration:none}}
+.topbar-phone{{color:var(--gold);font-weight:800;text-decoration:none;white-space:nowrap}}
 .hide-mobile{{}}
 .site-header{{position:sticky;top:0;background:rgba(255,255,255,.94);backdrop-filter:blur(10px);z-index:30;border-bottom:1px solid var(--line);transition:box-shadow .2s ease}}
 .site-header nav{{display:flex;gap:1rem;align-items:center;padding-top:.7rem;padding-bottom:.7rem;flex-wrap:wrap}}
@@ -2040,6 +2063,67 @@ def _opencode_output_defects(target: Path) -> list[str]:
     return defects
 
 
+def _opencode_autofix(target: Path) -> list[str]:
+    """Repair machine-checkable OpenCode misses in place (no model round-trip).
+
+    Models intermittently skip prompt requirements that qa_bot verifies
+    statically; fixing them here (same philosophy as apply_site_hardening)
+    is cheaper and more reliable than another full generation:
+    - prefers-reduced-motion kill-switch appended when absent from CSS+JS.
+    - bare `.reveal{opacity:0}` rules rescoped to `body.js .reveal` (plus the
+      `js` class bootstrap in script.js) so content never hides with JS off.
+    - a ::selection rule plus an SVG-grain overlay appended when the page has
+      no texture craft at all (feTurbulence / ::selection / hero-ghost).
+    Returns the applied fix names (empty = output was already clean).
+    Brand-contrast and signature-moment failures still need the model, so
+    they stay prompt + QA-retry responsibilities.
+    """
+    fixed: list[str] = []
+    try:
+        css_p, js_p, html_p = target / "styles.css", target / "script.js", target / "index.html"
+        css, js = css_p.read_text(encoding="utf-8"), js_p.read_text(encoding="utf-8")
+        html = html_p.read_text(encoding="utf-8")
+    except OSError:
+        return fixed
+    html_low = html.lower()
+
+    if "prefers-reduced-motion" not in css and "prefers-reduced-motion" not in js.lower():
+        css += ("\n@media (prefers-reduced-motion:reduce){*,*::before,*::after"
+                "{animation-duration:.01ms!important;animation-iteration-count:1!important;"
+                "transition-duration:.01ms!important;scroll-behavior:auto!important}}\n")
+        fixed.append("reduced-motion")
+
+    if (re.search(r'class="[^"]*\breveal\b', html_low) and ".reveal" in css
+            and "opacity:0" in css.replace(" ", "") and "body.js" not in css):
+        def _scope(m: "re.Match") -> str:
+            sel, body = m.group(1), m.group(2)
+            if ".reveal" in sel and "body.js" not in sel:
+                sel = re.sub(r"\.reveal\b", "body.js .reveal", sel)
+            return sel + "{" + body + "}"
+        css = re.sub(r"([^{}]+)\{([^{}]*opacity\s*:\s*0[^{}]*)\}", _scope, css)
+        if "body.js" in css and 'classList.add(' not in js:
+            js = "document.body.classList.add('js');\n" + js
+        fixed.append("reveal-scope")
+
+    if ("feTurbulence" not in css and "feTurbulence" not in html
+            and "::selection" not in css and "hero-ghost" not in html):
+        css += ("\n::selection{background:#ffc53d;color:#1c1917}\n"
+                'body::after{content:"";position:fixed;inset:0;pointer-events:none;opacity:.05;'
+                'background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' '
+                'width=\'120\' height=\'120\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' '
+                'baseFrequency=\'0.9\' numOctaves=\'2\'/%3E%3C/filter%3E%3Crect width=\'120\' height=\'120\' '
+                'filter=\'url(%23n)\' opacity=\'0.6\'/%3E%3C/svg%3E")}\n')
+        fixed.append("texture")
+
+    if fixed:
+        try:
+            css_p.write_text(css, encoding="utf-8")
+            js_p.write_text(js, encoding="utf-8")
+        except OSError:
+            return []
+    return fixed
+
+
 def _prompt_sha(prompt: str) -> str:
     """Short stable hash of the build prompt for meta.json diagnosability."""
     import hashlib
@@ -2125,6 +2209,10 @@ def generate_one(lead: dict, out_root: Path, feedback: dict | None,
             for name, content in files.items():
                 (target / name).write_text(content, encoding="utf-8")
         else:
+            fixes = _opencode_autofix(target)
+            if fixes:
+                print(f"[website_generator] opencode autofix: {', '.join(fixes)}",
+                      flush=True)
             if preview:
                 apply_preview_lock(target, lead.get("name") or "this business")
     else:

@@ -1,6 +1,10 @@
 {
   "lead_id": "lead_00001",
   "slug": "90-bangkok-cafe-and-bar",
+  "photos": [
+    "photo-hero.png",
+    "photo-1.png"
+  ],
   "business": {
     "name": "90° Bangkok cafe and bar",
     "category": "Thai restaurant",
@@ -11,9 +15,11 @@
     "review_count": 555
   },
   "lead_type": "bad_website",
-  "opportunity_score": 93.0,
+  "opportunity_score": 90.0,
   "engine": "opencode",
-  "created_at": "2026-09-18T00:11:18.130155+00:00",
+  "created_at": "2026-09-29T04:33:49.339298+00:00",
   "preview_mode": true,
+  "model": "opencode/big-pickle",
+  "prompt_sha": "7c1d6234aa30",
   "feedback_applied": false
 }
