@@ -1,113 +1,35 @@
 # Storefront — automated website agency
 
-Finds local businesses with missing or bad websites, builds each one a
-modern site, deploys it, and runs personalized email outreach — including
-handling replies (revision requests rebuild + redeploy automatically).
+so instead of building websites one at a time like a normal freelancer, I built a robot agency: ten bots that find local businesses with missing or terrible websites, generate modern replacements, deploy them to Vercel, and run personalized email outreach — including handling replies, where a revision request automatically rebuilds and redeploys the site. I'm basically the manager; the pipeline does the work.
 
-## How it works
+## how it actually works
 
-```
-maps_scraper ──► website_classifier ──► website_qualifier ──► lead_prioritizer
-  (Bot 1)          (Bot 2)               (Bot 3)                (Bot 4)
-  Google Maps      with/without site     keeps BAD sites        target_leads.json
-  businesses.json
-                                                          │
-                        per lead:                         ▼
-              website_generator ──► qa_bot ──► deployment_manager
-                (Bot 5)              (Bot 6)     (Bot 7)
-                OpenCode or          score ≥80   GitHub repo + Vercel
-                built-in template    or retry    production URL
-                                                          │
-                                                          ▼
-              current_lead_generator ──► email_generator ◄──► response_feedback_manager
-                (Bot 8)                    (Bot 9)              (Bot 10)
-                outreach-ready lead        SMTP outreach        classifies replies;
-                                           (draft by default)   revisions loop back
-                                                              to Bot 5
-```
+`orchestrator.py` (536 lines) chains each bot's `main()` in order:
+1. **maps_scraper** — finds local businesses off Maps
+2. **classifier** — flags the ones with missing/bad sites
+3. **qualifier** — scores leads, **prioritizer** ranks them
+4. **website_generator** — builds each site (OpenCode agent or template path)
+5. **qa_bot** — quality gate, must score ≥80 or it's back for regen
+6. **deployment_manager** — GitHub repo + Vercel deploy per site (business-slug names like `bothell-way-garage`, never `lead_00001`)
+7. **email_generator** + outreach — personalized emails via SMTP, reply/revision loop watches the inbox and triggers rebuilds
 
-Customer-facing names are business slugs (`bothell-way-garage`), never
-`lead_00001` (kept as the internal key). Sites are built with OpenCode
-when available, otherwise a built-in category-aware template.
-
-## Setup
-
-Requires Python 3.11+, `pip install requests beautifulsoup4 playwright`
-(plus `playwright install chromium`), the `gh`, `vercel`, and `opencode`
-CLIs.
-
-| Purpose | What to do |
-|---|---|
-| GitHub | `gh auth login` as the agency account; `gh auth status` to verify |
-| Vercel | `vercel login` as the agency account; `vercel whoami` to verify |
-| Sending mail | `AGENCY_SMTP_PASS` (Gmail app password for `storefront.webs@gmail.com`; host/user/sender prefilled) |
-| Reading replies | `AGENCY_IMAP_PASS` (same app password; host/user prefilled) |
-| Sender override | `AGENCY_FROM` (default `storefront.webs@gmail.com`) |
-| Commit authorship | `AGENCY_GIT_NAME`, `AGENCY_GIT_EMAIL` (repo-local only) |
-| Deploy guard | `AGENCY_GH_USER` — deploys abort if another account is active |
-| Branding | `AGENCY_NAME` (default `Storefront`) |
-
-If you work in other local folders, they belong to `boblio-max` — see
-`../AGENTS.md`. Never mix the two accounts.
-
-## Usage (safe → live)
+`generated_sites/`, `deployments/`, and the `agency_site/` demo hold the outputs.
 
 ```bash
-py orchestrator.py --help                              # safe: shows options
-py orchestrator.py --reuse --limit 1                   # 1 site, draft-only email
-py orchestrator.py --reuse --limit 1 --send-emails     # actually sends (needs SMTP env)
-py orchestrator.py --watch --reuse --send-emails       # continuous: new leads + inbox replies
-py orchestrator.py --reply "..." --reply-lead <id>     # manual reply handling
+py orchestrator.py --help                                  # always safe, start here
+py orchestrator.py --reuse --limit 1                       # 1 site, draft-only email
+py orchestrator.py --reuse --limit 1 --send-emails         # actually sends (needs SMTP env)
+py orchestrator.py --watch --reuse --send-emails           # continuous: new leads + inbox replies
 ```
 
-- `--reuse` reuses `businesses.json` instead of re-scraping Google Maps.
-- `--limit 0` processes all leads; default `1` is a safe first run.
-- `--send-emails` is the ONLY flag that sends real mail. Without it,
-  Bot 9 prints drafts and records nothing.
-- `--watch` loops forever (Ctrl-C stops): skips deployed/emailed leads,
-  polls the inbox, routes revisions back through generate → QA → deploy.
+## rules that keep it safe
 
-Single steps:
+outreach builds are locked previews (banner + noindex + demo forms) until `--final` after payment. outreach only goes to verified emails (never fabricated), opt-outs suppress forever, resends are guarded per lead+purpose. secrets stay in env (`AGENCY_SMTP_PASS`, `AGENCY_IMAP_PASS`, Stripe keys) — `.env*` is gitignored, never commit them.
 
-```bash
-py website_generator.py --lead <id> --force            # build (omit --force to reuse cache)
-py qa_bot.py generated_sites/<slug>                    # QA gate (≥80 passes)
-py deployment_manager.py generated_sites/<slug>        # GitHub + Vercel deploy
-py response_feedback_manager.py --poll                 # list unseen inbox replies
-```
+## accounts (important)
 
-## Payments (Bot 11 wallet)
+this is the ONLY repo on the agency GitHub/Vercel account — everything else here runs as `boblio-max`. verify with `gh auth status` / `vercel whoami` before touching deploys; `AGENCY_GH_USER` enforcement fails loudly on mismatch instead of publishing to the wrong account.
 
-Clients pay however they want — card, bank transfer, or crypto — and money
-settles into accounts only you can withdraw from. Card goes through Stripe
-(auto-payout to your bank), bank lands directly, crypto lands on your
-watch-only addresses. The wallet never stores card numbers or private keys.
+## stack
 
-```bash
-py payment_manager.py --invoice --lead <id> --amount 49900   # $499 invoice + pay instructions
-py payment_manager.py --mark-paid --invoice-id <inv> --method bank --txref "..."  # confirm receipt
-py payment_manager.py --balance                             # what's been collected
-py payment_manager.py --payout-report                       # where it sits + how to withdraw
-```
-
-Paid invoices gate the unlock: only rebuild with `--final` (banner gone,
-indexable, live forms) after `payment_manager.py --is-paid <id>` says PAID.
-Env: `AGENCY_STRIPE_KEY`, `AGENCY_STRIPE_LINK_BASE`, `AGENCY_BANK_REF`,
-`AGENCY_CRYPTO_ADDRESSES` (JSON), `AGENCY_DEFAULT_PRICE_CENTS`.
-
-## Rules the pipeline enforces
-
-- **Emails are never fabricated.** No verified address → lead is skipped
-  for outreach (phone-only leads are reported, not emailed).
-- **Opt-outs suppress forever** (exit 3); resends are guarded per
-  lead + purpose.
-- **QA failing stops the lead** — fix the site, don't force the deploy.
-- **No `lead_00001` in public**: folders, repos, and Vercel projects use
-  business slugs; colliding names get a short stable suffix.
-- **Previews are locked demos.** Every outreach build ships with a
-  visible preview banner, `noindex`, and demo-only forms — gorgeous but
-  unusable until paid. `--final` rebuilds the unlocked production site
-  after payment (banner gone, indexable, live forms).
-- Generated sites, `deployments/`, and outreach history are pipeline
-  output — lead data (`businesses.json`, `target_leads.json`) is input.
-  Don't delete one thinking it's the other.
+Python 3.11 (`requests`, `bs4`, `playwright`), `gh` / `vercel` / `opencode` CLIs. safe → live pipeline: preview first, send later, watch mode for the full loop.
