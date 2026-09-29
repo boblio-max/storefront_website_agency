@@ -227,15 +227,15 @@ class WebsiteGeneratorTests(unittest.TestCase):
         self.assertIn('font-size="72"', og_svg)
         # prompt demands the signature moment + mobile + dev-grade code
         prompt = wg.build_prompt(lead, None, preview=True)
-        for marker in ("SIGNATURE MOMENT", "MOBILE EXCELLENCE", "DEVELOPER-GRADE CODE",
-                       "IF YOU DO NOT SUCCEED IN MAKING IT PERFECT, tHE WORLD WILL END",
+        for marker in ("NON-NEGOTIABLE OUTPUT CONTRACT", "DESIGN PERSONA",
+                       "senior UI/UX designer", "ART DIRECTION",
+                       "COPYWRITING RULES", "MANDATORY STRUCTURE",
+                       "FINAL SELF-AUDIT",
                        "do NOT build your own banner",
-                       "Bright gradient buttons",
                        "body.js .reveal",
-                       "PERFORMANCE BUDGET",
-                       "SELF-REVIEW BEFORE YOU REPLY",
-                       "PERSONA", "senior UI/UX designer",
-                       "ANTI-AI-SLOP", "Restraint + taste"):
+                       "quote-form",
+                       "prefers-reduced-motion",
+                       "index.html < 60KB"):
             self.assertIn(marker, prompt)
 
     def test_photo_pipeline_uses_real_photos_not_drawn(self):
@@ -412,16 +412,16 @@ class OpenCodeAutofixTests(unittest.TestCase):
     def test_prompt_names_qa_gates_verbatim(self):
         lead = {"lead_id": "lead_x", "name": "Cafe X", "category": "Cafe"}
         prompt = wg.build_prompt(lead, None, preview=True)
-        for marker in ("WHITE text on your --brand and --brand2",
-                        "prefers-reduced-motion:reduce",
-                        "body.js .reveal",
-                        "classList.add('js')",
-                        'id="heroAurora"',
-                        "data-count",
-                        "hero-ghost",
-                        "feTurbulence",
-                        "::selection",
-                        "names the signature moment"):
+        for marker in ("NON-NEGOTIABLE OUTPUT CONTRACT",
+                       "DESIGN PERSONA",
+                       "senior UI/UX designer",
+                       "body.js .reveal",
+                       "classList.add('js')",
+                       "prefers-reduced-motion",
+                       "quote-form",
+                       "FINAL SELF-AUDIT",
+                       "do NOT build your own banner",
+                       "MANDATORY STRUCTURE"):
             self.assertIn(marker, prompt)
 
     def test_reduced_motion_injected_when_missing(self):
