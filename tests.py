@@ -453,6 +453,29 @@ class OpenCodeAutofixTests(unittest.TestCase):
         self.assertEqual(before, after)
 
 
+class LeadPrioritizerEmailTests(unittest.TestCase):
+    def test_email_adds_full_bonus_ceteris_paribus(self):
+        import lead_prioritizer as lp
+        base = {"name": "Shop", "phone": "(425) 555-0100", "rating": 4.2,
+                "review_count": 60}
+        s_plain, _ = lp.score_business(dict(base), "bad_website")
+        s_mail, reasons = lp.score_business(dict(base, email="a@shop.com"),
+                                            "bad_website")
+        self.assertEqual(s_mail - s_plain, 25)
+        self.assertTrue(any("outreach-ready" in r for r in reasons))
+
+    def test_require_email_keeps_only_contactable(self):
+        import lead_prioritizer as lp
+        leads = lp.prioritize(
+            [{"name": "No Site", "phone": "1"}],
+            [{"name": "Bad Site", "phone": "2", "email": "b@x.com",
+              "website_analysis": {"score": 10, "problems": ["x"]}}])
+        self.assertEqual(len(leads), 2)
+        filtered = [l for l in leads if (l.get("email") or "").strip()]
+        self.assertEqual(len(filtered), 1)
+        self.assertEqual(filtered[0]["email"], "b@x.com")
+
+
 class EmailConfigTests(unittest.TestCase):
     def test_smtp_config_none_without_password(self):
         import email_generator as eg

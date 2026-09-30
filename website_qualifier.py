@@ -95,7 +95,8 @@ BAD_EMAIL_SUBS = ("example.", "sentry", "wixpress", "schema.", "email-protection
                   "noreply", "no-reply", "donotreply", "mailer-daemon", "postmaster@")
 BAD_EMAIL_EXTS = {"png", "jpg", "jpeg", "gif", "svg", "css", "js",
                   "webp", "ico", "woff", "woff2"}
-CONTACT_PATHS = ("/contact", "/contact-us", "/contactus", "/about", "/about-us")
+CONTACT_PATHS = ("/contact", "/contact-us", "/contactus", "/about", "/about-us",
+                 "/get-in-touch", "/connect", "/visit")
 
 
 def extract_emails(html: str, page_url: str) -> list[str]:

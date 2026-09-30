@@ -128,11 +128,14 @@ def score_business(b: dict, lead_type: str) -> tuple[float, list[str]]:
         n_prob = len(wa.get("problems") or [])
         reasons.append(f"Bad website (site score {site_score:.0f}, {n_prob} problems) — strong replacement case")
 
-    # -- Contact availability (0..+10) ------------------------------------
+    # -- Contact availability ----------------------------------------------
+    # Email is the only outreach channel that scales (Bot 9 sends, Bot 10
+    # reads replies), so a verified address outweighs everything else short
+    # of need severity. Phone-only leads still build fine but can't be emailed.
     if (b.get("phone") or "").strip():
         score += 6; reasons.append("Phone available for outreach")
     if (b.get("email") or "").strip():
-        score += 4; reasons.append("Email available for outreach")
+        score += 25; reasons.append("Verified email — outreach-ready (highest contact value)")
     elif not (b.get("phone") or "").strip():
         score -= 6; reasons.append("No phone/email — hard to reach")
     if (b.get("address") or "").strip():
@@ -188,6 +191,8 @@ def parse_args(argv=None):
     p.add_argument("--output", "-o", default="target_leads.json")
     p.add_argument("--max", type=int, default=0, help="Keep top N (0 = all)")
     p.add_argument("--min-score", type=float, default=0.0, help="Drop leads below this score")
+    p.add_argument("--require-email", action="store_true",
+                   help="Keep only leads with a verified email (outreach-ready)")
     return p.parse_args(argv)
 
 
@@ -220,6 +225,11 @@ def main(argv=None, **kwargs) -> str | int:
     leads = prioritize(without, bad)
     total = len(leads)
     leads = [l for l in leads if l["opportunity_score"] >= args.min_score]
+    if args.require_email:
+        before = len(leads)
+        leads = [l for l in leads if (l.get("email") or "").strip()]
+        print(f"[lead_prioritizer] require-email: {before} -> {len(leads)} outreach-ready",
+              flush=True)
     if args.max and args.max > 0:
         leads = leads[:args.max]
     out_path = Path(args.output)

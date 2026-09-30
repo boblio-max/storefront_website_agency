@@ -121,7 +121,8 @@ def run(queries: list[str] | None = None, max_per_query: int = 20,
         skip_deployed: bool = False,
         notify: bool = True,
         notify_to: str | None = None,
-        preview: bool = True) -> str:
+        preview: bool = True,
+        require_email: bool = False) -> str:
     """Run scrape -> classify -> qualify -> merge -> prioritize -> per-lead loop.
 
     Per entry: Bot 5 generate -> Bot 6 QA loop ("good") -> Bot 7 deploy
@@ -163,7 +164,8 @@ def run(queries: list[str] | None = None, max_per_query: int = 20,
 
     # Bot 4: merge + rank -> target_leads.json
     leads_path = _require(
-        lp.main(without=without_path, bad=bad_path, output="target_leads.json"),
+        lp.main(without=without_path, bad=bad_path, output="target_leads.json",
+                require_email=require_email),
         "lead_prioritizer",
     )
     
@@ -491,6 +493,8 @@ def parse_args(argv=None):
                    help="Don't email owner updates (default: notify)")
     p.add_argument("--notify-to", default=None,
                    help="Owner update recipient (default: AGENCY_NOTIFY_TO or nikhilmahankali56@gmail.com)")
+    p.add_argument("--require-email", action="store_true",
+                   help="Only target leads with a verified email (outreach-ready)")
     return p.parse_args(argv)
 
 
@@ -504,7 +508,7 @@ def _run_kwargs(_a) -> dict:
             "send_emails": _a.send_emails, "skip_scrape": _a.skip_scrape,
             "businesses": _a.businesses, "history": _a.history,
             "notify": _a.notify, "notify_to": _a.notify_to,
-            "preview": _a.preview}
+            "preview": _a.preview, "require_email": _a.require_email}
 
 
 if __name__ == "__main__":
