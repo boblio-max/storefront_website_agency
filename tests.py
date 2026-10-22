@@ -40,6 +40,27 @@ def test_create_github_repo() -> int:
     return 0
 
 
+class _FakePopen:
+    """Popen stand-in for the opencode bridge tests.
+
+    Records the prompt passed via communicate(), returns canned
+    output/stderr, or raises `error` from communicate() to exercise the
+    timeout path.
+    """
+
+    def __init__(self, stdout="", stderr="", returncode=0, error=None):
+        self.pid = 4242
+        self.returncode = returncode
+        self._out, self._err, self._error = stdout, stderr, error
+        self.inputs = []
+
+    def communicate(self, input=None, timeout=None):
+        self.inputs.append(input)
+        if self._error is not None:
+            raise self._error
+        return self._out, self._err
+
+
 class WebsiteGeneratorTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -138,6 +159,16 @@ class WebsiteGeneratorTests(unittest.TestCase):
         for var in ("--brand", "--brand2", "--gold"):
             self.assertIn(var, css)
         self.assertNotRegex(html, "[\U0001F300-\U0001FAFF\u2600-\u27BF]")
+
+        # a11y + responsive: skip link, main landmark, tablet breakpoint
+        self.assertIn('class="skip-link"', html)
+        self.assertIn('id="main"', html)
+        self.assertIn("max-width:920px", css)
+        # proof band ships final values in HTML (no-JS fallback), not zeros
+        rated = dict(lead, rating=4.7, review_count=132)
+        rated_html = wg.render_template(rated, None)["index.html"]
+        self.assertIn(">4.7<", rated_html)
+        self.assertIn(">132<", rated_html)
 
     def test_hardening_applies_seo_overflow_aria_to_built_site(self):
         lead = dict(self.lead, phone="(425) 555-0100", rating=4.7,
@@ -342,24 +373,25 @@ class WebsiteGeneratorTests(unittest.TestCase):
 
     def test_bridge_passes_prompt_via_stdin_and_selects_build_agent(self):
         prompt = 'Business "Cafe"\nBuild <nav> & responsive CSS'
-        proc = subprocess.CompletedProcess([], 0, stdout="Done", stderr="")
+        fake = _FakePopen(stdout="Done", stderr="", returncode=0)
         with patch.object(wg, "_opencode_argv", return_value=["opencode"]), \
                 patch.dict(wg.os.environ, {"AGENCY_OPENCODE_MODEL": "provider/model"}), \
-                patch.object(wg.subprocess, "run", return_value=proc) as run:
+                patch.object(wg.subprocess, "Popen", return_value=fake) as popen:
             self.assertEqual(wg.run_opencode_command(self.root, prompt), "Done")
-            self.assertEqual(run.call_args.args[0],
+            self.assertEqual(popen.call_args.args[0],
                              ["opencode", "run", "--agent", "build", "--auto",
                               "--model", "provider/model"])
-            self.assertEqual(run.call_args.kwargs["input"], prompt)
+            self.assertEqual(popen.call_args.kwargs["cwd"], str(self.root))
+        self.assertEqual(fake.inputs, [prompt])
 
     def test_bridge_defaults_to_fast_model_with_auto_approve(self):
-        proc = subprocess.CompletedProcess([], 0, stdout="Done", stderr="")
+        fake = _FakePopen(stdout="Done", stderr="", returncode=0)
         env = {k: v for k, v in wg.os.environ.items() if k != "AGENCY_OPENCODE_MODEL"}
         with patch.object(wg, "_opencode_argv", return_value=["opencode"]), \
                 patch.dict(wg.os.environ, env, clear=True), \
-                patch.object(wg.subprocess, "run", return_value=proc) as run:
+                patch.object(wg.subprocess, "Popen", return_value=fake) as popen:
             wg.run_opencode_command(self.root, "Build")
-            self.assertEqual(run.call_args.args[0],
+            self.assertEqual(popen.call_args.args[0],
                              ["opencode", "run", "--agent", "build", "--auto",
                               "--model", wg.DEFAULT_OPENCODE_MODEL])
 
@@ -385,15 +417,24 @@ class WebsiteGeneratorTests(unittest.TestCase):
             run.assert_called_once()
 
     def test_bridge_errors_propagate(self):
-        cases = [subprocess.TimeoutExpired("opencode", 1), OSError("missing")]
         with patch.object(wg, "_opencode_argv", return_value=["opencode"]):
-            for error in cases:
-                with self.subTest(error=error), \
-                        patch.object(wg.subprocess, "run", side_effect=error):
-                    with self.assertRaises(RuntimeError):
-                        wg.run_opencode_command(self.root, "Build")
-            proc = subprocess.CompletedProcess([], 1, stdout="Authentication failed", stderr="")
-            with patch.object(wg.subprocess, "run", return_value=proc):
+            # Startup failure (OSError from Popen) surfaces immediately.
+            with self.subTest(error="oserror"), \
+                    patch.object(wg.subprocess, "Popen", side_effect=OSError("missing")):
+                with self.assertRaisesRegex(RuntimeError, "missing"):
+                    wg.run_opencode_command(self.root, "Build")
+            # Timeout: communicate() raises, the tree-kill is attempted, and
+            # a RuntimeError surfaces (never a raw TimeoutExpired).
+            with self.subTest(error="timeout"), \
+                    patch.object(wg.subprocess, "Popen", return_value=_FakePopen(
+                        error=subprocess.TimeoutExpired("opencode", 1))), \
+                    patch.object(wg.subprocess, "run"):
+                with self.assertRaisesRegex(RuntimeError, "timed out after"):
+                    wg.run_opencode_command(self.root, "Build")
+            # Nonzero exit with stderr propagates the diagnostic verbatim.
+            with self.subTest(error="exit1"), \
+                    patch.object(wg.subprocess, "Popen", return_value=_FakePopen(
+                        stdout="", stderr="Authentication failed", returncode=1)):
                 with self.assertRaisesRegex(RuntimeError, "Authentication failed"):
                     wg.run_opencode_command(self.root, "Build")
 
@@ -569,16 +610,100 @@ class PaymentWalletTests(unittest.TestCase):
         with self.assertRaises(LookupError):
             pm.mark_paid("inv_nope_01", "card", "", self.ledger)
         with self.assertRaises(ValueError):
-            pm.mark_paid("inv_nope_01", "cash", "", self.ledger)
+            pm.mark_paid("inv_nope_01", "barter", "", self.ledger)
 
 
 class ResponseFeedbackTests(unittest.TestCase):
     def test_buying_intent_is_interested(self):
         import response_feedback_manager as rfm
         for body in ("Perfect, we'll take it! What's the price and how do we pay?",
-                     "Looks great — send me the invoice and let's start."):
+                      "Looks great — send me the invoice and let's start."):
             self.assertEqual(rfm.classify(body)[0], "interested")
         self.assertEqual(rfm.classify("No thanks, not interested")[0], "not_interested")
+
+
+class ClientPhotoIntakeTests(unittest.TestCase):
+    def _message(self, big: bytes, tiny: bytes):
+        import email.mime.multipart as _mmp
+        import email.mime.text as _mt
+        import email.mime.image as _mi
+        msg = _mmp.MIMEMultipart()
+        msg.attach(_mt.MIMEText("here are photos of the shop", "plain"))
+        img = _mi.MIMEImage(big, _subtype="jpeg")
+        img.add_header("Content-Disposition", "attachment", filename="shop.jpg")
+        msg.attach(img)
+        icon = _mi.MIMEImage(tiny, _subtype="jpeg")
+        icon.add_header("Content-Disposition", "attachment", filename="icon.jpg")
+        msg.attach(icon)
+        return msg
+
+    def _jpeg(self, w, h, pad):
+        import struct
+        body = (b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00"
+                + b"\xff\xc0\x00\x0b\x08" + struct.pack(">HH", h, w) + b"\x03\x01\x22\x00")
+        return body + b"\x00" * pad
+
+    def test_attachments_saved_and_adopted_once(self):
+        import response_feedback_manager as rfm
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            msg = self._message(self._jpeg(1200, 800, 30000), b"\xff\xd8" + b"\x00" * 500)
+            saved = rfm.save_attachments(msg, "lead_pic", inbox_dir=root / "client_photos")
+            self.assertEqual(len(saved), 1)  # tiny icon skipped
+            site = root / "site"
+            site.mkdir()
+            adopted = wg.adopt_client_photos("lead_pic", site,
+                                             inbox_dir=root / "client_photos")
+            self.assertEqual(adopted, ["photo-client-0.jpg"])
+            self.assertEqual(wg.adopt_client_photos(
+                "lead_pic", site, inbox_dir=root / "client_photos"), [])
+            # duplicate bytes under a new filename are not re-adopted
+            (root / "client_photos" / "lead_pic" / "again.jpg").write_bytes(
+                self._jpeg(1200, 800, 30000))
+            self.assertEqual(wg.adopt_client_photos(
+                "lead_pic", site, inbox_dir=root / "client_photos"), [])
+
+
+class EmailVoiceTests(unittest.TestCase):
+    def _biz(self, **kw):
+        base = {"lead_id": "lead_voice", "business_name": "La Gloria Modern Mexican Bar",
+                "category": "Mexican restaurant", "rating": 4.7, "review_count": 348,
+                "website": "https://m.facebook.com/lagloriabothell/",
+                "lead_type": "bad_website",
+                "preview_url": "https://la-gloria-modern-mexican-bar.vercel.app"}
+        return {**base, **kw}
+
+    def test_initial_is_short_human_and_specific(self):
+        import email_generator as eg
+        s, b = eg.template_email(self._biz(), [], "initial_outreach")
+        self.assertLessEqual(len(b.split()), 130)
+        self.assertTrue(b.startswith("Hi La Gloria,"))
+        self.assertNotIn(" team,", b)
+        self.assertIn("4.7", b)  # cites the collected rating
+        self.assertIn("Facebook", b)  # cites the real situation
+        self.assertIn("https://la-gloria-modern-mexican-bar.vercel.app", b)
+        for banned in ("hope this finds", "checking in", "touch base",
+                       "circling back", "cutting-edge", "leverage",
+                       "game-changer", "solutions", "synergy",
+                       "haven't connected yet", "mobile-friendly", "!"):
+            self.assertNotIn(banned, b.lower() if banned != "!" else b)
+
+    def test_subjects_rotate_and_followups_vary(self):
+        import email_generator as eg
+        subjects = {eg.template_email(self._biz(lead_id=f"lead_{i:05d}"),
+                                      [], "initial_outreach")[0]
+                    for i in range(6)}
+        self.assertGreater(len(subjects), 1)
+        s2, b2 = eg.template_email(self._biz(), [], "follow_up_3")
+        self.assertLessEqual(len(b2.split()), 80)
+
+    def test_empty_preview_never_leaves_blank_link(self):
+        import email_generator as eg
+        for purpose in ("initial_outreach", "follow_up", "revision_delivery"):
+            s, b = eg.template_email(self._biz(preview_url=""), [], purpose)
+            self.assertNotIn("\n\n\n", b)
+            if purpose == "initial_outreach":
+                self.assertIn("send you the link", b)
 
 
 class QAReviewerTests(unittest.TestCase):

@@ -167,9 +167,9 @@ def _opencode_argv() -> list[str]:
     raise RuntimeError("No working OpenCode CLI found "
                        "(tried npm opencode.cmd + PATH `opencode`)")
 
-DEFAULT_OPENCODE_MODEL = "opencode/muse-spark-1.3-contributor-free"
+DEFAULT_OPENCODE_MODEL = "opencode/big-pickle"
 
-def run_opencode_command(target_dir: Path, prompt: str, timeout: int = 600) -> str:
+def run_opencode_command(target_dir: Path, prompt: str, timeout: int = 1800) -> str:
     """Run OpenCode in target_dir with prompt; return stdout.
 
     Uses the build agent with the prompt on stdin to avoid Windows shell
@@ -181,22 +181,42 @@ def run_opencode_command(target_dir: Path, prompt: str, timeout: int = 600) -> s
     target_dir.mkdir(parents=True, exist_ok=True)
     prefix = _opencode_argv()
     model = os.environ.get("AGENCY_OPENCODE_MODEL", "").strip() or DEFAULT_OPENCODE_MODEL
+    # AGENCY_OPENCODE_TIMEOUT overrides the timeout without a code change
+    # (handy for tests / slow-model tuning).
+    timeout = int(os.environ.get("AGENCY_OPENCODE_TIMEOUT", str(timeout)))
     command = [*prefix, "run", "--agent", "build", "--auto", "--model", model]
     print(f"[website_generator] OpenCode starting in {target_dir} "
           f"(model={model}, timeout={timeout}s)", flush=True)
     try:
-        proc = subprocess.run(
-            command, input=prompt,
-            cwd=str(target_dir), capture_output=True, text=True,
-            encoding="utf-8", errors="replace", timeout=timeout)
-    except subprocess.TimeoutExpired as e:
-        raise RuntimeError(f"OpenCode timed out after {timeout}s") from e
+        proc = subprocess.Popen(
+            command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, cwd=str(target_dir),
+            text=True, encoding="utf-8", errors="replace")
     except OSError as e:
         raise RuntimeError(f"Could not start OpenCode: {e}") from e
+    try:
+        out, err = proc.communicate(input=prompt, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        # Windows: killing only the direct child (the opencode.cmd wrapper)
+        # leaves node grandchildren holding the inherited pipe handles open —
+        # proc.wait() would then hang forever while the orphan keeps running.
+        # Kill the ENTIRE process tree, reap, and surface the timeout.
+        print(f"[website_generator] OpenCode timed out after {timeout}s "
+              f"— killing process tree {proc.pid}", flush=True)
+        try:
+            subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc.pid)],
+                           capture_output=True, text=True, timeout=30)
+        except Exception:  # noqa: BLE001 — best-effort cleanup
+            pass
+        try:
+            out, err = proc.communicate(timeout=15)
+        except subprocess.TimeoutExpired:
+            out, err = "", ""
+        raise RuntimeError(f"OpenCode timed out after {timeout}s") from None
     if proc.returncode != 0:
-        detail = (proc.stderr or proc.stdout or "No diagnostic output").strip()
+        detail = (err or out or "No diagnostic output").strip()
         raise RuntimeError(f"OpenCode exited {proc.returncode}: {detail[-2000:]}")
-    return proc.stdout or ""
+    return out or ""
 
 
 # ---------------------------------------------------------------------------
@@ -989,6 +1009,70 @@ def collect_business_photos(lead: dict, target: Path,
             role = "hero" if i == 0 else ("about" if i == 1 else f"gallery-{i - 1}")
             out.append({"file": fname, "width": w, "height": h, "role": role})
         return out
+    except Exception:
+        return []
+
+
+def adopt_client_photos(lead_id: str, site_dir: str | Path,
+                        inbox_dir: str | Path = "client_photos") -> list[str]:
+    """Copy client-sent photos (email attachments, manual drops) into a site.
+
+    Validates real image bytes + minimum width, stores as
+    photo-client-<n>.<ext> (never overwrites existing files). The next
+    rebuild picks them up automatically via collect_business_photos.
+    Returns adopted filenames. Never raises.
+    """
+    try:
+        import hashlib
+        site = Path(site_dir)
+        inbox = Path(inbox_dir) / str(lead_id)
+        if not site.is_dir() or not inbox.is_dir():
+            return []
+        adopted: list[str] = []
+        existing = {p.name for p in site.glob("photo-*.*")}
+        # content hashes of already-adopted client photos (idempotency:
+        # re-running must not duplicate the same bytes under a new name)
+        site_hashes: set[str] = set()
+        for name in existing:
+            if name.startswith("photo-client-"):
+                try:
+                    site_hashes.add(hashlib.md5((site / name).read_bytes()).hexdigest())
+                except OSError:
+                    pass
+        n = sum(1 for name in existing if name.startswith("photo-client-"))
+        for src in sorted(inbox.iterdir()):
+            if not src.is_file() or src.suffix.lower() not in (
+                    ".jpg", ".jpeg", ".png", ".webp", ".gif"):
+                continue
+            try:
+                data = src.read_bytes()
+            except OSError:
+                continue
+            if len(data) < 15_000 or len(data) > 8_000_000:
+                continue
+            dims = _img_dimensions(data)
+            if not dims or dims[0] < PHOTO_MIN_WIDTH:
+                continue
+            ext = ".jpg" if src.suffix.lower() in (".jpg", ".jpeg") else src.suffix.lower()
+            if ext == ".gif":
+                continue  # templates serve jpg/png/webp (animation would be lost)
+            if hashlib.md5(data).hexdigest() in site_hashes:
+                continue
+            while f"photo-client-{n}{ext}" in existing:
+                n += 1
+            fname = f"photo-client-{n}{ext}"
+            n += 1
+            try:
+                (site / fname).write_bytes(data)
+            except OSError:
+                continue
+            existing.add(fname)
+            site_hashes.add(hashlib.md5(data).hexdigest())
+            adopted.append(fname)
+        if adopted:
+            print(f"[website_generator] {lead_id}: adopted {len(adopted)} "
+                  f"client photo(s): {', '.join(adopted)}", flush=True)
+        return adopted
     except Exception:
         return []
 
@@ -2392,16 +2476,31 @@ def render_template(b: dict, feedback: dict | None,
         services_list = f'<ul class="cards">{services_html}</ul>'
     stats_band = ""
     if has_rating:
+        # Progressive enhancement: final values ship IN the HTML so the
+        # proof band reads correctly with no JS, no scroll, and no
+        # IntersectionObserver (print, caches, in-app browsers). The
+        # count-up script re-animates from 0 when it can observe.
+        try:
+            _rating_txt = f"{float(rating):.1f}"
+        except (TypeError, ValueError):
+            _rating_txt = str(rating)
+        try:
+            _reviews_txt = str(int(reviews))
+        except (TypeError, ValueError):
+            _reviews_txt = str(reviews)
+        _services_txt = str(len(prof["services"]))
         stats_band = (
             f'<section class="stats" aria-label="Ratings and reviews">'
             f'<div class="wrap stats-grid">'
             f'<div class="stat"><span class="stat-num" data-count="{esc(str(rating))}" '
-            f'data-decimals="1">0</span>'
+            f'data-decimals="1">{esc(_rating_txt)}</span>'
             f'<span class="stat-star" aria-hidden="true">' + _icon("star", 14) + '</span>'
             f'<span class="stat-label">Average rating</span></div>'
-            f'<div class="stat"><span class="stat-num" data-count="{esc(str(reviews))}">0</span>'
+            f'<div class="stat"><span class="stat-num" data-count="{esc(str(reviews))}">'
+            f'{esc(_reviews_txt)}</span>'
             f'<span class="stat-label">Verified reviews</span></div>'
-            f'<div class="stat"><span class="stat-num" data-count="{len(prof["services"])}">0</span>'
+            f'<div class="stat"><span class="stat-num" data-count="{len(prof["services"])}">'
+            f'{esc(_services_txt)}</span>'
             f'<span class="stat-label">Signature services</span></div>'
             f'</div></section>')
 
@@ -2455,6 +2554,7 @@ def render_template(b: dict, feedback: dict | None,
 <link rel="stylesheet" href="styles.css">
 </head>
 <body id="top">
+<a class="skip-link" href="#main">Skip to main content</a>
 <div class="loader" id="loader" aria-hidden="true"><div class="loader-mark">{esc(first_letters)}</div></div>
 <div class="progress" aria-hidden="true"><span id="progressBar"></span></div>
 <div class="topbar"><div class="wrap topbar-inner">
@@ -2478,7 +2578,7 @@ def render_template(b: dict, feedback: dict | None,
 {('<a class="btn btn-primary btn-call" href="' + esc(tel) + '">' + _icon("phone", 15) + ' Call ' + esc(phone) + '</a>') if phone else ('<a class="btn btn-primary btn-call" href="#contact">Contact Us</a>' if is_food else '<a class="btn btn-primary btn-call" href="#contact">Get a Quote</a>')}
 </nav>
 </header>
-<main>
+<main id="main">
 {hero_html}
 <div class="marquee" aria-hidden="true"><div class="marquee-track">
 {("&nbsp;•&nbsp; " + esc(name) + " ") * 2}
@@ -2746,13 +2846,17 @@ body.js.loaded .loader{{opacity:0;visibility:hidden}}
 .stack-card h3{{margin-top:.35rem}}
 @media(max-width:760px){{.stats-grid{{grid-template-columns:1fr;gap:1.4rem}}.stack-card{{top:84px}}.hero-ghost{{right:-60px;opacity:.05}}}}
 @media (prefers-reduced-motion:reduce){{body.js .hero-copy>*{{opacity:1;transform:none;transition:none}}body.js .loader,.loader{{display:none}}.w{{transform:none;transition:none}}.hero-aurora{{display:none}}.marquee-track{{animation:none}}}}
-@media(max-width:760px){{
+.skip-link{{position:absolute;left:1rem;top:-4rem;background:#111;color:#fff;padding:.6rem 1rem;border-radius:8px;z-index:200;text-decoration:none;font-weight:600}}
+.skip-link:focus{{top:.6rem;color:#fff}}
+@media(max-width:920px){{
+  .about-grid,.visit-grid{{grid-template-columns:1fr}}
   .nav-links{{display:none;width:100%;flex-direction:column;background:#fff;border:1px solid var(--line);border-radius:12px;padding:.7rem}}
   .nav-links.open{{display:flex}}
   .nav-toggle{{display:flex}}
+}}
+@media(max-width:760px){{
   .hide-mobile{{display:none}}
   .btn-call{{width:100%;justify-content:center}}
-  .about-grid,.visit-grid{{grid-template-columns:1fr}}
   .hero{{padding:3.2rem 0 2.6rem}}
 }}
 """

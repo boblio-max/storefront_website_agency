@@ -32,6 +32,21 @@ from pathlib import Path
 import shutil
 import subprocess
 
+
+def _load_env_file() -> None:
+    try:
+        from dotenv import load_dotenv
+    except ImportError:
+        return
+    try:
+        load_dotenv(dotenv_path=Path(__file__).resolve().parent / ".env",
+                     override=False)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+_load_env_file()
+
 def _resolve_cli(cmd: str) -> str:
     """Find a CLI on PATH plus known Windows install locations."""
     found = shutil.which(cmd)
@@ -64,16 +79,43 @@ def append_deployment_record(deployment_record: dict, record_file: str = "deploy
         except (json.JSONDecodeError, OSError):
             records = []
     records.append(deployment_record)
-    record_path.write_text(json.dumps(records, ensure_ascii=False, indent=2) + "\n",
-                           encoding="utf-8")
+    # Don't spam history with identical consecutive local_previews.
+    if deployment_record.get("status") == "local_preview":
+        prior = [r for r in records[:-1] if isinstance(r, dict)
+                 and r.get("lead_id") == deployment_record.get("lead_id")]
+        if prior and prior[-1].get("status") == "local_preview":
+            records.pop()
+            try:
+                from agency_config import atomic_write_json
+                atomic_write_json(record_path, records)
+            except ImportError:
+                record_path.write_text(json.dumps(records, ensure_ascii=False, indent=2) + "\n",
+                                       encoding="utf-8")
+            return
+    try:
+        from agency_config import atomic_write_json
+        atomic_write_json(record_path, records)
+    except ImportError:
+        record_path.write_text(json.dumps(records, ensure_ascii=False, indent=2) + "\n",
+                               encoding="utf-8")
     # Per-lead record(s) for Bot 8 (current_lead_generator defaults to
     # deployments/<lead_id>.json). The folder/repo name is now a
     # customer-facing slug, so index under both slug and lead_id.
+    # Never let a local_preview clobber a live record: a live preview_url
+    # is revenue infrastructure (outreach links point at it).
     seen: set[str] = set()
     for key in (deployment_record.get("site"), deployment_record.get("lead_id")):
         if key and key not in seen:
             seen.add(key)
-            (record_path.parent / f"{key}.json").write_text(
+            _lp = record_path.parent / f"{key}.json"
+            if deployment_record.get("status") == "local_preview" and _lp.exists():
+                try:
+                    _prev = json.loads(_lp.read_text(encoding="utf-8"))
+                    if isinstance(_prev, dict) and (_prev.get("preview_url") or "").startswith("http"):
+                        continue
+                except (json.JSONDecodeError, OSError):
+                    pass
+            _lp.write_text(
                 json.dumps(deployment_record, ensure_ascii=False, indent=2) + "\n",
                 encoding="utf-8")
         
@@ -121,14 +163,32 @@ def create_github_repo(path_to_file: str) -> str:
         raise RuntimeError(f"create_github_repo: not a folder: {folder}")
     # Agency guard: never publish client sites from the wrong account.
     expected = os.environ.get("AGENCY_GH_USER", "").strip()
-    if expected:
+
+    def _gh_login() -> str:
         try:
             out_login = subprocess.run(
                 [_resolve_cli("gh"), "api", "user", "-q", ".login"],
                 capture_output=True, text=True, timeout=30)
-            active = (out_login.stdout or "").strip()
+            return (out_login.stdout or "").strip()
         except (OSError, subprocess.TimeoutExpired):
-            active = ""
+            return ""
+
+    if expected:
+        active = _gh_login()
+        if active.lower() != expected.lower():
+            # Auto-switch once so the pipeline never stalls on a stale
+            # account. If the switch fails, fail loudly below instead of
+            # publishing client sites from the wrong account.
+            print(f"[deployment_manager] active GitHub account is "
+                  f"'{active or 'unknown'}' — switching to '{expected}'",
+                  flush=True)
+            try:
+                subprocess.run(
+                    [_resolve_cli("gh"), "auth", "switch", "--user", expected],
+                    capture_output=True, text=True, timeout=30)
+                active = _gh_login()
+            except (OSError, subprocess.TimeoutExpired):
+                pass
         if active.lower() != expected.lower():
             raise RuntimeError(
                 f"wrong GitHub account active ({active or 'unknown'}); "
@@ -302,11 +362,11 @@ def deploy_to_vercel(path_to_file: str, prod: bool = True) -> str:
             proc = subprocess.run(
                 [*vercel_cmd, *args], cwd=str(folder), check=True,
                 capture_output=True, text=True,
-                encoding="utf-8", errors="replace", timeout=300)
+                encoding="utf-8", errors="replace", timeout=120)
         except FileNotFoundError:
             raise RuntimeError("'vercel' CLI not found. Install it: npm i -g vercel")
         except subprocess.TimeoutExpired:
-            raise RuntimeError(f"vercel {step} timed out after 300s")
+            raise RuntimeError(f"vercel {step} timed out after 120s")
         except subprocess.CalledProcessError as e:
             out = (e.stdout or "") + "\n" + (e.stderr or "")
             raise RuntimeError(f"vercel {step} failed: {out[-800:]}")
@@ -328,13 +388,59 @@ def deploy_to_vercel(path_to_file: str, prod: bool = True) -> str:
     return url
 
 
+def _active_gh_user() -> str:
+    """Logged-in gh user, or '' when gh is missing/offline. Never raises."""
+    try:
+        out = subprocess.run(
+            [_resolve_cli("gh"), "api", "user", "-q", ".login"],
+            capture_output=True, text=True, timeout=30)
+        return (out.stdout or "").strip()
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+
+
+def local_preview_record(path_to_file: str, reason: str) -> dict:
+    """Build a local-only deployment record: site is built, not yet live.
+
+    Used when GitHub/Vercel is unreachable or the wrong account is
+    active. The lead is never lost — outreach drafts reference the local
+    build and the pipeline retries the live deploy later.
+    """
+    folder = Path(path_to_file)
+    lead_id = folder.name
+    try:
+        _meta = json.loads((folder / "meta.json").read_text(encoding="utf-8"))
+        if isinstance(_meta, dict) and _meta.get("lead_id"):
+            lead_id = str(_meta["lead_id"])
+    except (OSError, json.JSONDecodeError):
+        pass
+    return {
+        "site": folder.name,
+        "lead_id": lead_id,
+        "status": "local_preview",
+        "github_url": "",
+        "preview_url": "",
+        "local_path": str(folder),
+        "provider": "local",
+        "needs_redeploy": True,
+        "reason": reason[:300],
+        "deployed_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    }
+
+
 def main(argv=None, path_to_file: str | None = None, prod: bool = True,
-         dest_base: str | Path | None = None) -> int:
+         dest_base: str | Path | None = None,
+         allow_local: bool = True) -> int:
     """Deploy a QA-approved site: GitHub push, then Vercel (production by default).
 
     Orchestrator use: ``main(path_to_file="generated_sites/lead_00001")``.
     CLI use: ``python deployment_manager.py generated_sites/lead_00001 [--no-prod]``.
     Returns 0 on success, non-zero exit code on error.
+
+    With allow_local=True (default), a blocked deploy (wrong GitHub
+    account, missing CLI, offline) records a local_preview instead of
+    failing: the built site is kept, outreach can draft, and a later run
+    redeploys. Nothing is ever pushed from the wrong account.
     """
     import argparse as _ap
     if isinstance(argv, (str, Path)):
@@ -344,8 +450,11 @@ def main(argv=None, path_to_file: str | None = None, prod: bool = True,
         _p.add_argument("path", nargs="?", default=path_to_file)
         _p.add_argument("--prod", dest="prod", action="store_true", default=True)
         _p.add_argument("--no-prod", dest="prod", action="store_false")
+        _p.add_argument("--no-local-fallback", dest="allow_local",
+                        action="store_false", default=True)
         _a = _p.parse_args(argv)
         path_to_file, prod = _a.path, _a.prod
+        allow_local = _a.allow_local
     if not path_to_file:
         print("[deployment_manager] ERROR: pass the site folder, e.g. "
               'main("generated_sites/lead_00001")', flush=True)
@@ -380,7 +489,28 @@ def main(argv=None, path_to_file: str | None = None, prod: bool = True,
         except OSError as e:
             print(f"[deployment_manager] staging cleanup skipped ({e})", flush=True)
     except RuntimeError as e:
-        print(f"[deployment_manager] ERROR: {e}", flush=True)
+        msg = str(e)
+        print(f"[deployment_manager] ERROR: {msg}", flush=True)
+        if allow_local:
+            rec = local_preview_record(path_to_file, msg)
+            try:
+                append_deployment_record(rec)
+            except Exception:  # noqa: BLE001
+                pass
+            try:
+                from agency_config import mark_stage
+                mark_stage(rec["lead_id"], "site_built",
+                           {"preview_url": "", "needs_redeploy": True})
+            except ImportError:
+                pass
+            if "wrong GitHub account" in msg:
+                print("[deployment_manager] local preview kept (no push from "
+                      "wrong account). Fix: gh auth switch --user <agency-login>, "
+                      "then re-run with --reuse to redeploy.", flush=True)
+            else:
+                print("[deployment_manager] local preview kept — redeploy on "
+                      "next run with --reuse.", flush=True)
+            return 0
         return 1
     print(f"[deployment_manager] Deployment completed for {path_to_file}.", flush=True)
     print(f"[deployment_manager] preview_url: {preview_url}", flush=True)

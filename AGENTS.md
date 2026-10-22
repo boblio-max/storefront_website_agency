@@ -6,7 +6,9 @@ All pipeline GitHub operations (repo create/push) MUST run as the
 - Verify: `gh auth status` → active account must be the agency one.
 - Switch: `gh auth switch --user <agency-login>`.
 - `deployment_manager` enforces this via `AGENCY_GH_USER`: if the active
-  account mismatches, deploys fail loudly instead of publishing wrong.
+  account mismatches, it auto-switches once (`gh auth switch --user
+  <agency-login>`) and rechecks; if the switch fails, deploys fail loudly
+  instead of publishing wrong.
 - Deploy commit authorship is set per-repo from
   `AGENCY_GIT_NAME` / `AGENCY_GIT_EMAIL` (repo-local config only).
 
