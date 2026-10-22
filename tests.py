@@ -71,7 +71,7 @@ class WebsiteGeneratorTests(unittest.TestCase):
     def build(self, use_opencode=True, force=False, **kwargs):
         return wg.generate_one(self.lead, self.root, None, use_opencode, force, **kwargs)
 
-    def write_site(self, target, prompt):
+    def write_site(self, target, prompt, *args, **kwargs):
         for name, content in {"index.html": "<html><head></head><body>Custom cafe</body></html>",
                               "styles.css": "body { color: brown; }",
                               "script.js": "document.title = 'Cafe';"}.items():
@@ -97,11 +97,14 @@ class WebsiteGeneratorTests(unittest.TestCase):
                 self.build(require_opencode=True)
 
     def test_explicit_template_and_cached_template_upgrade(self):
+        # Partner stages are disabled: this test targets the driver contract.
+        env = dict(wg.os.environ, AGENCY_PARTNER="off")
         with patch.object(wg, "run_opencode_command") as run:
             result = self.build(use_opencode=False)
             self.assertEqual(result["engine"], "template")
             run.assert_not_called()
-        with patch.object(wg, "run_opencode_command", side_effect=self.write_site) as run:
+        with patch.object(wg, "run_opencode_command", side_effect=self.write_site) as run, \
+                patch.dict(wg.os.environ, env, clear=False):
             result = self.build()
             self.assertEqual(result["engine"], "opencode")
             self.assertFalse(result["skipped"])
@@ -362,12 +365,17 @@ class WebsiteGeneratorTests(unittest.TestCase):
         self.assertGreater(len(variants), 1)
 
     def test_failed_qa_is_not_cached_and_is_in_prompt(self):
-        with patch.object(wg, "run_opencode_command", side_effect=self.write_site):
+        # Partner stages are disabled: the last opencode call must be the
+        # driver's own build prompt embedding the QA feedback.
+        env = dict(wg.os.environ, AGENCY_PARTNER="off")
+        with patch.object(wg, "run_opencode_command", side_effect=self.write_site), \
+                patch.dict(wg.os.environ, env, clear=False):
             result = self.build()
         target = Path(result["dir"])
         (target / "qa_report.json").write_text(json.dumps([
             {"passed": False, "issues": ["Missing navigation"]}]), encoding="utf-8")
-        with patch.object(wg, "run_opencode_command", side_effect=self.write_site) as run:
+        with patch.object(wg, "run_opencode_command", side_effect=self.write_site) as run, \
+                patch.dict(wg.os.environ, env, clear=False):
             self.assertFalse(self.build()["skipped"])
             self.assertIn("Missing navigation", run.call_args.args[1])
 
@@ -406,11 +414,15 @@ class WebsiteGeneratorTests(unittest.TestCase):
             self.assertEqual(run.call_args.args[0], [*command, "--version"])
 
     def test_failed_build_is_retried_not_cached(self):
+        # Partner stages are disabled: this test targets the driver contract.
+        env = dict(wg.os.environ, AGENCY_PARTNER="off")
         with patch.object(wg, "opencode_available", return_value=True), \
-                patch.object(wg, "run_opencode_command", side_effect=RuntimeError("failed")):
+                patch.object(wg, "run_opencode_command", side_effect=RuntimeError("failed")), \
+                patch.dict(wg.os.environ, env, clear=False):
             result = self.build()
             self.assertEqual(result["engine"], "template")
-        with patch.object(wg, "run_opencode_command", side_effect=self.write_site) as run:
+        with patch.object(wg, "run_opencode_command", side_effect=self.write_site) as run, \
+                patch.dict(wg.os.environ, env, clear=False):
             result = self.build()
             self.assertEqual(result["engine"], "opencode")
             self.assertFalse(result["skipped"])
@@ -437,6 +449,76 @@ class WebsiteGeneratorTests(unittest.TestCase):
                         stdout="", stderr="Authentication failed", returncode=1)):
                 with self.assertRaisesRegex(RuntimeError, "Authentication failed"):
                     wg.run_opencode_command(self.root, "Build")
+
+    # -- Design Partner (second OpenCode instance) --------------------------------
+
+    def _partner_side_effect(self, target_dir, prompt, timeout=None, agent=None,
+                             review_mutates=True):
+        """Route partner prompts: write .partner files, mutate site files on
+        the apply stage (optionally), and answer the build stage."""
+        pdir = target_dir / wg.PARTNER_DIR
+        if "Co-Design Director working alongside" in prompt:  # brief stage
+            pdir.mkdir(parents=True, exist_ok=True)
+            (pdir / wg.PARTNER_BRIEF).write_text("# brief", encoding="utf-8")
+            return ""
+        if "Final polish pass" in prompt:  # driver apply stage
+            if review_mutates:
+                for name, text in (("index.html", "<html><body>polished</body></html>"),
+                                   ("styles.css", "body{color:#111}"),
+                                   ("script.js", "//ok")):
+                    (target_dir / name).write_text(text, encoding="utf-8")
+            return ""
+        if "Judge the build the way a design partner" in prompt:  # review stage
+            pdir.mkdir(parents=True, exist_ok=True)
+            (pdir / wg.PARTNER_REVIEW).write_text("- [index.html] tweak — why",
+                                                  encoding="utf-8")
+            return ""
+        # main build: produce the required files once.
+        for name, text in (("index.html", "<html><body>built</body></html>"),
+                           ("styles.css", "body{}"),
+                           ("script.js", "//x")):
+            (target_dir / name).write_text(text, encoding="utf-8")
+        return ""
+
+    def test_partner_disabled_runs_only_the_driver(self):
+        env = dict(wg.os.environ, AGENCY_PARTNER="off")
+        with patch.object(wg, "opencode_available", return_value=True), \
+                patch.object(wg, "run_opencode_command",
+                             side_effect=self._partner_side_effect) as run, \
+                patch.dict(wg.os.environ, env, clear=True):
+            result = self.build(require_opencode=False)
+        self.assertEqual(result["engine"], "opencode")
+        self.assertEqual(run.call_count, 1)  # driver only, no partner stages
+
+    def test_partner_flow_writes_brief_review_apply_and_meta(self):
+        with patch.object(wg, "opencode_available", return_value=True), \
+                patch.object(wg, "run_opencode_command",
+                             side_effect=self._partner_side_effect) as run:
+            result = self.build(require_opencode=False)
+        stages = [c.kwargs["prompt"] if "prompt" in c.kwargs else c.args[1]
+                  for c in run.call_args_list]
+        self.assertTrue(any(".partner/brief.md" in p for p in stages))
+        self.assertEqual(sum(1 for p in stages if "Final polish pass" in p), 1)
+        meta = json.loads((Path(result["dir"]) / "meta.json")
+                          .read_text(encoding="utf-8"))
+        self.assertEqual(meta["partner"],
+                         {"brief": True, "review": True, "applied": True})
+        self.assertTrue((Path(result["dir"]) / wg.PARTNER_DIR /
+                         wg.PARTNER_REVIEW).is_file())
+
+    def test_partner_apply_regression_rolls_back(self):
+        # Apply stage runs but changes nothing -> rejected, files restored.
+        def side_effect(target_dir, prompt, timeout=None, agent=None):
+            return self._partner_side_effect(target_dir, prompt, review_mutates=False)
+        with patch.object(wg, "opencode_available", return_value=True), \
+                patch.object(wg, "run_opencode_command", side_effect=side_effect):
+            result = self.build(require_opencode=False)
+        meta = json.loads((Path(result["dir"]) / "meta.json")
+                          .read_text(encoding="utf-8"))
+        self.assertEqual(meta["partner"],
+                         {"brief": True, "review": True, "applied": False})
+        self.assertIn("built", (Path(result["dir"]) / "index.html")
+                      .read_text(encoding="utf-8"))
 
 
 class OpenCodeAutofixTests(unittest.TestCase):

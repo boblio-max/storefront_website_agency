@@ -40,3 +40,23 @@ py orchestrator.py --reply "..." --reply-lead <id>         # manual reply handli
 - Wallet env: `AGENCY_STRIPE_KEY` (secret, live cards), `AGENCY_STRIPE_LINK_BASE`,
   `AGENCY_BANK_REF` (public reference only), `AGENCY_CRYPTO_ADDRESSES` (watch-only JSON),
   `AGENCY_DEFAULT_PRICE_CENTS` (default 29900). Never commit secrets (`.env*` ignored).
+
+## OpenCode + Design Partner
+The generator (`website_generator.py`) drives the OpenCode CLI
+(`opencode/big-pickle` by default; `AGENCY_OPENCODE_MODEL` overrides,
+`AGENCY_OPENCODE_TIMEOUT` caps every call). A **second OpenCode instance
+acts as the Design Partner** alongside the driver:
+
+- Protocol: `brief` (partner writes `.partner/brief.md` before the build)
+  → driver build incorporating it → `review` (partner writes
+  `.partner/review.md` after the build) → driver makes **one** bounded
+  polish pass applying the top findings; any regression (missing/empty
+  file, no change, defect check) rolls the pass back.
+- Partner conventions: the partner NEVER edits site files while the
+  driver runs; driver and partner take turns. Partner stages are wrapped
+  so a partner failure/timeout never blocks or corrupts a build.
+- `.partner/` is excluded from GitHub/Vercel staging (internal notes are
+  never published).
+- Disable with `AGENCY_PARTNER=off` (default: on). `meta.json` records
+  `"partner": {"brief": ..., "review": ..., "applied": ...}` on the
+  opencode path (`null` for the template engine).

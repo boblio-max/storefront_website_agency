@@ -169,24 +169,28 @@ def _opencode_argv() -> list[str]:
 
 DEFAULT_OPENCODE_MODEL = "opencode/big-pickle"
 
-def run_opencode_command(target_dir: Path, prompt: str, timeout: int = 1800) -> str:
+def run_opencode_command(target_dir: Path, prompt: str, timeout: int = 1800,
+                         agent: str = "build") -> str:
     """Run OpenCode in target_dir with prompt; return stdout.
 
-    Uses the build agent with the prompt on stdin to avoid Windows shell
-    quoting and command-length limits. `--auto` is required: without it a
-    headless run waits forever on tool-permission approvals (stdin is the
-    prompt, there is no TTY to approve from). Raises RuntimeError on
-    failure — callers decide whether to fall back.
+    Uses an agent with the prompt on stdin to avoid Windows shell quoting
+    and command-length limits. `--auto` is required: without it a headless
+    run waits forever on tool-permission approvals (stdin is the prompt,
+    there is no TTY to approve from). Raises RuntimeError on failure —
+    callers decide whether to fall back.
     """
     target_dir.mkdir(parents=True, exist_ok=True)
     prefix = _opencode_argv()
+    agent = (agent or "build").strip() or "build"
+    if "/" in agent or "\\" in agent or not agent.replace("-", "").replace("_", "").isalnum():
+        raise RuntimeError(f"unknown agent: {agent!r}")
     model = os.environ.get("AGENCY_OPENCODE_MODEL", "").strip() or DEFAULT_OPENCODE_MODEL
     # AGENCY_OPENCODE_TIMEOUT overrides the timeout without a code change
     # (handy for tests / slow-model tuning).
     timeout = int(os.environ.get("AGENCY_OPENCODE_TIMEOUT", str(timeout)))
-    command = [*prefix, "run", "--agent", "build", "--auto", "--model", model]
+    command = [*prefix, "run", "--agent", agent, "--auto", "--model", model]
     print(f"[website_generator] OpenCode starting in {target_dir} "
-          f"(model={model}, timeout={timeout}s)", flush=True)
+          f"(agent={agent}, model={model}, timeout={timeout}s)", flush=True)
     try:
         proc = subprocess.Popen(
             command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -217,6 +221,151 @@ def run_opencode_command(target_dir: Path, prompt: str, timeout: int = 1800) -> 
         detail = (err or out or "No diagnostic output").strip()
         raise RuntimeError(f"OpenCode exited {proc.returncode}: {detail[-2000:]}")
     return out or ""
+
+
+# ---------------------------------------------------------------------------
+# Design Partner: a SECOND OpenCode instance that collaborates with the
+# website generator ("driver"). Protocol — driver and partner never run or
+# write simultaneously, so builds stay deterministic:
+#   1. brief:  partner (navigator) writes .partner/brief.md before the build.
+#   2. build:  driver incorporates the brief, produces the site.
+#   3. review: partner reads the built site, writes .partner/review.md.
+#   4. apply:  driver makes ONE bounded polish pass; any regression
+#              (missing file, unchanged files, defect check) rolls back.
+# Partner stages never touch site files; driver apply passes are validated
+# and rolled back. Disable with AGENCY_PARTNER=off.
+# ---------------------------------------------------------------------------
+PARTNER_DIR = ".partner"
+PARTNER_BRIEF = "brief.md"
+PARTNER_REVIEW = "review.md"
+PARTNER_BRIEF_TIMEOUT = 900
+PARTNER_REVIEW_TIMEOUT = 900
+PARTNER_APPLY_TIMEOUT = 1200
+PARTNER_MAX_APPLY_FINDINGS = 6
+
+
+def partner_enabled() -> bool:
+    flag = os.environ.get("AGENCY_PARTNER", "").strip().lower()
+    return flag not in ("0", "false", "off", "no")
+
+
+def partner_stage(stage: str, target: Path, body: str, timeout: int) -> bool:
+    """Run one partner OpenCode turn in target_dir.
+
+    Returns True when the stage's output file (.partner/brief.md or
+    .partner/review.md) exists and is non-empty afterwards; a partner
+    failure never blocks the build.
+    """
+    out_name = PARTNER_BRIEF if stage == "brief" else PARTNER_REVIEW
+    try:
+        run_opencode_command(target, body, timeout=timeout)
+    except Exception as e:  # noqa: BLE001 — a partner stage must never block a build
+        print(f"[website_generator] partner {stage} skipped ({e!r})", flush=True)
+        return False
+    out = target / PARTNER_DIR / out_name
+    try:
+        ok = out.is_file() and out.stat().st_size > 0
+    except OSError:
+        ok = False
+    if not ok:
+        print(f"[website_generator] partner {stage} produced no {out_name}; "
+              f"continuing without it", flush=True)
+    return ok
+
+
+def build_partner_brief_prompt(lead: dict, preview: bool = True) -> str:
+    name = lead.get("name") or "the business"
+    category = lead.get("category") or "local business"
+    address = lead.get("address") or "unknown"
+    phone = lead.get("phone") or "(phone unknown)"
+    rating = lead.get("rating")
+    review_count = lead.get("review_count")
+    return "\n".join([
+        "You are the Co-Design Director working alongside another OpenCode instance.",
+        "That other instance is the driver: it will read your brief and then build the",
+        f"outreach website for {name} ({category}) in THIS directory, writing index.html,",
+        "styles.css, and script.js. You are the navigator, not the driver.",
+        "",
+        f"Business: {name} — {category}",
+        f"Address: {address} | Phone: {phone}",
+        f"Rating: {rating} from {review_count} reviews (cite only if both are present)",
+        f"Preview mode: {str(preview).lower()} (banner + noindex/NOFOLLOW + disabled demo",
+        "forms must stay in the final build; the driver handles that).",
+        "",
+        "Write exactly one file: .partner/brief.md — do NOT write or edit any website",
+        "files and do not create anything else. Plain markdown, at most 80 lines, no emoji.",
+        "Sections:",
+        "1. Direction — 3 bullets on positioning/edge for this exact business and locale.",
+        "2. Visual identity — hex palette (3 colors), type pairing, layout structure, one",
+        "   signature element worth building.",
+        "3. Copy — hero headline, subhead, 3 section themes with concrete local texture.",
+        "   Never fabricate certifications, awards, hours, or statistics.",
+        "4. Watch-outs — 3 specific things generic builds get wrong for this category.",
+    ])
+
+
+def build_partner_review_prompt(lead: dict) -> str:
+    name = lead.get("name") or "the business"
+    category = lead.get("category") or "local business"
+    return "\n".join([
+        "You are the Co-Design Director; the driver instance has finished a website",
+        "build in THIS directory.",
+        f"Business: {name} — {category}. Read index.html, styles.css, and script.js.",
+        "Judge the build the way a design partner would before it ships: clarity,",
+        "hierarchy, accessibility, mobile behavior, local credibility, and preview-",
+        "mode integrity.",
+        "",
+        "Write exactly one file: .partner/review.md — do NOT edit any website files.",
+        "Format: at most 10 findings, prioritized, one per line as",
+        "- [file] change — why",
+        "High-impact tweaks that are cheap to implement only (copy, spacing, contrast,",
+        "aria/labels, tel: and map links). No emoji, no site restructure, no new",
+        "libraries, no new files.",
+    ])
+
+
+def build_partner_apply_prompt(lead: dict) -> str:
+    name = lead.get("name") or "this business"
+    return "\n".join([
+        f"Final polish pass for the {name} site in THIS directory.",
+        "Your design partner reviewed the build and left .partner/review.md. Read it,",
+        f"then apply at most the top {PARTNER_MAX_APPLY_FINDINGS} findings. Rules:",
+        "- Keep the exact file set: only index.html, styles.css, script.js.",
+        "- Do not restructure and do not add libraries, frameworks, or new files.",
+        "- Keep every QA gate: no emoji, semantic HTML, responsive CSS, accessible",
+        "  controls, valid links.",
+        "- Small surgical edits; preserve existing copy unless a finding targets it.",
+    ])
+
+
+def _partner_apply_pass(target: Path, lead: dict,
+                        timeout: int = PARTNER_APPLY_TIMEOUT) -> bool:
+    """One bounded driver pass applying partner findings; rolls back on any
+    regression: missing/empty required file, no file changed, or a defect
+    from the output check. Returns True only for a clean, changed apply.
+    """
+    required = ("index.html", "styles.css", "script.js")
+    snapshot = {n: (target / n).read_bytes() for n in required}
+    try:
+        run_opencode_command(target, build_partner_apply_prompt(lead), timeout=timeout)
+    except RuntimeError as e:
+        print(f"[website_generator] partner apply skipped ({e}); "
+              f"keeping build as-is", flush=True)
+        return False
+    missing = [n for n in required
+               if not (target / n).is_file() or not (target / n).stat().st_size]
+    if not missing and all((target / n).read_bytes() == snapshot[n]
+                           for n in required):
+        missing = ["no file changed"]
+    if not missing:
+        missing = list(_opencode_output_defects(target))
+    if missing:
+        print(f"[website_generator] partner apply rejected "
+              f"({'; '.join(missing[:3])}); rolling back", flush=True)
+        for n, blob in snapshot.items():
+            (target / n).write_bytes(blob)
+        return False
+    return True
 
 
 # ---------------------------------------------------------------------------
@@ -3237,6 +3386,16 @@ def generate_one(lead: dict, out_root: Path, feedback: dict | None,
         (target / "meta.json").write_text(json.dumps({
             "lead_id": lid, "slug": target.name, "engine": "opencode-incomplete",
             "preview_mode": preview}, indent=2), encoding="utf-8")
+        # Design Partner: pre-build brief (+ post-build review/apply later).
+        brief_ok = review_ok = partner_applied = False
+        if partner_enabled():
+            brief_ok = partner_stage("brief", target,
+                                     build_partner_brief_prompt(lead, preview=preview),
+                                     PARTNER_BRIEF_TIMEOUT)
+        if brief_ok:
+            prompt += ("\n\nDESIGN PARTNER — read .partner/brief.md first and build from "
+                       "its direction: it is your co-designer's vision for exactly this "
+                       "business. Every QA gate below still wins over the brief.")
         try:
             run_opencode_command(target, prompt)
             missing = [name for name in required
@@ -3262,6 +3421,16 @@ def generate_one(lead: dict, out_root: Path, feedback: dict | None,
             if fixes:
                 print(f"[website_generator] opencode autofix: {', '.join(fixes)}",
                       flush=True)
+            # Design Partner: post-build review, then one bounded driver
+            # apply pass with rollback-on-regression.
+            review_ok = False
+            partner_applied = False
+            if partner_enabled():
+                review_ok = partner_stage("review", target,
+                                          build_partner_review_prompt(lead),
+                                          PARTNER_REVIEW_TIMEOUT)
+                if review_ok:
+                    partner_applied = _partner_apply_pass(target, lead)
             if preview:
                 apply_preview_lock(target, lead.get("name") or "this business")
     else:
@@ -3278,6 +3447,9 @@ def generate_one(lead: dict, out_root: Path, feedback: dict | None,
     # for every site, whichever engine produced it (idempotent).
     apply_site_hardening(target, lead)
 
+    partner_info = ({"brief": brief_ok, "review": review_ok,
+                     "applied": partner_applied} if want_opencode else None)
+
     meta = {"lead_id": lid, "slug": target.name,
             "photos": [p["file"] for p in photos],
             "business": {k: lead.get(k) for k in
@@ -3286,6 +3458,7 @@ def generate_one(lead: dict, out_root: Path, feedback: dict | None,
             "engine": engine, "created_at": utc_now_iso(), "preview_mode": preview,
             "model": os.environ.get("AGENCY_OPENCODE_MODEL", "").strip() or DEFAULT_OPENCODE_MODEL,
             "prompt_sha": _prompt_sha(prompt),
+            "partner": partner_info,
             "feedback_applied": bool(feedback and feedback.get("requested_changes"))}
     (target / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
     return {"lead_id": lid, "dir": str(target), "skipped": False, "engine": engine}

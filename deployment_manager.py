@@ -145,7 +145,8 @@ def send_to_github(path_to_file: str, dest_base: str | Path | None = None):
     shutil.copytree(source, destination, dirs_exist_ok=True,
                     ignore=shutil.ignore_patterns(
                         ".vercel", ".git", "*.log",
-                        ".env", ".env.*", "qa_report.json"))
+                        ".env", ".env.*", "qa_report.json",
+                        ".partner"))
     return destination
 
 def create_github_repo(path_to_file: str) -> str:
