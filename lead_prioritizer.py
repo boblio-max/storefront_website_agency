@@ -155,7 +155,32 @@ def score_business(b: dict, lead_type: str) -> tuple[float, list[str]]:
     return round(max(0, min(100, score)), 1), reasons
 
 
-def prioritize(without: list[dict], bad: list[dict]) -> list[dict]:
+def prioritize(without: list[dict], bad: list[dict],
+               output: str | None = None) -> list[dict]:
+    """Score + rank leads. lead_ids are STABLE across re-runs: businesses
+    seen before keep their ID (matched by stable_key from the existing
+    output file); only genuinely new businesses get fresh IDs. This keeps
+    deployments, email history, and invoices pointing at the right
+    business forever."""
+    existing_ids: dict[str, str] = {}
+    existing_max = 0
+    if output:
+        try:
+            raw = json.loads(Path(output).read_text(encoding="utf-8"))
+            items = raw if isinstance(raw, list) else []
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                sk = item.get("stable_key") or stable_key(item)
+                lid = str(item.get("lead_id") or "")
+                if sk and lid.startswith("lead_"):
+                    existing_ids[sk] = lid
+                    try:
+                        existing_max = max(existing_max, int(lid.split("_")[1]))
+                    except (ValueError, IndexError):
+                        pass
+        except (OSError, json.JSONDecodeError):
+            pass
     leads: list[dict] = []
     seen: set[str] = set()
     for b in without:
@@ -178,8 +203,13 @@ def prioritize(without: list[dict], bad: list[dict]) -> list[dict]:
                               -(l.get("review_count") or 0),
                               (l.get("name") or "")))
     now = utc_now_iso()
-    for i, lead in enumerate(leads, 1):
-        lead["lead_id"] = f"lead_{i:05d}"
+    nxt = existing_max + 1
+    for lead in leads:
+        if lead["stable_key"] in existing_ids:
+            lead["lead_id"] = existing_ids[lead["stable_key"]]
+        else:
+            lead["lead_id"] = f"lead_{nxt:05d}"
+            nxt += 1
         lead["prioritized_at"] = now
     return leads
 
@@ -222,7 +252,7 @@ def main(argv=None, **kwargs) -> str | int:
     if not without and not bad:
         print("[lead_prioritizer] ERROR: both inputs empty/missing", file=sys.stderr)
         return 2
-    leads = prioritize(without, bad)
+    leads = prioritize(without, bad, output=str(args.output))
     total = len(leads)
     leads = [l for l in leads if l["opportunity_score"] >= args.min_score]
     if args.require_email:

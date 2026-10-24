@@ -48,7 +48,7 @@ try:  # Windows consoles default to cp1252; keep unicode output from crashing
 except Exception:  # noqa: BLE001
     pass
 
-METHODS = ("card", "bank", "crypto")
+METHODS = ("card", "bank", "crypto", "cash")
 LEDGER_DEFAULT = "payments.json"
 
 
@@ -282,6 +282,9 @@ def pay_instructions(invoice: dict) -> str:
                 lines.append(f"    {coin}: {addr}")
         else:
             lines.append("  Crypto: address on request.")
+    if "cash" in invoice["methods"]:
+        lines.append(f"  Cash or check in person (reference {invoice['invoice_id']}) — "
+                     f"pay when we hand off your live site.")
     return "\n".join(lines)
 
 
@@ -295,7 +298,8 @@ def payout_report(ledger: str | Path = LEDGER_DEFAULT) -> str:
     for method, cents in sorted(bal["paid_by_method_cents"].items()):
         where = {"card": "Stripe balance -> automatic payout to your bank",
                  "bank": "your bank account already",
-                 "crypto": "your wallet addresses already"}.get(method, "see ledger")
+                 "crypto": "your wallet addresses already",
+                 "cash": "in your hand already"}.get(method, "see ledger")
         lines.append(f"  {method}: {cents / 100:.2f} {cur} — {where}")
     if os.environ.get("AGENCY_STRIPE_KEY", "").strip():
         lines.append(f"Stripe key: {mask_secret(os.environ['AGENCY_STRIPE_KEY'])} (payouts automatic)")

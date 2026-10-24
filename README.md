@@ -22,6 +22,14 @@ py orchestrator.py --reuse --limit 1 --send-emails         # actually sends (nee
 py orchestrator.py --watch --reuse --send-emails           # continuous: new leads + inbox replies
 ```
 
+resilience notes: `--reuse` reuses prior classification (no 2-min refetch;
+`--force` forces it). blocked deploys keep a local preview and never push
+from the wrong account — fix with `gh auth switch --user <agency-login>`
+then re-run `--reuse` to go live. `lead_id`s are stable across re-runs.
+Bot 2.5 (`email_finder.py`) scrapes business sites for verified emails;
+follow-ups go with `--followups` (schedule in `agency_config.json`,
+the one file that morphs niches/pricing/payments/voice).
+
 ## rules that keep it safe
 
 outreach builds are locked previews (banner + noindex + demo forms) until `--final` after payment. outreach only goes to verified emails (never fabricated), opt-outs suppress forever, resends are guarded per lead+purpose. secrets stay in env (`AGENCY_SMTP_PASS`, `AGENCY_IMAP_PASS`, Stripe keys) — `.env*` is gitignored, never commit them.

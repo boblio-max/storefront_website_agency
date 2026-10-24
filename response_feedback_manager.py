@@ -56,6 +56,19 @@ NOT_INTERESTED_HINTS = re.compile(
     r"\b(not interested|no thanks|no thank|pass|don'?t (call|email|contact)|"
     r"too expensive|already have|not now|stop|leave me alone)\b", re.I)
 UNSUB_HINTS = re.compile(r"unsubscribe|remove me|stop emailing|opt.?out", re.I)
+PRICE_HINTS = re.compile(
+    r"\b(how much|pricing|price|cost|quote|budget|invoice|pay)\b", re.I)
+MEETING_HINTS = re.compile(
+    r"\b(call me|meet|zoom|visit|stop by|come by|appointment|demo|"
+    r"when (can|are) you (free|available)|my number is)\b", re.I)
+BOUNCE_HINTS = re.compile(
+    r"\b(undeliverable|delivery failure|mailbox (full|not found)|"
+    r"address not found|bounce|auto.?reply|out of office)\b", re.I)
+PHOTO_HINTS = re.compile(
+    r"\b(attached|attachment|photo|picture|image|logo file|menu pdf)\b", re.I)
+TIMELINE_HINTS = re.compile(
+    r"\b(today|tomorrow|this week|next week|asap|urgent|no rush|"
+    r"whenever|this month|deadline|launch by)\b", re.I)
 
 
 def utc_now_iso() -> str:
@@ -124,19 +137,62 @@ def extract_changes(body: str) -> list[str]:
 
 
 def classify(body: str) -> tuple[str, str, str]:
-    """Return (response_type, action, route)."""
+    """Return (response_type, action, route). Order matters: cheapest opt-out
+    checks first, then bounces (never retry), then concrete site edits."""
     t = body or ""
     if UNSUB_HINTS.search(t):
         return ("unsubscribe", "opt_out", "suppress_future_outreach")
     if NOT_INTERESTED_HINTS.search(t):
         return ("not_interested", "opt_out", "sales_no_further_action")
+    if BOUNCE_HINTS.search(t):
+        return ("bounce", "opt_out", "suppress_future_outreach")
     if CHANGE_HINTS.search(t):
         return ("wants_changes", "website_revision", "BOT5 → BOT6 → BOT7 → BOT9")
     if INTERESTED_HINTS.search(t):
         return ("interested", "sales_followup", "sales → BOT9 contextual email")
+    if PRICE_HINTS.search(t):
+        return ("price_question", "sales_followup", "sales → BOT9 payment email")
+    if MEETING_HINTS.search(t):
+        return ("meeting_request", "sales_followup", "sales → BOT9 scheduling email")
     if "?" in t or re.search(r"\b(how|what|when|price|cost|long)\b", t, re.I):
         return ("question", "answer_question", "BOT9 contextual email")
     return ("unclear", "needs_review", "human_review → BOT9")
+
+
+def extract_structured(body: str) -> dict:
+    """Structured facts from a reply: contact, needs, urgency, sentiment.
+
+    Delegates to email_generator.extract_info_from_email (single source of
+    truth for regexes) and adds reply-level signals the router needs:
+    sentiment (-1/0/1), urgency (low/med/high), has_photos_hint,
+    question_count. Never raises; {} when body is empty.
+    """
+    try:
+        from email_generator import extract_info_from_email as _extract
+        info = dict(_extract(body) or {})
+    except Exception:  # noqa: BLE001
+        info = {}
+    try:
+        t = (body or "").strip()
+        if not t:
+            return info
+        low = t.lower()
+        pos = len(re.findall(
+            r"\b(love|great|perfect|awesome|amazing|thank|yes|please)\b", low))
+        neg = len(re.findall(
+            r"\b(hate|terrible|awful|angry|upset|wrong|bad|no)\b", low))
+        info["sentiment"] = 1 if pos > neg else (-1 if neg > pos else 0)
+        if TIMELINE_HINTS.search(t) or "urgent" in low or "asap" in low:
+            info["urgency"] = "high"
+        elif re.search(r"\b(no rush|whenever|next month)\b", low):
+            info["urgency"] = "low"
+        else:
+            info["urgency"] = "med"
+        info["has_photos_hint"] = bool(PHOTO_HINTS.search(t))
+        info["question_count"] = t.count("?")
+        return info
+    except Exception:  # noqa: BLE001
+        return info
 
 
 def parse_args(argv=None):
@@ -225,6 +281,76 @@ def _decode_body(msg) -> str:
         return ""
 
 
+ATTACH_MAX_BYTES = 8_000_000
+ATTACH_MAX_FILES = 6
+ATTACH_EXTS = {".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+               ".png": "image/png", ".webp": "image/webp",
+               ".gif": "image/gif"}
+
+
+def save_attachments(msg, lead_id: str,
+                     inbox_dir: str | Path = "client_photos") -> list[str]:
+    """Save image attachments from a parsed email message.
+
+    Stores verified image bytes under client_photos/<lead_id>/recv-<n>.<ext>
+    (content-hash deduped, never overwrites). Returns saved paths.
+    Non-image parts, tiny icons (<15KB), and oversize files are skipped.
+    Never raises — returns [] when nothing usable arrives.
+    """
+    try:
+        import hashlib
+        dest = Path(inbox_dir) / str(lead_id)
+        try:
+            seen_hashes = {p.stem for p in dest.glob("*.md5")}
+        except OSError:
+            seen_hashes = set()
+        saved: list[str] = []
+        n = len(list(dest.glob("recv-*.*"))) if dest.exists() else 0
+        if not msg.is_multipart():
+            return []
+        for part in msg.walk():
+            if len(saved) >= ATTACH_MAX_FILES:
+                break
+            if part.is_multipart():
+                continue
+            ctype = (part.get_content_type() or "").lower()
+            disp = str(part.get("Content-Disposition") or "").lower()
+            filename = str(part.get_filename() or "")
+            is_image = ctype.startswith("image/") or (
+                "attachment" in disp and filename.lower().endswith(
+                    tuple(ATTACH_EXTS)))
+            if not is_image:
+                continue
+            try:
+                data = part.get_payload(decode=True)
+            except Exception:  # noqa: BLE001
+                continue
+            if not isinstance(data, bytes) or not (15_000 <= len(data) <= ATTACH_MAX_BYTES):
+                continue
+            ext = ".jpg"
+            for e, mt in ATTACH_EXTS.items():
+                if ctype == mt or filename.lower().endswith(e):
+                    ext = e if e != ".jpeg" else ".jpg"
+                    break
+            digest = hashlib.md5(data).hexdigest()[:12]
+            if digest in seen_hashes:
+                continue
+            seen_hashes.add(digest)
+            dest.mkdir(parents=True, exist_ok=True)
+            target = dest / f"recv-{n}{ext}"
+            n += 1
+            try:
+                target.write_bytes(data)
+                (dest / f"{digest}.md5").write_text(filename or ctype,
+                                                   encoding="utf-8")
+            except OSError:
+                continue
+            saved.append(str(target))
+        return saved
+    except Exception:  # noqa: BLE001
+        return []
+
+
 def poll_inbox(current: str = "current_leads.json",
                history: str = "email_history.json",
                limit: int = 20) -> list[dict]:
@@ -270,10 +396,18 @@ def poll_inbox(current: str = "current_leads.json",
             subject = str(msg.get("Subject") or "")
             body = _decode_body(msg).strip()
             mid = str(msg.get("Message-ID") or f"uid_{uid.decode(errors='replace')}")
+            lid = known.get(sender)
+            photos: list[str] = []
+            if lid:
+                photos = save_attachments(msg, lid)
+                if photos:
+                    print(f"[response_feedback_manager] {lid}: saved "
+                          f"{len(photos)} client photo(s)", flush=True)
             out.append({"uid": uid.decode(errors="replace"),
-                        "lead_id": known.get(sender),
+                        "lead_id": lid,
                         "from": sender, "subject": subject,
-                        "body": body or subject, "message_id": mid})
+                        "body": body or subject, "message_id": mid,
+                        "photo_paths": photos})
     finally:
         try:
             box.close()
@@ -352,9 +486,23 @@ def main(argv=None, **kwargs) -> str | dict | int:
                if isinstance(m, dict) and m.get("lead_id") == lead_id]
     rtype, action, route = classify(body)
     changes = extract_changes(body) if action == "website_revision" else []
+    # Structured extraction: every reply enriches the lead automatically.
+    try:
+        structured = extract_structured(body)
+    except Exception:  # noqa: BLE001
+        structured = {}
+    applied: dict = {}
+    if structured:
+        try:
+            from email_generator import apply_extracted_to_lead as _apply
+            applied = _apply(lead_id, structured, current=args.current) or {}
+        except Exception:  # noqa: BLE001
+            applied = {}
 
     feedback = {"lead_id": lead_id, "action": action, "response_type": rtype,
                 "requested_changes": changes,
+                "extracted": structured,
+                "lead_updates_applied": applied,
                 "summary": f"Client reply classified as {rtype} "
                            f"({len(history)} prior messages).",
                 "route": route, "analyzed_at": utc_now_iso(),

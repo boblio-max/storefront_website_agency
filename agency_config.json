@@ -1,0 +1,15 @@
+{
+  "agency_name": "Storefront",
+  "niches": ["auto repair", "coffee shop", "restaurant", "dentist", "salon", "plumber", "hvac"],
+  "max_per_query": 20,
+  "qa_threshold": 80,
+  "max_qa_attempts": 5,
+  "default_price_cents": 29900,
+  "currency": "USD",
+  "payment_methods": ["card", "bank", "cash"],
+  "followup_schedule_days": [3, 7, 14],
+  "max_followups": 3,
+  "require_email_for_outreach": true,
+  "deploy": {"allow_local_fallback": true, "require_gh_match": true},
+  "outreach": {"max_words": 180, "include_pay_block": true}
+}

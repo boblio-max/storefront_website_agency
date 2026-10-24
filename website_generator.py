@@ -46,6 +46,7 @@ import hashlib
 import html as htmlmod
 import json
 import os
+import random
 import re
 import shutil
 import struct
@@ -1365,6 +1366,130 @@ def apply_site_hardening(target: Path, lead: dict) -> None:
 # OpenCode prompt (used when the CLI is available)
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Design direction sampling — sibling builds must not share an identity.
+# Machine-checked hooks (6 cards, quote-form, reveal system, contrast rules)
+# stay identical; palette, type pairing, motion set, decoration language,
+# hero composition and section emphasis are SAMPLED deterministically per
+# lead (same lead -> same direction, so cache/rebuilds and partner apply
+# passes stay coherent; different leads never look like twins).
+# ---------------------------------------------------------------------------
+
+# (key, name, brand, brand2, accent, bg, ink, dark_meta, attitude)
+# brand/brand2 are always deep enough for white text at >= 4.5:1 (the
+# automated contrast checker depends on that contract).
+DESIGN_FAMILIES = (
+    ("kiln-terracotta", "the ceramics studio", "#9A3412", "#431407", "#B45309",
+     "#FAF3EA", "#292524", "light",
+     "hand-thrown, warm dust, artist-run shopfront"),
+    ("press-letterpress", "the independent print shop", "#7F1D1D", "#1C1917", "#B91C1C",
+     "#F5F4EF", "#171717", "light",
+     "flat inks, hard edges, dated marks, paper over-substrate"),
+    ("spruce-fieldguide", "the field guide", "#276749", "#14532D", "#CA8A04",
+     "#F4F7EE", "#1B2A1F", "light",
+     "botanical plates, annotations on the craft, rope-and-paper"),
+    ("harbor-teal-rust", "the coastal outfitter", "#134E4A", "#7C2D12", "#0F766E",
+     "#F0F7F6", "#0F2A27", "light",
+     "tide tables, brass fixtures, salt air"),
+    ("graphite-toolbench", "the garage bench", "#1F2937", "#7F1D1D", "#DC2626",
+     "#F6F6F4", "#111827", "light",
+     "chalk marks on steel, tool drawers, one red signal"),
+    ("mulberry-orchid", "the boutique salon", "#701A75", "#4C1D95", "#C084FC",
+     "#1E0B24", "#F3E8F5", "dark",
+     "velvet, orchid, low light, mirrors"),
+    ("archive-sepia", "the archive", "#7C2D12", "#431407", "#B8860B",
+     "#201612", "#F5EBDD", "dark",
+     "ledger lines, rubber stamps, brass tacks — the warm legacy mood"),
+    ("diner-cherry", "the counter diner", "#7F1D1D", "#171717", "#F59E0B",
+     "#FDF8EC", "#1F1B18", "light",
+     "cream vinyl, cherry neon, steel napkin boxes"),
+    ("meadow-orchard", "the orchard stand", "#365314", "#78350F", "#CA8A04",
+     "#F6FAF2", "#1E2A12", "light",
+     "wax paper, apple crates, dappled leaf shade"),
+    ("midnight-teal", "the night ferry lounge", "#164E63", "#0F3D46", "#FDBA74",
+     "#0E1B20", "#E6F0F2", "dark",
+     "deep water, brass rail, warm window glow"),
+    ("atelier-noir-blush", "the atelier", "#831843", "#500724", "#F9A8D4",
+     "#171417", "#F6EFF3", "dark",
+     "charcoal paper, blush accents, long shadows"),
+    ("coffeehouse-oak", "the third-wave coffeehouse", "#713F12", "#292524", "#B45309",
+     "#F5F1E8", "#231F1A", "light",
+     "oak, crema, silt stone, morning light"),
+)
+
+DESIGN_TYPE_PAIRINGS = (
+    ("Fraunces", "Inter", "warm serif poster voice"),
+    ("Bodoni Moda", "Karla", "high-contrast editorial"),
+    ("DM Serif Display", "DM Sans", "confident magazine page"),
+    ("Libre Caslon Text", "Libre Franklin", "bookish, unhurried"),
+    ("Cormorant Garamond", "Work Sans", "engraved, delicate contrast"),
+    ("Archivo Black", "Archivo", "poster-grotesque, loud but disciplined"),
+    ("Unbounded", "Manrope", "wide, contemporary, slightly odd"),
+    ("Space Grotesk", "IBM Plex Sans", "technical drafting voice"),
+    ("Bricolage Grotesque", "Inter", "modern newsstand hybrid"),
+    ("Zilla Slab", "Karla", "typewriter slab, self-assured"),
+    ("Sora", "Public Sans", "clean geometric, quiet confidence"),
+    ("Playfair Display", "Source Sans 3", "theatrical classic with level feet"),
+)
+
+DESIGN_MOTION_POOL = ("marquee", "autoplay", "magnetic", "countup",
+                      "tilt")
+
+CORE_MOTION = (
+    "- IntersectionObserver scroll reveals with staggered delays (body.js gate)",
+    "- sticky header scroll shadow",
+    "- working mobile navigation (aria-expanded toggle)",
+    "- smooth real-anchor navigation",
+)
+
+DESIGN_DETAIL_POOL = ("ghost typography", "oversized numerals", "rotated off-grid element",
+                      "scrawled hand-drawn underline", "custom scrollbar",
+                      "feTurbulence grain texture", "sticky stacking cards")
+
+# The signature moment sponsorship: at least one of these must survive
+# sampling so every build has a WOW marker the QA gate can find.
+_SIGNATURE_ELEMENTS = ("countup", "ghost typography", "sticky stacking cards")
+
+DESIGN_HERO_COMPOSITIONS = (
+    "copy block left, visual panel right, off-grid insert crossing both",
+    "visual panel LEFT dominates, copy falls to a lower third",
+    "copy on an editorial column, visual bleeding behind it at 20% opacity",
+    "full-bleed patterned backdrop, copy in an indented plate over it",
+    "asymmetric vertical stack with a floating caption chip",
+)
+
+DESIGN_SECTION_ORDERS = (
+    "hero -> cards -> story -> reviews -> visit",
+    "hero -> story -> cards -> reviews -> visit",
+)
+
+
+def build_design_direction(lead: dict) -> dict:
+    """Sample a site-specific design identity, deterministic per lead."""
+    seed_src = (str(lead.get("lead_id") or lead.get("name") or "lead")).lower().strip()
+    seed = int(hashlib.sha1(seed_src.encode("utf-8")).hexdigest()[:8], 16)
+    rng = random.Random(seed)
+    fam = rng.choice(DESIGN_FAMILIES)
+    pairing = rng.choice(DESIGN_TYPE_PAIRINGS)
+    motion = sorted(rng.sample(DESIGN_MOTION_POOL, 2))
+    details = set(rng.sample(DESIGN_DETAIL_POOL, 4))
+    if not any(any(sig in what for sig in _SIGNATURE_ELEMENTS)
+               for what in list(details) + list(motion)):
+        details.add("ghost typography")
+    hero = rng.choice(DESIGN_HERO_COMPOSITIONS)
+    order = rng.choice(DESIGN_SECTION_ORDERS)
+    feature = rng.choice(("cards", "story", "reviews"))
+    return {
+        "key": fam[0], "fam_name": fam[1], "brand": fam[2], "brand2": fam[3],
+        "accent": fam[4], "bg": fam[5], "ink": fam[6], "dark": fam[7],
+        "attitude": fam[8],
+        "display_font": pairing[0], "body_font": pairing[1], "font_note": pairing[2],
+        "motion": motion, "motion_off": sorted(set(DESIGN_MOTION_POOL) - set(motion)),
+        "details": sorted(details), "details_off": sorted(set(DESIGN_DETAIL_POOL) - details),
+        "hero": hero, "order": order, "feature_section": feature,
+    }
+
+
 def build_prompt(b: dict, feedback: dict | None, preview: bool = True,
                  photos: list[dict] | None = None) -> str:
     name = b.get("name") or "Local Business"
@@ -1412,6 +1537,19 @@ def build_prompt(b: dict, feedback: dict | None, preview: bool = True,
             "and textures for the visuals instead. NEVER hotlink remote images and NEVER invent "
             "stock-photo URLs (Unsplash, Pexels, placeholder services) — every visual must work offline.",
         ]
+    d = build_design_direction(b)
+    core_motion = list(CORE_MOTION)
+    _motion_glossary = {
+        "marquee": "the scrolling business-specific marquee strip (aria-hidden=true so screen readers never hear repeats)",
+        "magnetic": "magnetic primary CTA (requestAnimationFrame pointer pull; disabled under reduced motion)",
+        "countup": "count-up statistic built ONLY from verified numbers",
+        "tilt": "pointer-driven tilt/parallax on the showcase element (requestAnimationFrame; passive listeners)",
+    }
+    detail_forbidden = ("FORBIDDEN this build (omitting these IS the design difference; "
+                        "their presence is a FAIL): " + ", ".join(d["details_off"]) + ".")
+    signature_note = ("Every build needs exactly one signature moment; this build's is picked in "
+                      "the include list. Do not add a second identity system on top.")
+
     lines = [
         "Your working directory IS the website root.",
         "",
@@ -1486,6 +1624,54 @@ def build_prompt(b: dict, feedback: dict | None, preview: bool = True,
         "",
         "Design it like a senior art director and UI/UX designer personally selected every element.",
         "==================================================",
+        "SIBLING RULE (read before any design decision)",
+        "==================================================",
+        "",
+        "This pipeline builds MANY sites. They all share machine hooks (6 card elements,",
+        "quote-form, reveal system, reduced-motion block) — those are QA anchors, not style.",
+        "They must NOT share anything else: every sibling ship with a different family,",
+        "different fonts, a different motion mix and different decoration. If this build",
+        "could be mistaken for a sibling, redesign it. Flat pastel paper AND dark espresso",
+        "gloom are both defaults you must obey ONLY when this build's direction says so.",
+        "",
+        "==================================================",
+        "DESIGN DIRECTION — THIS BUILD ONLY (sampled; obey over your own defaults)",
+        "==================================================",
+        "",
+        f"Family: {d['key']} — {d['fam_name']}. Attitude: {d['attitude']}.",
+        f"Spending mode: {d['dark']} page — background {d['bg']} with body text {d['ink']}",
+        "(light builds: dark text on paper; dark builds: light text on near-black).",
+        "",
+        f":root contract — --bg: {d['bg']}; --ink (body text var): {d['ink']};",
+        f"--brand: {d['brand']}; --brand2: {d['brand2']}; --dark: deepest neutral you use;",
+        f"--gold: {d['accent']} (kept as the machine-checked accent name; decorative use only).",
+        ".btn-primary background MUST be --brand or --brand2 so white text passes 4.5:1.",
+        "",
+        f"Type pairing (use EXACTLY these two, no third): display = {d['display_font']};",
+        f"body = {d['body_font']} ({d['font_note']}).",
+        "",
+        f"Hero composition for this build: {d['hero']}.",
+        "",
+        f"Section order for this build: {d['order']}.",
+        f"The FEATURE section (biggest, loosest, most designed layout of the page) is the",
+        f"{d['feature_section']} section. The other sections stay quieter so one section",
+        "actually leads. Two consecutive sections MUST NOT share a layout rhythm.",
+        "",
+        "Motion — core (always):",
+        "",
+        *core_motion,
+        "- review slider with dots + keyboard tabs (behavior contract unchanged)",
+        "- card hover lifts",
+        "",
+        f"This build's TWO extra motion kinds (both required): {d['motion'][0]}, {d['motion'][1]}.",
+        *[f"    ({k}: {_motion_glossary[k]})" for k in d["motion"]],
+        f"DO NOT implement any of: {', '.join(d['motion_off'])}.",
+        "",
+        f"Decoration include list for this build (all must appear): {', '.join(d['details'])}.",
+        f"{detail_forbidden}",
+        f"{signature_note}",
+        "",
+        "==================================================",
         "DESIGN PERSONA",
         "==================================================",
         "",
@@ -1549,21 +1735,18 @@ def build_prompt(b: dict, feedback: dict | None, preview: bool = True,
         "ART DIRECTION",
         "==================================================",
         "",
-        f"Create ONE cohesive visual concept for {name}.",
+        f"Create ONE cohesive visual concept for {name} — the sampled family above IS the concept.",
         "",
-        "Commit to a dark, warm, atmospheric aesthetic suited to the business — deep charcoal / espresso "
-        "tones, aged cream, restrained brass/gold, subtle paper grain, layered gradients and SVG textures "
-        "rather than photographs.",
+        f"Commit fully to {d['fam_name']} attitude ({d['attitude']}) in the {d['dark']} mode of this",
+        f"build: {d['brand']} / {d['brand2']} accents on {d['bg']} ground. Layered gradients and SVG",
+        "textures rather than photographs (unless REAL photos are provided).",
         "",
-        "Examples of committed concepts: Mexican restaurant = dark moody cantina (deep ember + cream + gold) "
-        "with a papel-picado SVG bunting motif and grain texture; auto shop = bold industrial navy+orange with "
-        "blueprint-grid texture and stencil display type; coffee = cozy cream+brown with steam-swirl SVG curves. "
-        "Never default blue-on-white, never #0b5fff.",
+        "Do NOT substitute the pipeline's old default flavor (dark espresso + aged cream +",
+        "brass) for this build unless that IS this build's family. Do NOT turn the concept into",
+        "cultural-decoration stereotypes. Keep it sophisticated.",
         "",
-        "Do NOT turn the concept into cultural-decoration stereotypes. Keep it sophisticated.",
-        "",
-        "Finish with craft details: film-grain or SVG texture overlay, styled ::selection, custom scrollbar, "
-        "layered ghost art in the hero.",
+        "Finish with craft details: the sampled grain treatment, styled ::selection, custom",
+        "scrollbar (when included), layered ghost art (when included).",
         "==================================================",
         "TYPOGRAPHY",
         "==================================================",
@@ -1575,6 +1758,10 @@ def build_prompt(b: dict, feedback: dict | None, preview: bool = True,
         "- one clean body font",
         "",
         "No third font.",
+        "",
+        f"This build's pairing is machine-pinned above in DESIGN DIRECTION: {d['display_font']}",
+        f"for display, {d['body_font']} for body. Deviating to a 'better' pairing is a FAIL —",
+        "the pairing IS part of the sampled identity.",
         "",
         "Use:",
         "- clamp()",
@@ -1635,18 +1822,16 @@ def build_prompt(b: dict, feedback: dict | None, preview: bool = True,
         "",
         "Implement motion where it improves the experience.",
         "",
-        "Required:",
+        "Required (core — every build):",
         "",
+        *core_motion,
         "- choreographed hero entrance",
-        "- IntersectionObserver scroll reveals",
-        "- staggered reveal delays",
-        "- scrolling marquee strip",
-        "- review slider",
-        "- sticky header shadow",
+        "- review slider with dots + keyboard tabs (reduced-motion bypass for autoplay)",
         "- card hover lifts",
-        "- magnetic primary buttons",
-        "- count-up stats",
-        "- smooth anchor navigation",
+        "",
+        f"This build's TWO extra motion kinds (both required): {d['motion'][0]} and",
+        f"{d['motion'][1]} (see DESIGN DIRECTION for what each means).",
+        f"Everything else in the extra pool FORBIDDEN this build: {', '.join(d['motion_off'])}.",
         "",
         "Animation properties should be limited to:",
         "",
@@ -2131,6 +2316,9 @@ def build_prompt(b: dict, feedback: dict | None, preview: bool = True,
         "",
         "Use real numbers only.",
         "",
+        f"This build requires animated count-up ONLY when 'countup' is in its motion mix"
+        f"({d['motion']}); otherwise render the same number statically with identical rules.",
+        "",
         f"{countup_ctx}",
         "",
         "Do not fabricate:",
@@ -2246,16 +2434,14 @@ def build_prompt(b: dict, feedback: dict | None, preview: bool = True,
         "TEXTURE / FINISHING",
         "==================================================",
         "",
-        "The site MUST contain a subtle texture or grain treatment.",
-        "",
-        "Use SVG/data-based texture or CSS where practical.",
+        "The site MUST contain a subtle texture treatment by this build's sampled route",
+        "(feTurbulence grain, a layered SVG pattern, or both when both are listed).",
         "",
         "Include:",
         "- styled ::selection",
-        "- custom scrollbar",
-        "- subtle grain",
+        "- subtle grain when sampled",
         "- layered hero art",
-        "- decorative ghost typography",
+        "- decorative ghost typography when sampled",
         "- restrained borders",
         "",
         "Avoid excessive decoration.",
@@ -2309,28 +2495,22 @@ def build_prompt(b: dict, feedback: dict | None, preview: bool = True,
         "DESIGN DETAILS THAT MUST BE PRESENT",
         "==================================================",
         "",
-        "Include all of these:",
+        f"This build's include list (ALL must appear):",
         "",
+        *[f"- {item}" for item in d["details"]],
         "- asymmetric hero",
-        "- oversized editorial numeral",
-        "- subtle grain",
-        "- SVG texture",
-        "- rotated decorative element",
-        "- ghost typography",
-        "- hand-drawn-looking underline",
-        "- marquee",
+        "- subtle texture/grain treatment via the sampled route (feTurbulence grain, or",
+        "  layered SVG pattern when grain is not on this build's include list)",
         "- varied card treatments",
-        "- oversized section numerals",
         "- sticky blurred header",
-        "- custom scrollbar",
         "- custom selection color",
         "- CTA banner",
         "- designed visual panel",
         "- business-specific microcopy",
         "- mobile navigation",
         "- review slider",
-        "- count-up statistic",
-        "- magnetic primary CTA",
+        "",
+        detail_forbidden,
         "",
         "Do not overdecorate.",
         "",

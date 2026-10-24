@@ -5,3 +5,8 @@ __pycache__/
 *.pyc
 .env
 .env.*
+pipeline_state.json
+payments_verify_tmp.json
+verify_new_tmp.py
+stage_time_tmp.py
+stage_front_tmp.py

@@ -74,6 +74,14 @@ def real_email(value) -> str | None:
 
 def build_current_lead(lead: dict, deployment: dict, preview_override: str | None) -> dict:
     preview = (preview_override or "").strip() or (deployment or {}).get("preview_url") or ""
+    # One-line site problem for outreach personalization (Bot 9 paraphrases it).
+    site_note = ""
+    try:
+        problems = (lead.get("website_analysis") or {}).get("problems") or []
+        if isinstance(problems, list) and problems:
+            site_note = str(problems[0])[:160]
+    except (AttributeError, TypeError):
+        site_note = ""
     return {
         "lead_id": lead.get("lead_id"),
         "business_name": lead.get("name"),
@@ -85,6 +93,7 @@ def build_current_lead(lead: dict, deployment: dict, preview_override: str | Non
         "rating": lead.get("rating"),
         "review_count": lead.get("review_count"),
         "lead_type": lead.get("lead_type"),
+        "site_note": site_note or None,
         "opportunity_score": lead.get("opportunity_score"),
         "preview_url": preview or None,
         "deployment_id": (deployment or {}).get("deployment_id"),
